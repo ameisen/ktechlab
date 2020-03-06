@@ -7,8 +7,7 @@
  *   Software Foundation                                                   *
  ***************************************************************************/
 
-#ifndef KTL_CANVASITEMS_H_
-#define KTL_CANVASITEMS_H_
+#pragma once
 
 #include "canvasitemlist.h"
 
@@ -36,7 +35,7 @@ class KtlQCanvasItem : public QObject
 {
     Q_OBJECT
     public:
-        KtlQCanvasItem(KtlQCanvas* canvas);
+        KtlQCanvasItem(KtlQCanvas *canvas);
         ~KtlQCanvasItem() override;
 
         double x() const { return myx; }
@@ -49,29 +48,31 @@ class KtlQCanvasItem : public QObject
         void setY(double a) { move(x(),a); }
         void setZ(double a);
 
-        virtual bool collidesWith( const KtlQCanvasItem* ) const=0;
+        virtual bool collidesWith( const KtlQCanvasItem* ) const = 0;
 
         KtlQCanvasItemList collisions(const bool exact /* NO DEFAULT */ ) const;
 
-        virtual void setCanvas(KtlQCanvas*);
+        virtual void setCanvas(KtlQCanvas *);
 
-        virtual void draw(QPainter&)=0;
+        virtual void draw(QPainter &) = 0;
 
         void show();
         void hide();
 
-        virtual void setVisible(bool yes);
+        virtual void setVisible(bool visible);
         bool isVisible() const { return vis; }
-        virtual void setSelected(const bool yes);
+        virtual void setSelected(const bool selected);
         bool isSelected() const { return sel; }
 
-        virtual QRect boundingRect() const=0;
+        virtual QRect boundingRect() const = 0;
 
-        KtlQCanvas* canvas() const { return cnv; }
+        KtlQCanvas * canvas() const { return cnv; }
 
-        virtual bool collidesWith( const KtlQCanvasPolygonalItem*,
-                       const KtlQCanvasRectangle*,
-                       const KtlQCanvasEllipse* ) const = 0;
+        virtual bool collidesWith(
+            const KtlQCanvasPolygonalItem *,
+            const KtlQCanvasRectangle *,
+            const KtlQCanvasEllipse *
+        ) const = 0;
 
         bool needRedraw() const { return m_bNeedRedraw; }
         void setNeedRedraw( const bool needRedraw ) { m_bNeedRedraw = needRedraw; }
@@ -84,40 +85,38 @@ class KtlQCanvasItem : public QObject
         virtual void removeFromChunks();
         virtual void changeChunks();
 
-        bool val;
-        double myx,myy,myz;
+        double myx = 0;
+        double myy = 0;
+        double myz = 0;
+        bool val = false;
 
     private:
-        KtlQCanvas* cnv;
-        static KtlQCanvas* current_canvas;
-        KtlQCanvasItemExtra *ext;
-        KtlQCanvasItemExtra& extra();
-        bool m_bNeedRedraw;
-        bool vis;
-        bool sel;
-
+        KtlQCanvas *cnv = nullptr;
+        static KtlQCanvas *current_canvas;
+        KtlQCanvasItemExtra *ext = nullptr;
+        KtlQCanvasItemExtra & extra();
+        bool m_bNeedRedraw = true;
+        bool vis = false;
+        bool sel = false;
 };
-
 
 class KtlQPolygonalProcessor;
 
 class KtlQCanvasPolygonalItem : public KtlQCanvasItem
 {
     public:
-        KtlQCanvasPolygonalItem(KtlQCanvas* canvas);
+        KtlQCanvasPolygonalItem(KtlQCanvas *canvas);
         ~KtlQCanvasPolygonalItem() override;
 
-        bool collidesWith( const KtlQCanvasItem* ) const override;
+        bool collidesWith(const KtlQCanvasItem *) const override;
 
-        virtual void setPen( const QPen & p );
-        virtual void setBrush( const QBrush & b );
+        virtual void setPen( const QPen &p );
+        virtual void setBrush( const QBrush &b );
 
-        QPen pen() const
-        { return pn; }
-        QBrush brush() const
-        { return br; }
+        const QPen & pen() const { return pn; }
+        const QBrush & brush() const { return br; }
 
-        virtual QPolygon areaPoints() const=0;
+        virtual QPolygon areaPoints() const = 0;
         QRect boundingRect() const override;
 
     protected:
@@ -128,62 +127,67 @@ class KtlQCanvasPolygonalItem : public KtlQCanvasItem
         void setWinding(bool);
 
         void invalidate();
-        bool isValid() const
-        { return val; }
+        bool isValid() const { return val; }
 
     private:
-        void scanPolygon( const QPolygon& pa, int winding,
-                    KtlQPolygonalProcessor& process ) const;
+        void scanPolygon(
+            const QPolygon &pa,
+            int winding,
+            KtlQPolygonalProcessor &process
+        ) const;
 
         QPolygon chunks() const override;
 
-        bool collidesWith( const KtlQCanvasPolygonalItem*,
-                   const KtlQCanvasRectangle*,
-                   const KtlQCanvasEllipse* ) const override;
+        bool collidesWith(
+            const KtlQCanvasPolygonalItem *,
+            const KtlQCanvasRectangle *,
+            const KtlQCanvasEllipse *
+        ) const override;
 
         QBrush br;
         QPen pn;
-        bool wind;
+        bool wind = false;
 };
 
 
 class KtlQCanvasRectangle : public KtlQCanvasPolygonalItem
 {
     public:
-        KtlQCanvasRectangle(KtlQCanvas* canvas);
-        KtlQCanvasRectangle(const QRect&, KtlQCanvas* canvas);
-        KtlQCanvasRectangle(int x, int y, int width, int height, KtlQCanvas* canvas);
+        KtlQCanvasRectangle(KtlQCanvas *canvas);
+        KtlQCanvasRectangle(const QRect &, KtlQCanvas *canvas);
+        KtlQCanvasRectangle(int x, int y, int width, int height, KtlQCanvas *canvas);
 
         ~KtlQCanvasRectangle() override;
 
         int width() const;
         int height() const;
         void setSize(const int w, const int h);
-        QSize size() const
-        { return QSize(w,h); }
+        QSize size() const { return QSize(w,h); }
         QPolygon areaPoints() const override;
-        QRect rect() const
-        { return QRect(int(x()),int(y()),w,h); }
+        QRect rect() const { return QRect(int(x()),int(y()),w,h); }
 
-        bool collidesWith( const KtlQCanvasItem* ) const override;
+        bool collidesWith( const KtlQCanvasItem * ) const override;
 
     protected:
         void drawShape(QPainter &) override;
         QPolygon chunks() const override;
 
     private:
-        bool collidesWith( const KtlQCanvasPolygonalItem*,
-                   const KtlQCanvasRectangle*,
-                   const KtlQCanvasEllipse* ) const override;
+        bool collidesWith(
+            const KtlQCanvasPolygonalItem *,
+            const KtlQCanvasRectangle *,
+            const KtlQCanvasEllipse *
+        ) const override;
 
-        int w, h;
+        int w = 32;
+        int h = 32;
 };
 
 
 class KtlQCanvasPolygon : public KtlQCanvasPolygonalItem
 {
     public:
-        KtlQCanvasPolygon(KtlQCanvas* canvas);
+        KtlQCanvasPolygon(KtlQCanvas *canvas);
         ~KtlQCanvasPolygon() override;
         void setPoints(QPolygon);
         QPolygon points() const;
@@ -195,7 +199,7 @@ class KtlQCanvasPolygon : public KtlQCanvasPolygonalItem
         void drawShape(QPainter &) override;
         // TODO FIXME guarts are added for debugging memory corruption (poly takes non-pointer values)
         int guardBef[10];
-        QPolygon *poly;
+        QPolygon *poly = nullptr;
         int guardAft[10];
 };
 
@@ -203,16 +207,14 @@ class KtlQCanvasPolygon : public KtlQCanvasPolygonalItem
 class KtlQCanvasLine : public KtlQCanvasPolygonalItem
 {
     public:
-        KtlQCanvasLine(KtlQCanvas* canvas);
+        KtlQCanvasLine(KtlQCanvas *canvas);
         ~KtlQCanvasLine() override;
         void setPoints(int x1, int y1, int x2, int y2);
 
-        QPoint startPoint() const
-        { return QPoint(x1,y1); }
-        QPoint endPoint() const
-        { return QPoint(x2,y2); }
+        QPoint startPoint() const { return QPoint(x1,y1); }
+        QPoint endPoint() const { return QPoint(x2,y2); }
 
-        void setPen( const QPen & p ) override;
+        void setPen( const QPen &p ) override;
         void moveBy(double dx, double dy) override;
 
     protected:
@@ -228,10 +230,9 @@ class KtlQCanvasEllipse : public KtlQCanvasPolygonalItem
 {
 
     public:
-        KtlQCanvasEllipse( KtlQCanvas* canvas );
-        KtlQCanvasEllipse( int width, int height, KtlQCanvas* canvas );
-        KtlQCanvasEllipse( int width, int height, int startangle, int angle,
-                    KtlQCanvas* canvas );
+        KtlQCanvasEllipse( KtlQCanvas *canvas );
+        KtlQCanvasEllipse( int width, int height, KtlQCanvas *canvas );
+        KtlQCanvasEllipse( int width, int height, int startangle, int angle, KtlQCanvas *canvas );
 
         ~KtlQCanvasEllipse() override;
 
@@ -243,18 +244,19 @@ class KtlQCanvasEllipse : public KtlQCanvasPolygonalItem
         int angleLength() const { return a2; }
         QPolygon areaPoints() const override;
 
-        bool collidesWith( const KtlQCanvasItem* ) const override;
+        bool collidesWith( const KtlQCanvasItem *) const override;
 
     protected:
         void drawShape(QPainter &) override;
 
     private:
-        bool collidesWith( const KtlQCanvasPolygonalItem*,
-                   const KtlQCanvasRectangle*,
-                   const KtlQCanvasEllipse* ) const override;
-        int w, h;
-        int a1, a2;
+        bool collidesWith(
+            const KtlQCanvasPolygonalItem *,
+            const KtlQCanvasRectangle *,
+            const KtlQCanvasEllipse *
+        ) const override;
+        int w = 32;
+        int h = 32;
+        int a1 = 0;
+        int a2 = 360 * 16;
 };
-
-
-#endif // KTL_CANVASITEMS_H_

@@ -451,4 +451,4 @@ void OscilloscopeView::drawFloatingData(QPainter &p)
 	}
 }
 
-#include "oscilloscopeview.moc"
+#include "moc_oscilloscopeview.cpp"

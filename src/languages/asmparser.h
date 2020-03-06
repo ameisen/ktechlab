@@ -26,9 +26,9 @@ class AsmParser
 	public:
 		AsmParser( const QString &url );
 		~AsmParser();
-		
-		enum Type { Relocatable, Absolute };
-		
+
+		enum class Type { Relocatable, Absolute };
+
 		/**
 		 * Read in data from file, return success status.
 		 * @param debugger if this is non-null, then source-line markers read
@@ -50,7 +50,7 @@ class AsmParser
 		 * it as a relocatable object, then this will return Relocatable.
 		 */
 		Type type() const { return m_type; }
-		
+
 	protected:
 		const QString m_url;
 		QString m_picID;

@@ -48,9 +48,9 @@ void DebugManager::registerGpsim( GpsimProcessor * gpsim )
 {
 	if (!gpsim)
 		return;
-	
+
 	m_processors << gpsim;
-	
+
 	const QStringList files = gpsim->sourceFileList();
 	QStringList::const_iterator end = files.end();
 	for ( QStringList::const_iterator it = files.begin(); it != end; ++it )
@@ -68,16 +68,16 @@ void DebugManager::urlOpened( TextDocument * td )
 {
 	if ( td->debuggerIsRunning() )
 		return;
-	
+
 	m_processors.removeAll( (GpsimProcessor*)0l );
 	GpsimProcessorList::iterator end = m_processors.end();
 	for ( GpsimProcessorList::iterator it = m_processors.begin(); it != end; ++it )
 	{
 		if ( !(*it)->sourceFileList().contains( td->url().path() ) )
 			continue;
-		
+
 		(*it)->setDebugMode( (td->guessedCodeType() == TextDocument::ct_asm) ? GpsimDebugger::AsmDebugger : GpsimDebugger::HLLDebugger );
-		
+
 		td->setDebugger( (*it)->currentDebugger(), false );
 		return;
 	}
@@ -85,6 +85,6 @@ void DebugManager::urlOpened( TextDocument * td )
 //END class DebugManager
 
 
-#include "debugmanager.moc"
+#include "moc_debugmanager.cpp"
 
 #endif

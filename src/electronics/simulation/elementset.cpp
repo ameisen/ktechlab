@@ -56,8 +56,8 @@ ElementSet::ElementSet( Circuit * circuit, const int n, const int m )
 
 ElementSet::~ElementSet()
 {
-	const ElementList::iterator end = m_elementList.end();
-	for ( ElementList::iterator it = m_elementList.begin(); it != end; ++it ) {
+	const QList<Element *>::iterator end = m_elementList.end();
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != end; ++it ) {
 		// Note: By calling setElementSet(0l), we might have deleted it (the Element will commit
 		// suicide when both the ElementSet and Component to which it belongs have deleted
 		// themselves). So be very careful it you plan to do anything with the (*it) pointer
@@ -98,21 +98,21 @@ void ElementSet::addElement( Element *e )
 
 void ElementSet::createMatrixMap()
 {
-// mapping nolonger done, overly ambitious optimization... 
+// mapping nolonger done, overly ambitious optimization...
 
 	// And do our logic as well...
-	
+
 	m_clogic = 0;
-	ElementList::iterator end = m_elementList.end();
-	for ( ElementList::iterator it = m_elementList.begin(); it != end; ++it )
+	QList<Element *>::iterator end = m_elementList.end();
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != end; ++it )
 	{
 		if ( dynamic_cast<LogicIn*>(*it) )
 			m_clogic++;
 	}
-	
+
 	p_logicIn = new LogicIn*[m_clogic];
 	int i=0;
-	for ( ElementList::iterator it = m_elementList.begin(); it != end; ++it )
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != end; ++it )
 	{
 		if ( LogicIn * in = dynamic_cast<LogicIn*>(*it) )
 			p_logicIn[i++] = in;
@@ -126,13 +126,13 @@ void ElementSet::doNonLinear( int maxIterations, double maxErrorV, double maxErr
 
 	// And now tell the cnodes and cbranches about their new voltages & currents
 	updateInfo();
-	
-	const NonLinearList::iterator end = m_cnonLinearList.end();
-	
+
+	const QList<NonLinear *>::iterator end = m_cnonLinearList.end();
+
 	int k = 0;
 	do {
 		// Tell the nonlinear elements to update its J, A and b from the newly calculated x
-		for ( NonLinearList::iterator it = m_cnonLinearList.begin(); it != end; ++it )
+		for ( QList<NonLinear *>::iterator it = m_cnonLinearList.begin(); it != end; ++it )
 			(*it)->update_dc();
 
 		*p_x = *p_b;  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -140,7 +140,7 @@ void ElementSet::doNonLinear( int maxIterations, double maxErrorV, double maxErr
 		p_A->performLU();
 		p_A->fbSub(p_x);
 		updateInfo();
-		
+
 		// Now, check for convergence
 		bool converged = true;
 		for ( unsigned i = 0; i < m_cn; ++i )
@@ -178,7 +178,7 @@ bool ElementSet::doLinear( bool performLU )
 {
 	if ( b_containsNonLinear || (!p_b->isChanged() && ((performLU && !p_A->isChanged()) || !performLU)) )
 		return false;
-	
+
 	if (performLU)
 		p_A->performLU();
 
@@ -188,7 +188,7 @@ bool ElementSet::doLinear( bool performLU )
 	p_A->fbSub(p_x);
 	updateInfo();
 	p_b->setUnchanged();
-	
+
 	return true;
 }
 
@@ -247,4 +247,3 @@ void ElementSet::displayEquations()
 	std::cout << "A_LU:"<<std::endl;
 	p_A->displayLU();
 }
-

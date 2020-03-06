@@ -26,18 +26,18 @@ struct SwitchPosition
  * A rotary switch
  * \author John Myers
  */
-class ECRotoSwitch : public Component
+class ECRotoSwitch final : public Component
 {
 public:
     ECRotoSwitch( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
     ~ECRotoSwitch() override;
-    
+
     static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
     static LibraryItem *libraryItem();
-    
+
     void buttonStateChanged( const QString &id, bool state ) override;
     void dataChanged() override;
-    
+
 private:
     void drawShape( QPainter &p ) override;
 

@@ -47,7 +47,7 @@ class LEDPart
 		uint last_brightness;
 };
 
-class LEDBarGraphDisplay : public Component
+class LEDBarGraphDisplay final : public Component
 {
 	public:
 		LEDBarGraphDisplay( ICNDocument* icnDocument, bool newItem, const QString& id = 0L );
@@ -59,7 +59,7 @@ class LEDBarGraphDisplay : public Component
 	private:
 		void initPins();
 		void dataChanged() override;
-		
+
 		void stepNonLogic() override;
 		bool doesStepNonLogic() const override { return true; }
 		void drawShape( QPainter &p ) override;

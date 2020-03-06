@@ -1,38 +1,11 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke                              *
- *   Copyright (C) 2005 by David Saxton                                    *
- *   daniel.jc@gmail.com                                                   *
- *									   *
- *   24-04-2007                                                            *
- *   Modified to add pic 16f877,16f627 and 16f628 			   *
- *   by george john george@space-kerala.org,az.j.george@gmail.com	   *
- *   supported by SPACE www.space-kerala.org	 			   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
 #include "microbe.h"
 #include "pic14.h"
 
 #include <k4aboutdata.h>
-// #include <k3aboutdialog.h>
 #include <kcmdlineargs.h>
 #include <klocale.h>
 
-#include <qfile.h>
+#include <QFile>
 
 #include <iostream>
 #include <fstream>
@@ -69,24 +42,24 @@ int main(int argc, char **argv)
     options.add( QByteArray("+[Input URL]"), ki18n( "Input filename" ),0);
     options.add( QByteArray("+[Output URL]"), ki18n( "Output filename" ),0);
     KCmdLineArgs::addCmdLineOptions( options );
-	
+
 	KCmdLineArgs *args = KCmdLineArgs::parsedArgs();
-	
+
 	if(args->count() == 2 )
 	{
-		Microbe mb;	
+		Microbe mb;
 //		QString s = mb.compile( args->arg(0), args->isSet("show-source"), args->isSet("optimize"));
 
 		QString s = mb.compile( args->arg(0), args->isSet("optimize"));
 
 		QString errorReport = mb.errorReport();
-		
+
 		if ( !errorReport.isEmpty() )
 		{
 			cerr << mb.errorReport().toStdString();
 			return 1; // If there was an error, don't write the output to file.
 		}
-		
+
 		else
 		{
 			ofstream out(args->arg(1).toStdString().c_str());
@@ -96,4 +69,3 @@ int main(int argc, char **argv)
 	}
 	else args->usage();
 }
-

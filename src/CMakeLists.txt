@@ -15,7 +15,8 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/micro
     ${CMAKE_CURRENT_SOURCE_DIR}/ktlqt3support
     ${KDE4_INCLUDES}
-    ${QT_INCLUDES})
+    ${QT_INCLUDES}
+)
 if(GPSim_FOUND)
     include_directories(${GPSim_INCLUDE_DIRS})
     set(CMAKE_CXX_FLAGS ${KDE4_ENABLE_EXCEPTIONS})
@@ -329,12 +330,17 @@ set(ktechlab_DCOP_SKEL_SRCS
 add_executable(ktechlab
     core/main.cpp
     ${ktechlab_SRCS}
-    )
+)
+
+target_precompile_headers(ktechlab
+    PUBLIC
+        pch.hpp
+)
 
 target_link_libraries( ktechlab
-    #core 
-#     gui 
-    #micro 
+    #core
+#     gui
+    #micro
     #flowparts
     #ktlqt3support
 	#mechanics electronics elements components languages drawparts

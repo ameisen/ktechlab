@@ -61,4 +61,4 @@ ScopeScreen * ScopeScreen::self( KateMDI::ToolView * parent )
 }
 
 
-#include "scopescreen.moc"
+#include "moc_scopescreen.cpp"

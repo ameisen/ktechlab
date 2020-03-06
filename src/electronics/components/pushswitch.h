@@ -17,18 +17,18 @@
 @short Push-to-Break switch component
 @author David Saxton
 */
-class ECPTBSwitch : public Component
+class ECPTBSwitch final : public Component
 {
 public:
 	ECPTBSwitch( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECPTBSwitch() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void buttonStateChanged( const QString &id, bool state ) override;
 	void dataChanged() override;
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 	Switch *m_switch;
@@ -40,18 +40,18 @@ private:
 @short Push-to-make switch
 @author David Saxton
 */
-class ECPTMSwitch : public Component
+class ECPTMSwitch final : public Component
 {
 public:
 	ECPTMSwitch( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECPTMSwitch() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void buttonStateChanged( const QString &id, bool state ) override;
 	void dataChanged() override;
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 

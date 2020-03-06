@@ -34,7 +34,7 @@ Q_OBJECT
 public:
 	FPNode( ICNDocument *_icnView, Node::node_type type, int dir, const QPoint &pos, QString *id = 0L );
     ~FPNode() override;
-	
+
 	/**
 	 * Returns a pointer to the FlowPart attached to this node if this node isInput, or
 	 * to the other end of the connector (if one exists) if it isOutput()
@@ -98,7 +98,7 @@ public:
 	 * being the connected nodes, and so can simply return if they are in there.
 	 * If it is null, it will assume that it is the first ndoe & will create a list
 	 */
-	bool isConnected( Node *node, NodeList *checkedNodes = 0L ) override;
+	bool isConnected( Node *node, QPtrList<Node> *checkedNodes = 0L ) override;
 	/**
 	 * Removes all the NULL connectors
 	 */
@@ -108,16 +108,16 @@ public:
 	/**
 	 * Returns a list of the input connectors; implemented inline
 	 */
-	ConnectorList inputConnectorList() const ; /* {
-			return (ConnectorList)(FlowConnectorList) m_inFlowConnList; 	} */
+	QPtrList<Connector> inputConnectorList() const ; /* {
+			return (QPtrList<Connector>)(FlowConnectorList) m_inFlowConnList; 	} */
 	/**
 	 * Returns a list of the output connectors
 	 */
-	ConnectorList outputConnectorList() const ;
+	QPtrList<Connector> outputConnectorList() const ;
 	/**
 	 * @return the list of all the connectors attached to the node
 	 */
-	ConnectorList getAllConnectors() const override ;
+	QPtrList<Connector> getAllConnectors() const override ;
 
 	/**
 	 * For a flownode: returns the first input connector, if it exist, or the fist outptut connector, if it exists.
@@ -128,8 +128,8 @@ public:
 	Connector* getAConnector() const override ;
 
 
-public slots:	
-	
+public slots:
+
 	/**
 	 * what is this? (verifies if the node can be removed; if it can, removes itself (?) )
 	 */
@@ -146,8 +146,8 @@ protected:
 	 * function will trace the two connectors until the point where they
 	 * diverge; this point is returned. */
 	QPoint findConnectorDivergePoint( bool * found ) override;
-	
-	/** (please document this) registers some signals for the node and the new connector (?) 
+
+	/** (please document this) registers some signals for the node and the new connector (?)
 	 * @return true of the operation was successful or false otherwise
 	 */
 	bool handleNewConnector( Connector * newConnector );
@@ -161,4 +161,3 @@ private:
 };
 
 #endif
-

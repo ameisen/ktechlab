@@ -39,7 +39,7 @@ ECSubcircuit::ECSubcircuit( ICNDocument *icnDocument, bool newItem, const char *
 	: Component( icnDocument, newItem, (id) ? id : "subcircuit" )
 {
 	m_name = i18n("Subcircuit");
-	
+
 	createProperty( "id", Variant::Type::Int );
 	property("id")->setMinValue(1);
 	property("id")->setMaxValue(1<<15);
@@ -60,7 +60,7 @@ void ECSubcircuit::removeItem()
 }
 
 
-void ECSubcircuit::setNumExtCon( unsigned numExtCon )
+void ECSubcircuit::setNumExtCon( int numExtCon )
 {
 	m_conNames.resize(numExtCon);
 
@@ -72,19 +72,19 @@ void ECSubcircuit::setNumExtCon( unsigned numExtCon )
 	}
 	p_icnDocument->flushDeleteList();
 	m_nodeMap.clear();
-	
+
 	QStringList pins;
-	for ( unsigned i=0; i<numExtCon; ++i )
+	for ( int i=0; i<numExtCon; ++i )
 	{
 		pins += QString::number(i);
 	}
-	
+
 	initDIPSymbol( pins, 80 );
-	
+
 	// We don't want the text that the dip symbol gave us as we initialize it later...
-	for ( unsigned i = 0; i < numExtCon; ++i )
+	for ( int i = 0; i < numExtCon; ++i )
 		removeDisplayText( QString::number(i) );
-	
+
 	initDIP(pins);
 }
 
@@ -100,11 +100,11 @@ void ECSubcircuit::dataChanged()
 }
 
 
-void ECSubcircuit::setExtConName( unsigned numId, const QString & name )
+void ECSubcircuit::setExtConName( int numId, const QString & name )
 {
 	if ( numId > m_conNames.size() )
 		return;
-	
+
 	m_conNames[numId] = name;
 }
 
@@ -112,7 +112,7 @@ void ECSubcircuit::setExtConName( unsigned numId, const QString & name )
 void ECSubcircuit::doneSCInit()
 {
 	QStringList pins;
-	for ( unsigned i = 0; i < m_conNames.size(); ++i )
+	for ( int i = 0; i < m_conNames.size(); ++i )
 		pins << m_conNames[i];
 	initDIPSymbol( pins, 80 );
 }
@@ -124,7 +124,4 @@ void ECSubcircuit::drawShape( QPainter &p )
 }
 
 
-#include "ecsubcircuit.moc"
-
-
-
+#include "moc_ecsubcircuit.cpp"

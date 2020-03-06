@@ -146,7 +146,7 @@ bool ItemDocument::registerItem(KtlQCanvasItem *qcanvasItem)
 
 void ItemDocument::slotSetDrawAction(QAction *selected)
 {
-    int drawAction = selected->data().toInt();
+  auto drawAction = DrawAction(selected->data().toInt());
 	m_cmManager->setDrawAction(drawAction);
 }
 
@@ -280,7 +280,7 @@ void ItemDocument::print()
 	// Send off the painter for drawing
     // note: What was this doing?? // set "null" background, so the background horiznotal and vertial lines are not visible
 	m_canvas->setBackgroundPixmap( QPixmap(0,0) /* 0 */ );
-	
+
 	QRect bounding = canvasBoundingRect();
 	unsigned int rows = (unsigned) std::ceil( double( bounding.height() ) / double( h ) );
 	unsigned int cols = (unsigned) std::ceil( double( bounding.width() ) / double( w ) );
@@ -874,7 +874,7 @@ void ItemDocument::exportToImage()
     exportDialog.setModal(true);
     exportDialog.setWindowTitle(i18n("Export As Image"));
     //exportDialog.setCaption(i18n("Export As Image"));
-	
+
 	exportDialog.setOperationMode( KFileDialog::Saving );
 	// now actually show it
 	if ( exportDialog.exec() == QDialog::Rejected )
@@ -1032,7 +1032,7 @@ void ItemDocument::raiseZ()
 {
 	raiseZ( selectList()->items(true) );
 }
-void ItemDocument::raiseZ( const ItemList & itemList )
+void ItemDocument::raiseZ( const QPtrList<Item> & itemList )
 {
 	if ( m_zOrder.isEmpty() ) slotUpdateZOrdering();
 
@@ -1064,7 +1064,7 @@ void ItemDocument::lowerZ()
 	lowerZ( selectList()->items(true) );
 }
 
-void ItemDocument::lowerZ( const ItemList &itemList )
+void ItemDocument::lowerZ( const QPtrList<Item> &itemList )
 {
 	if ( m_zOrder.isEmpty() ) slotUpdateZOrdering();
 
@@ -1144,9 +1144,9 @@ void ItemDocument::update( )
 }
 
 
-ItemList ItemDocument::itemList( ) const
+QPtrList<Item> ItemDocument::itemList( ) const
 {
-	ItemList l;
+	QPtrList<Item> l;
 
 	ItemMap::const_iterator end = m_itemList.end();
 	for ( ItemMap::const_iterator it = m_itemList.begin(); it != end; ++it )
@@ -1438,5 +1438,4 @@ void Canvas::update()
 }
 //END class Canvas
 
-#include "itemdocument.moc"
-
+#include "moc_itemdocument.cpp"

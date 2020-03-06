@@ -32,19 +32,19 @@ class DependentSource : public Component
 @short Current Controlled Current Source
 @author David Saxton
 */
-class ECCCCS : public DependentSource
+class ECCCCS final : public DependentSource
 {
 	public:
 		ECCCCS( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~ECCCCS() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
 
 	protected:
 		void dataChanged() override;
 		void drawShape( QPainter &p ) override;
-	
+
 		CCCS *m_cccs;
 };
 
@@ -52,19 +52,19 @@ class ECCCCS : public DependentSource
 @short Current Controlled Voltage Source
 @author David Saxton
 */
-class ECCCVS : public DependentSource
+class ECCCVS final : public DependentSource
 {
 	public:
 		ECCCVS( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~ECCCVS() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
 
 	protected:
 		void dataChanged() override;
 		void drawShape( QPainter &p ) override;
-	
+
 		CCVS *m_ccvs;
 };
 
@@ -72,7 +72,7 @@ class ECCCVS : public DependentSource
 @short Voltage Controlled Current Source
 @author David Saxton
 */
-class ECVCCS : public DependentSource
+class ECVCCS final : public DependentSource
 {
 	public:
 		ECVCCS( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
@@ -92,19 +92,19 @@ class ECVCCS : public DependentSource
 @short Voltage Controlled Voltage Source
 @author David Saxton
 */
-class ECVCVS : public DependentSource
+class ECVCVS final : public DependentSource
 {
 	public:
 		ECVCVS( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~ECVCVS() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
 
 	protected:
 		void dataChanged() override;
 		void drawShape( QPainter &p ) override;
-	
+
 		VCVS *m_vcvs;
 };
 

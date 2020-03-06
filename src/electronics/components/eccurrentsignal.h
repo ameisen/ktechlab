@@ -17,19 +17,19 @@
 @short Provides a current signal (sinusoidal, square, etc)
 @author David Saxton
 */
-class ECCurrentSignal : public Component
+class ECCurrentSignal final : public Component
 {
 public:
 	ECCurrentSignal( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECCurrentSignal() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 
 protected:
 	void drawShape( QPainter &p ) override;
 	void dataChanged() override;
-	
+
 	CurrentSignal *m_currentSignal;
 };
 

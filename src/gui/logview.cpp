@@ -39,7 +39,7 @@ LogView::LogView( KateMDI::ToolView * parent, const char *name )
 	//setWordWrap( WidgetWidth );
     setWordWrapMode( QTextOption::WrapAtWordBoundaryOrAnywhere );
 	setFocusPolicy( Qt::NoFocus );
-	
+
 	// Connect up signal emitted when the user doubleclicks on a paragraph in the log view
 	// connect( this, SIGNAL(clicked(int,int)), this, SLOT(slotParaClicked(int,int)) );
     // ^ reimplemented by: mouseDoubleClickEvent()
@@ -66,19 +66,19 @@ void LogView::addOutput( QString text, OutputType outputType, MessageInfo messag
 		case LogView::ot_important:
 			append( QString("<font color=\"#000000\"><b>%1</b></font>").arg(text) );
 			break;
-			
+
 		case LogView::ot_info:
 			append( QString("<font color=\"#000000\"><i>%1</i></font>").arg(text) );
 			break;
-			
+
 		case LogView::ot_message:
 			append( QString("<font color=\"#000000\">%1</font>").arg(text) );
 			break;
-			
+
 		case LogView::ot_warning:
 			append( QString("<font color=\"#666666\">%1</font>").arg(text) );
 			break;
-			
+
 		case LogView::ot_error:
 			append( QString("<font color=\"#800000\">%1</font>").arg(text) );
 			break;
@@ -124,13 +124,13 @@ void LogView::untidyText( QString &t )
 QMenu * LogView::createPopupMenu( const QPoint & pos )
 {
 	QMenu * menu = KTextEdit::createStandardContextMenu( pos );
-	
+
 	//menu->insertSeparator(); // 2018.12.07
     menu->addSeparator();
 	//int id = menu->insertItem( i18n("Clear All"), this, SLOT(clear()) ); // 2018.12.07
     QAction *clearAllAct = menu->addAction( i18n("Clear All"), this, SLOT(clear()) );
     clearAllAct->setEnabled( document()->blockCount() > 1 );
-	
+
 	//// "an empty textedit is always considered to have one paragraph" - qt documentation
 	//// although this does not always seem to be the case, so I don't know...
 	////menu->setItemEnabled( id, paragraphs() > 1 );
@@ -157,4 +157,4 @@ MessageInfo::MessageInfo( QString fileURL, int fileLine )
 //END class MessageInfo
 
 
-#include "logview.moc"
+#include "moc_logview.cpp"

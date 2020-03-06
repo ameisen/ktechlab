@@ -129,4 +129,4 @@ MicroSelectWidget * ProgrammerDlg::microSelect( ) const
 }
 
 
-#include "programmerdlg.moc"
+#include "moc_programmerdlg.cpp"

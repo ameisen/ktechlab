@@ -122,9 +122,9 @@ class RegisterSet
 		/**
 		 * Returns the number of registers.
 		 */
-		unsigned size() const { return m_registers.size(); }
+		int size() const { return m_registers.size(); }
 
-		RegisterInfo * fromAddress( unsigned address );
+		RegisterInfo * fromAddress( int address );
 		RegisterInfo * fromName( const QString & name );
 
 	protected:

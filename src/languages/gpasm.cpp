@@ -21,12 +21,14 @@
 
 #include <ktlconfig.h>
 
-Gpasm::Gpasm( ProcessChain *processChain )
- : ExternalLanguage( processChain, "Gpasm" )
-{
-	m_successfulMessage = i18n("*** Assembly successful ***");
-	m_failedMessage = i18n("*** Assembly failed ***");
-}
+Gpasm::Gpasm(ProcessChain *processChain) :
+	ExternalLanguage(
+		processChain,
+		"Gpasm",
+		"*** Assembly successful ***",
+		"*** Assembly failed ***"
+	)
+{}
 
 
 Gpasm::~Gpasm()
@@ -34,31 +36,31 @@ Gpasm::~Gpasm()
 }
 
 
-void Gpasm::processInput( ProcessOptions options )
+void Gpasm::processInput(const ProcessOptions &options)
 {
 	resetLanguageProcess();
-	m_processOptions = options;
-	
+	processOptions_ = options;
+
 	AsmParser p( options.inputFiles().first() );
 	p.parse();
-	
+
 	*m_languageProcess << ("gpasm");
-	
-	if ( ProcessOptions::ProcessPath::from( options.processPath() ) == ProcessOptions::ProcessPath::AssemblyRelocatable )
+
+	if ( ProcessOptions::from( options.processPath() ) == ProcessOptions::MediaType::AssemblyRelocatable )
 		*m_languageProcess << ("--object");
-	
+
 // 	*m_languageProcess << ("--debug-info"); // Debug info
-	
+
 	// Output filename
 	*m_languageProcess << ("--output");
 	*m_languageProcess << ( options.intermediaryOutput() );
-	
+
 	if ( !options.m_hexFormat.isEmpty() )
 	{
 		*m_languageProcess << ("--hex-format");
 		*m_languageProcess << (options.m_hexFormat);
 	}
-	
+
 	// Radix
 	if ( !p.containsRadix() )
 	{
@@ -80,7 +82,7 @@ void Gpasm::processInput( ProcessOptions options )
 				break;
 		}
 	}
-	
+
 	// Warning Level
 	*m_languageProcess << ("--warning");
 	switch( KTLConfig::gpasmWarningLevel() )
@@ -96,26 +98,26 @@ void Gpasm::processInput( ProcessOptions options )
 			*m_languageProcess << ("0");
 			break;
 	}
-	
+
 	// Ignore case
 	if ( KTLConfig::ignoreCase() )
 		*m_languageProcess << ("--ignore-case");
-	
+
 	// Dos formatting
 	if ( KTLConfig::dosFormat() )
 		*m_languageProcess << ("--dos");
-	
+
 	// Force list
 	if ( options.b_forceList )
 		*m_languageProcess << ("--force-list");
-	
+
 	// Other options
 	if ( !KTLConfig::miscGpasmOptions().isEmpty() )
 		*m_languageProcess << ( KTLConfig::miscGpasmOptions() );
-	
+
 	// Input Asm file
 	*m_languageProcess << ( options.inputFiles().first() );
-	
+
 	if ( !start() )
 	{
 		KMessageBox::sorry( LanguageManager::self()->logView(), i18n("Assembly failed. Please check you have gputils installed.") );
@@ -137,52 +139,46 @@ bool Gpasm::isWarning( const QString &message ) const
 }
 
 
-ProcessOptions::ProcessPath::Path Gpasm::outputPath( ProcessOptions::ProcessPath::Path inputPath ) const
+ProcessOptions::Path Gpasm::outputPath( ProcessOptions::Path inputPath ) const
 {
 	switch (inputPath)
 	{
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_PIC:
-			return ProcessOptions::ProcessPath::Program_PIC;
-			
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_Program:
-			return ProcessOptions::ProcessPath::None;
-			
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Library:
-			return ProcessOptions::ProcessPath::Object_Library;
-			
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Object:
-			return ProcessOptions::ProcessPath::None;
-			
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_PIC:
-			return ProcessOptions::ProcessPath::Object_PIC;
-			
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Program:
-			return ProcessOptions::ProcessPath::Object_Program;
-			
-		case ProcessOptions::ProcessPath::C_AssemblyRelocatable:
-		case ProcessOptions::ProcessPath::C_Library:
-		case ProcessOptions::ProcessPath::C_Object:
-		case ProcessOptions::ProcessPath::C_PIC:
-		case ProcessOptions::ProcessPath::C_Program:
-		case ProcessOptions::ProcessPath::FlowCode_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::FlowCode_Microbe:
-		case ProcessOptions::ProcessPath::FlowCode_PIC:
-		case ProcessOptions::ProcessPath::FlowCode_Program:
-		case ProcessOptions::ProcessPath::Microbe_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Microbe_PIC:
-		case ProcessOptions::ProcessPath::Microbe_Program:
-		case ProcessOptions::ProcessPath::Object_Disassembly:
-		case ProcessOptions::ProcessPath::Object_Library:
-		case ProcessOptions::ProcessPath::Object_PIC:
-		case ProcessOptions::ProcessPath::Object_Program:
-		case ProcessOptions::ProcessPath::PIC_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Program_Disassembly:
-		case ProcessOptions::ProcessPath::Program_PIC:
-		case ProcessOptions::ProcessPath::Invalid:
-		case ProcessOptions::ProcessPath::None:
-			return ProcessOptions::ProcessPath::Invalid;
-	}
-	
-	return ProcessOptions::ProcessPath::Invalid;
-}
+		case ProcessOptions::Path::AssemblyAbsolute_PIC:
+			return ProcessOptions::Path::Program_PIC;
 
+		case ProcessOptions::Path::AssemblyAbsolute_Program:
+			return ProcessOptions::Path::None;
+
+		case ProcessOptions::Path::AssemblyRelocatable_Library:
+			return ProcessOptions::Path::Object_Library;
+
+		case ProcessOptions::Path::AssemblyRelocatable_Object:
+			return ProcessOptions::Path::None;
+
+		case ProcessOptions::Path::AssemblyRelocatable_PIC:
+			return ProcessOptions::Path::Object_PIC;
+
+		case ProcessOptions::Path::AssemblyRelocatable_Program:
+			return ProcessOptions::Path::Object_Program;
+
+		case ProcessOptions::Path::FlowCode_AssemblyAbsolute:
+		case ProcessOptions::Path::FlowCode_Microbe:
+		case ProcessOptions::Path::FlowCode_PIC:
+		case ProcessOptions::Path::FlowCode_Program:
+		case ProcessOptions::Path::Microbe_AssemblyAbsolute:
+		case ProcessOptions::Path::Microbe_PIC:
+		case ProcessOptions::Path::Microbe_Program:
+		case ProcessOptions::Path::Object_Disassembly:
+		case ProcessOptions::Path::Object_Library:
+		case ProcessOptions::Path::Object_PIC:
+		case ProcessOptions::Path::Object_Program:
+		case ProcessOptions::Path::PIC_AssemblyAbsolute:
+		case ProcessOptions::Path::Program_Disassembly:
+		case ProcessOptions::Path::Program_PIC:
+		case ProcessOptions::Path::Invalid:
+		case ProcessOptions::Path::None:
+			return ProcessOptions::Path::Invalid;
+	}
+
+	return ProcessOptions::Path::Invalid;
+}

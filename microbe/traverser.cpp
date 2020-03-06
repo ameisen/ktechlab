@@ -1,23 +1,3 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke                              *
- *   daniel.jc@gmail.com                                               *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
 #include "traverser.h"
 #include "pic14.h"
 
@@ -37,10 +17,10 @@ BTreeNode * Traverser::start()
 	down the tree, each time turning down the node that has children,
 	if they both have no children we have reached the end and it shouldn't
 	really matter which we pick (check this algorithm) */
-	
+
 	BTreeNode *n = m_root;
 	bool found = false;
-	
+
 	while(!found)
 	{
 		if( !n->hasChildren() ) found = true;
@@ -97,4 +77,3 @@ void Traverser::moveToParent()
 {
 	if(current()->parent()) m_current = current()->parent();
 }
-

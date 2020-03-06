@@ -23,7 +23,7 @@ class MetaInfo
 {
 	public:
 		MetaInfo();
-		
+
 		/**
 		 * Returns true if all the data stored is default; and therefore does
 		 * not need saving.
@@ -38,34 +38,34 @@ class MetaInfo
 		 * Reads in the data from the config. Does not set the group.
 		 */
 		void load( KConfigGroup * conf );
-		
+
 		IntList bookmarks() const { return m_bookmarks; }
 		void setBookmarks( IntList bookmarks ) { m_bookmarks = bookmarks; }
-		
+
 		IntList breakpoints() const { return m_breakpoints; }
 		void setBreakpoints( IntList breakpoints ) { m_breakpoints = breakpoints; }
-		
+
 		OutputMethodInfo & outputMethodInfo() { return m_outputMethodInfo; }
 		void setOutputMethodInfo( OutputMethodInfo info ) { m_outputMethodInfo = info; }
-		
+
 		unsigned cursorLine() const { return m_cursorLine; }
 		void setCursorLine( unsigned line ) { m_cursorLine = line; }
-		
+
 		unsigned cursorColumn() const { return m_cursorColumn; }
 		void setCursorColumn( unsigned column ) { m_cursorColumn = column; }
-		
+
 	protected:
 		/**
 		 * Convert the id (e.g. "Direct") to a method, used when reading in the
 		 * config file.
 		 */
-		OutputMethodInfo::Method::Type toMethod( const QString & id );
+		OutputMethodInfo::Method toMethod( const QString & id );
 		/**
 		 * Conver the method (e.g. OutputMethodInfo::Method::Direct) to an id
 		 * that can be saved in the config file.
 		 */
-		QString toID( OutputMethodInfo::Method::Type method );
-		
+		QString toID( OutputMethodInfo::Method method );
+
 		IntList m_bookmarks;
 		IntList m_breakpoints;
 		OutputMethodInfo m_outputMethodInfo;
@@ -84,7 +84,7 @@ class FileMetaInfo : public QObject
 	Q_OBJECT
 	public:
 		~FileMetaInfo() override;
-	
+
 		/**
 		 * Initialize the TextDocument with the appropriate stored metainfo - e.g.
 		 * setting the appopriate bookmarks, etc
@@ -124,13 +124,13 @@ class FileMetaInfo : public QObject
 		 * loaded)
 		 */
 		void loadAllMetaInfo();
-	
+
 		KConfig *m_metaInfoConfig;
-	
+
 	private:
 		FileMetaInfo();
 		friend inline FileMetaInfo* fileMetaInfo();
-	
+
 		MetaInfoMap m_metaInfoMap;
 };
 

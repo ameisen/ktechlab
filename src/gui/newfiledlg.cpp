@@ -60,34 +60,34 @@ NewFileDlg::NewFileDlg( QWidget *parent )
 	 m_pNewFileWidget->typeIconView->setSelectionMode(QAbstractItemView::SingleSelection /*Q3IconView::Single*/);
 	 //m_pNewFileWidget->typeIconView->setMode(K3IconView::Select); // 2017.12.01 - convert to qlistwidget
      m_pNewFileWidget->typeIconView->setIconSize(QSize(KIconLoader::SizeHuge, KIconLoader::SizeHuge));
-    
+
 	KIconLoader *loader = KIconLoader::global();
-	
+
 	QList<QListWidgetItem*> items;
-	
+
 	//BEGIN insert icons
 	QString text = QString("%1 (.asm)").arg(i18n("Assembly Code"));
     items << new QListWidgetItem(loader->loadIcon( "source", KIconLoader::NoGroup, KIconLoader::SizeHuge ), text, m_pNewFileWidget->typeIconView);
 
-	
+
 	text = "C (.c)";
 	items << new QListWidgetItem(loader->loadIcon( "text-x-csrc", KIconLoader::NoGroup, KIconLoader::SizeHuge ), text, m_pNewFileWidget->typeIconView );
-	
+
 	text = QString("%1 (.circuit)").arg(i18n("Circuit"));
 	items << new QListWidgetItem(loader->loadIcon( "application-x-circuit", KIconLoader::NoGroup, KIconLoader::SizeHuge ), text, m_pNewFileWidget->typeIconView);
-	
+
 	items << new QListWidgetItem(loader->loadIcon( "application-x-flowcode", KIconLoader::NoGroup, KIconLoader::SizeHuge ), "FlowCode (.flowcode)", m_pNewFileWidget->typeIconView );
-	
+
 #ifdef MECHANICS
 	items << new QListWidgetItem(loader->loadIcon( "exec", KIconLoader::NoGroup, KIconLoader::SizeHuge ), "Mechanics (.mechanics)", m_pNewFileWidget->typeIconView);
 #endif
-	
+
 	items << new QListWidgetItem(loader->loadIcon( "application-x-microbe", KIconLoader::NoGroup, KIconLoader::SizeHuge ), "Microbe (.microbe)", m_pNewFileWidget->typeIconView);
 	//END insert icons
-	
+
 	int minWidth = 20 + m_pNewFileWidget->typeIconView->spacing() * items.size();
 	int minHeight = 20;
-	
+
 	const QList<QListWidgetItem*>::iterator end = items.end();
 	for ( QList<QListWidgetItem*>::iterator it = items.begin(); it != end; ++it )
 	{
@@ -112,9 +112,9 @@ NewFileDlg::NewFileDlg( QWidget *parent )
 	m_pNewFileWidget->addToProjectCheck->setChecked( ProjectManager::self()->currentProject() );
 	m_pNewFileWidget->addToProjectCheck->setEnabled( ProjectManager::self()->currentProject() );
 	microSelectWidget()->setAllowedFlowCodeSupport( MicroInfo::FullSupport | MicroInfo::PartialSupport );
-    
+
 	setMainWidget(m_pNewFileWidget);
-    
+
 	// Our behaviour is to have single click selects and double click accepts the dialog
 	connect( m_pNewFileWidget->typeIconView, SIGNAL(itemSelectionChanged()), this, SLOT(fileTypeChanged()) );
 	connect( m_pNewFileWidget->typeIconView, SIGNAL(doubleClicked(const QModelIndex &)), this, SLOT(accept()));
@@ -130,41 +130,41 @@ void NewFileDlg::accept()
 {
 	hide();
 	m_bAccepted = true;
-	
+
 	const QString fileText = m_pNewFileWidget->typeIconView->currentItem()->text();
-	
+
 	if		( fileText.contains(".flowcode") )
 		m_fileType = Document::dt_flowcode;
-	
+
 	else if ( fileText.contains(".circuit") )
 		m_fileType = Document::dt_circuit;
-	
+
 	else if ( fileText.contains(".mechanics") )
 		m_fileType = Document::dt_mechanics;
-	
+
 	else if ( fileText.contains(".asm") )
 	{
 		m_fileType = Document::dt_text;
 		m_codeType = TextDocument::ct_asm;
 	}
-	
+
 	else if ( fileText.contains(".basic") || fileText.contains(".microbe") )
 	{
 		m_fileType = Document::dt_text;
 		m_codeType = TextDocument::ct_microbe;
 	}
-	
+
 	else if (fileText.contains(".c") )
 	{
 		m_fileType = Document::dt_text;
 		m_codeType = TextDocument::ct_c;
 	}
-	
+
 	else
 		m_fileType = Document::dt_text;
 
 	m_bAddToProject = m_pNewFileWidget->addToProjectCheck->isChecked();
-	
+
 	m_microID = m_pNewFileWidget->m_pMicroSelect->micro();
 }
 
@@ -193,4 +193,4 @@ MicroSelectWidget * NewFileDlg::microSelectWidget() const
 }
 
 
-#include "newfiledlg.moc"
+#include "moc_newfiledlg.cpp"

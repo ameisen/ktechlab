@@ -11,6 +11,8 @@
 #ifndef ITEMVIEW_H
 #define ITEMVIEW_H
 
+#include "pch.hpp"
+
 #include <view.h>
 
 #include <canvas.h>

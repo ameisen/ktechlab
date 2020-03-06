@@ -35,7 +35,7 @@ Sub::Sub( ICNDocument *icnDocument, bool newItem, const char *id )
 	: FlowContainer( icnDocument, newItem, id ? id : "sub" )
 {
 	m_name = i18n("Sub");
-	
+
 	createProperty( "sub", Variant::Type::Combo );
 	property("sub")->setCaption( i18n("Subroutine") );
 	property("sub")->setValue("MySub");
@@ -58,4 +58,4 @@ void Sub::generateMicrobe( FlowCode *code )
 }
 
 
-// #include "sub.moc"
+// #include "sub.cpp"

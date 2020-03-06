@@ -1,38 +1,11 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke                              *
- *   daniel.jc@gmail.com                                                   *
- *									   *
- *   24-04-2007                                                            *
- *   Modified to add pic 16f877,16f627 and 16f628 			   *
- *   by george john george@space-kerala.org 				   *
- *   supported by SPACE www.space-kerala.org	 			   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
-#ifndef MICROBE_H
-#define MICROBE_H
+#pragma once
 
 #include <instruction.h>
 #include <variable.h>
-// #include <pic14.h>
 
-#include <qmap.h>
-#include <qstring.h>
-#include <qstringlist.h>
+#include <QMap>
+#include <QString>
+#include <QStringList>
 
 class QString;
 class BTreeBase;
@@ -73,17 +46,17 @@ class SourceLine
 		 */
 		SourceLine();
 		SourceLine( const QString & text, const QString & url, int line );
-		
+
 		QString text() const { return m_text; }
 		QString url() const { return m_url; }
 		int line() const { return m_line; }
-		
+
 		/**
 		 * Extracts the text from each SourceLine and adds it to the
 		 * returned QStringList.
 		 */
 		static QStringList toStringList( const SourceLineList & lines );
-		
+
 	protected:
 		QString m_text;
 		QString m_url;
@@ -91,7 +64,7 @@ class SourceLine
 };
 
 
-	
+
 /**
 @author Daniel Clarke
 @author David Saxton
@@ -101,7 +74,7 @@ class Microbe
 	public:
 		Microbe();
 		~Microbe();
-		
+
 		enum MistakeType
 		{
 			UnknownStatement = 1,
@@ -140,7 +113,7 @@ class Microbe
 			VariableExpected = 40,
 			NameExpected = 41
 		};
-	
+
 		/**
 		 * Returns a list of errors occurred during compilation, intended for
 		 * outputting to stderr.
@@ -186,7 +159,7 @@ class Microbe
 		/**
 		 * Add the interrupt as being used, i.e. make sure there is one and only
 		 * one occurance of its name in m_usedInterrupts.
-		 */ 
+		 */
 		void setInterruptUsed( const QString & interruptName );
 		/**
 		 * @returns whether the given interrupt has already been used.
@@ -216,14 +189,14 @@ class Microbe
 		void incDest();
 		void decDest();
 		void resetDest();
-	
+
 	protected:
 		/**
 		 * Strips comments from m_program, simplifies the white space in each line,
 		 * puts braces on separate lines, and then removes any blank lines.
 		 */
 		void simplifyProgram();
-	
+
 		QStringList m_usedInterrupts;
 		SourceLineList m_program;
 		QString m_errorReport;
@@ -231,11 +204,11 @@ class Microbe
 		VariableList m_variables;
 		int m_dest;
 		unsigned m_maxDelaySubroutine;
-	
+
 		/**
 		 * Keeps a list of aliases that have been created which maps the key as
 		 * the alias text to the data which is the thing being aliased, so that
-		 * something can be  aliased to two different things. e.g. 
+		 * something can be  aliased to two different things. e.g.
 		 * alias ken bob
 		 * alias mary bob
 		 */
@@ -248,7 +221,3 @@ class Microbe
 		 */
 		int m_picType;
 };
-
-
-#endif
-

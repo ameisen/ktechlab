@@ -17,7 +17,7 @@
 @short Simple resistor
 @author David Saxton
 */
-class Resistor : public Component
+class Resistor final : public Component
 {
 	public:
 		Resistor( ICNDocument *icnDocument, bool newItem, const char *id = 0L );

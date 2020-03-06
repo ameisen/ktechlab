@@ -15,12 +15,9 @@
 
 #include "qapplication.h"
 #include "qbitmap.h"
-//#include "q3ptrdict.h"
 #include "qpainter.h"
 #include "ktlq3polygonscanner.h"
 #include "qtimer.h"
-// #include "q3tl.h"
-// #include <q3pointarray.h>   // needed for q3polygonscanner
 #include <ktlqt3support/ktlq3scrollview.h>
 #include <qdesktopwidget.h>
 
@@ -29,25 +26,24 @@
 
 using namespace std;
 
-static bool isCanvasDebugEnabled() {
-    return false;
+namespace {
+	static constexpr const bool isCanvasDebugEnabled = false;
 }
 
 //BEGIN class KtlQCanvasClusterizer
 
-
-static void include(QRect& r, const QRect& rect)
+static void include(QRect &r, const QRect &rect)
 {
-	if (rect.left()<r.left()) {
+	if (rect.left() < r.left()) {
 		r.setLeft(rect.left());
 	}
-	if (rect.right()>r.right()) {
+	if (rect.right() > r.right()) {
 		r.setRight(rect.right());
 	}
-	if (rect.top()<r.top()) {
+	if (rect.top() < r.top()) {
 		r.setTop(rect.top());
 	}
-	if (rect.bottom()>r.bottom()) {
+	if (rect.bottom() > r.bottom()) {
 		r.setBottom(rect.bottom());
 	}
 }
@@ -56,8 +52,10 @@ static void include(QRect& r, const QRect& rect)
 A KtlQCanvasClusterizer groups rectangles (QRects) into non-overlapping rectangles
 by a merging heuristic.
 */
-KtlQCanvasClusterizer::KtlQCanvasClusterizer(int maxclusters)
-	: cluster(new QRect[maxclusters]), count(0), maxcl(maxclusters)
+KtlQCanvasClusterizer::KtlQCanvasClusterizer(int maxclusters) :
+	cluster(new QRect[maxclusters]),
+	count(0),
+	maxcl(maxclusters)
 {
 }
 
@@ -69,22 +67,27 @@ KtlQCanvasClusterizer::~KtlQCanvasClusterizer()
 
 void KtlQCanvasClusterizer::clear()
 {
-	count=0;
+	count = 0;
 }
 
 void KtlQCanvasClusterizer::add(int x, int y)
 {
-	add(QRect(x,y,1,1));
+	add(QRect(x, y, 1, 1));
 }
 
 void KtlQCanvasClusterizer::add(int x, int y, int w, int h)
 {
-	add(QRect(x,y,w,h));
+	add(QRect(x, y, w, h));
 }
 
-void KtlQCanvasClusterizer::add(const QRect& rect)
+void KtlQCanvasClusterizer::add(const QRect &rect)
 {
-	QRect biggerrect(rect.x()-1,rect.y()-1,rect.width()+2,rect.height()+2);
+	QRect biggerrect(
+		rect.x() - 1,
+		rect.y() - 1,
+		rect.width() + 2,
+		rect.height() + 2
+	);
 
     //assert(rect.width()>0 && rect.height()>0);
 
@@ -242,7 +245,7 @@ int KtlQCanvas::toChunkScaling( int x ) const
 {
 	return roundDown( x, chunksize );
 }
-	
+
 
 void KtlQCanvas::initChunkSize( const QRect & s )
 {
@@ -251,7 +254,7 @@ void KtlQCanvas::initChunkSize( const QRect & s )
 			 ((s.width()-1)/chunksize)+3,
 			 ((s.height()-1)/chunksize)+3 );
 }
-	
+
 
 void KtlQCanvas::init(int w, int h, int chunksze, int mxclusters)
 {
@@ -338,8 +341,8 @@ KtlQCanvasChunk& KtlQCanvas::chunkContaining(int x, int y) const
 KtlQCanvasItemList KtlQCanvas::allItems()
 {
 	KtlQCanvasItemList list;
-	SortedCanvasItems::iterator end = m_canvasItems.end();
-	for ( SortedCanvasItems::iterator it = m_canvasItems.begin(); it != end; ++it )
+	auto end = m_canvasItems.end();
+	for ( auto it = m_canvasItems.begin(); it != end; ++it )
 		list << it->second;
 	return list;
 }
@@ -349,10 +352,9 @@ void KtlQCanvas::resize( const QRect & newSize )
 	if ( newSize == m_size )
 		return;
 
-	KtlQCanvasItem* item;
 	QList<KtlQCanvasItem*> hidden;
-	SortedCanvasItems::iterator end = m_canvasItems.end();
-	for ( SortedCanvasItems::iterator it = m_canvasItems.begin(); it != end; ++it )
+	auto end = m_canvasItems.end();
+	for ( auto it = m_canvasItems.begin(); it != end; ++it )
 	{
 		KtlQCanvasItem * i = it->second;
 		if ( i->isVisible() )
@@ -388,8 +390,8 @@ void KtlQCanvas::retune(int chunksze, int mxclusters)
 	if ( chunksize!=chunksze )
 	{
 		QList<KtlQCanvasItem*> hidden;
-		SortedCanvasItems::iterator end = m_canvasItems.end();
-		for ( SortedCanvasItems::iterator it = m_canvasItems.begin(); it != end; ++it )
+		auto end = m_canvasItems.end();
+		for ( auto it = m_canvasItems.begin(); it != end; ++it )
 		{
 			KtlQCanvasItem * i = it->second;
 			if ( i->isVisible() )
@@ -420,8 +422,8 @@ void KtlQCanvas::addItem(KtlQCanvasItem* item)
 
 void KtlQCanvas::removeItem(const KtlQCanvasItem* item)
 {
-	SortedCanvasItems::iterator end = m_canvasItems.end();
-	for ( SortedCanvasItems::iterator it = m_canvasItems.begin(); it != end; ++it )
+	auto end = m_canvasItems.end();
+	for ( auto it = m_canvasItems.begin(); it != end; ++it )
 	{
 		if ( it->second == item )
 		{
@@ -463,7 +465,7 @@ void KtlQCanvas::setUpdatePeriod(int ms)
 
 // Don't call this unless you know what you're doing.
 // p is in the content's co-ordinate example.
-void KtlQCanvas::drawViewArea( KtlQCanvasView* view, QPainter* p, const QRect& vr, bool dbuf /* always false */)
+void KtlQCanvas::drawViewArea( KtlQCanvasView* view, QPainter* p, const QRect& vr, [[maybe_unused]] bool dbuf /* always false */)
 {
 	QPoint tl = view->contentsToViewport(QPoint(0,0));
 
@@ -484,7 +486,7 @@ void KtlQCanvas::drawViewArea( KtlQCanvasView* view, QPainter* p, const QRect& v
 	if ( !all.contains(ivr) )
 	{
 		// Need to clip with edge of canvas.
-		
+
 		// For translation-only transformation, it is safe to include the right
 		// and bottom edges, but otherwise, these must be excluded since they
 		// are not precisely defined (different bresenham paths).
@@ -494,7 +496,7 @@ void KtlQCanvas::drawViewArea( KtlQCanvasView* view, QPainter* p, const QRect& v
 		else	a = QPolygon( all );
 
 		a = (wm*twm).map(a);
-	
+
 		//if ( view->viewport()->backgroundMode() == Qt::NoBackground ) // 2018.12.02
         QWidget *vp = view->viewport();
         if ( vp->palette().color( vp->backgroundRole() ) == QColor(Qt::transparent) )
@@ -545,7 +547,7 @@ void KtlQCanvas::drawViewArea( KtlQCanvasView* view, QPainter* p, const QRect& v
 			//p->setClipRect(r);
 		}
 		p->setWorldMatrix( wm*twm );
-	
+
 		p->setBrushOrigin(tl.x(), tl.y());
 		drawCanvasArea(ivr,p,false);
 	}
@@ -574,11 +576,11 @@ void KtlQCanvas::update()
         KtlQCanvasView* view = *itView;
 
 		QMatrix wm = view->worldMatrix();
-	
+
 		QRect area(view->contentsX(),view->contentsY(),
 				   view->visibleWidth(),view->visibleHeight());
 		if (area.width()>0 && area.height()>0) {
-		
+
 			if ( !wm.isIdentity() )
 			{
 				// r = Visible area of the canvas where there are changes
@@ -787,11 +789,11 @@ void KtlQCanvas::drawArea(const QRect& clip, QPainter* painter)
 }
 
 
-void KtlQCanvas::drawCanvasArea(const QRect& inarea, QPainter* p, bool double_buffer /* 2018.03.11 - always false */)
+void KtlQCanvas::drawCanvasArea(const QRect& inarea, QPainter* p, [[maybe_unused]] bool double_buffer /* 2018.03.11 - always false */)
 {
 	QRect area=inarea.intersect( m_size );
 
-	if (!m_viewList.first() && !p)
+	if ((m_viewList.isEmpty() || !m_viewList.first()) && !p)
 		return; // Nothing to do.
 
 	int lx = toChunkScaling(area.x());
@@ -911,7 +913,7 @@ void KtlQCanvas::drawCanvasArea(const QRect& inarea, QPainter* p, bool double_bu
 		QPoint nrtr = view->contentsToViewport(QPoint(0,0)); // new translation
 		QPoint rtr = nrtr - trtr; // extra translation of rgn
 		trtr += rtr; // add to total
-		
+
 		if (double_buffer) {
 			rgn.translate(rtr.x(),rtr.y());
 			painter.setClipRegion(rgn);
@@ -942,8 +944,8 @@ void KtlQCanvas::setNeedRedraw( const KtlQCanvasItemList * list )
 
 void KtlQCanvas::drawChangedItems( QPainter & painter )
 {
-	SortedCanvasItems::iterator end = m_canvasItems.end();
-	for ( SortedCanvasItems::iterator it = m_canvasItems.begin(); it != end; ++it ) {
+	auto end = m_canvasItems.end();
+	for ( auto it = m_canvasItems.begin(); it != end; ++it ) {
 		KtlQCanvasItem * i = it->second;
 		if ( i->needRedraw() ) {
 			i->draw( painter );
@@ -1055,7 +1057,7 @@ void KtlQCanvas::removeItemFromChunkContaining(KtlQCanvasItem* g, int x, int y)
 
 	\sa setBackgroundColor(), backgroundPixmap()
  */
-QColor KtlQCanvas::backgroundColor() const
+const QColor & KtlQCanvas::backgroundColor() const
 {
 	return bgcolor;
 }
@@ -1090,7 +1092,7 @@ void KtlQCanvas::setBackgroundColor( const QColor& c )
 
 	\sa setBackgroundPixmap(), backgroundColor()
  */
-QPixmap KtlQCanvas::backgroundPixmap() const
+const QPixmap & KtlQCanvas::backgroundPixmap() const
 {
 	return pm;
 }
@@ -1131,10 +1133,10 @@ void KtlQCanvas::setBackgroundPixmap( const QPixmap& p )
 void KtlQCanvas::drawBackground(QPainter& painter, const QRect& clip)
 {
 	painter.fillRect( clip, Qt::white );
-	
+
 	if ( pm.isNull() )
 		painter.fillRect(clip,bgcolor);
-	
+
 	else if ( !grid ) {
 		for (int x=clip.x()/pm.width();
 				   x<(clip.x()+clip.width()+pm.width()-1)/pm.width(); x++)
@@ -1239,9 +1241,9 @@ KtlQCanvasItemList KtlQCanvas::collisions(const QRect& r) /* const */
 
 KtlQCanvasItemList KtlQCanvas::collisions(const QPolygon& chunklist, const KtlQCanvasItem* item, bool exact) const
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " test item: " << item;
-        for (SortedCanvasItems::const_iterator itIt = m_canvasItems.begin(); itIt != m_canvasItems.end(); ++itIt) {
+        for (auto itIt = m_canvasItems.begin(); itIt != m_canvasItems.end(); ++itIt) {
             const KtlQCanvasItem *i = itIt->second;
             qDebug() << "   in canvas item: " << i;
         }
@@ -1269,7 +1271,7 @@ KtlQCanvasItemList KtlQCanvas::collisions(const QPolygon& chunklist, const KtlQC
                         if (!exact) {
                             result.append(g);
                         }
-                        if (isCanvasDebugEnabled()) {
+                        if (isCanvasDebugEnabled) {
                             qDebug() <<"test collides " << item << " with " << g;
                         }
                         if (item->collidesWith(g)) {
@@ -1401,13 +1403,13 @@ void KtlQCanvasView::cMoving(int x, int y)
 	drawContents(), which means any reimplementation of
 	drawContents() is not called.
 
-	\sa setDoubleBuffering() 
+	\sa setDoubleBuffering()
  */
 void KtlQCanvasView::drawContents(QPainter *p, int cx, int cy, int cw, int ch)
 {
 	QRect r(cx,cy,cw,ch);
 	r = r.normalized();
-	
+
 	if (viewing) {
 	//viewing->drawViewArea(this,p,r,true);
 		viewing->drawViewArea(this,p,r, /*!d->repaint_from_moving*/ false); /* 2018.03.11 - fix build for osx */
@@ -1425,7 +1427,7 @@ void KtlQCanvasView::drawContents(QPainter *p, int cx, int cy, int cw, int ch)
  */
 void KtlQCanvasView::drawContents( QPainter *p )
 {
-    qDebug() << Q_FUNC_INFO << " called, altough not expected";
+    qDebug() << Q_FUNC_INFO << " called unexpectedly";
     drawContents(p, 0, 0, width(), height());
 }
 
@@ -1442,4 +1444,4 @@ QSize KtlQCanvasView::sizeHint() const
 }
 
 
-#include "canvas.moc"
+#include "moc_canvas.cpp"

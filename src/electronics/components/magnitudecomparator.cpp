@@ -36,17 +36,17 @@ MagnitudeComparator::MagnitudeComparator( ICNDocument *icnDocument, bool newItem
 	: Component( icnDocument, newItem, id ? id : "magnitudecomparator" )
 {
 	m_name = i18n("Magnitude Comparator");
-	
+
 	createProperty( "numInput", Variant::Type::Int );
 	property("numInput")->setCaption( i18n("Number Inputs") );
 	property("numInput")->setMinValue(1);
 	property("numInput")->setMaxValue(8);
 	property("numInput")->setValue(4);
-	
+
 	m_oldABLogicCount = 0;
 	cascadingInputs = 3;
 	outputs = 3;
-	
+
 	firstTime = true;
 }
 
@@ -64,10 +64,10 @@ void MagnitudeComparator::dataChanged()
 void MagnitudeComparator::inStateChanged()
 {
 	int i;
-	
+
 	for ( i = 0; i < 3; i++ )
 		m_output[i]->setHigh(false);
-	
+
 // 	for ( i = dataInt("numInput")-1; i >= 0; i-- ) {
 	for ( i = m_oldABLogicCount-1; i >= 0; i-- ) {
 		if (m_aLogic[i]->isHigh() && !m_bLogic[i]->isHigh())
@@ -80,7 +80,7 @@ void MagnitudeComparator::inStateChanged()
 			return;
 		}
 	}
-	
+
 	if ( m_cLogic[2]->isHigh() )
 		m_output[2]->setHigh(true);
 	else if ( m_cLogic[0]->isHigh() ) {
@@ -99,10 +99,10 @@ void MagnitudeComparator::initPins()
 {
 	const double numInputs = dataInt("numInput");
 	int newABLogicCount = (int)numInputs;
-	
+
 	if ( newABLogicCount == m_oldABLogicCount )
 		return;
-	
+
 	QStringList leftPins;
 	int space = 3 - newABLogicCount;
 	for ( int i = 0; i < space; i++ )
@@ -113,7 +113,7 @@ void MagnitudeComparator::initPins()
 		leftPins << QString("B%1").arg( QString::number(i) );
 	for ( int i = 0; i < space; i++ )
 		leftPins << "";
-	
+
 	QStringList rightPins;
 	space = -space;
 	for ( int i = 0; i < space; i++ )
@@ -124,23 +124,23 @@ void MagnitudeComparator::initPins()
 	rightPins << outNames[2] << outNames[1] << outNames[0];
 	for ( int i = 0; i < space; i++ )
 		rightPins << "";
-			
+
 	QStringList pins = leftPins + rightPins;
-	
+
 	initDIPSymbol( pins, 88 );
 	initDIP(pins);
-	
+
 	ECNode *node;
-	
+
 	if (firstTime) {
 		m_cLogic.resize(3);
 		for ( int i = 0; i < cascadingInputs; i++ )
 		{
 			node = ecNodeWithID( inNames[i] );
 			m_cLogic.insert( i, createLogicIn(node) );
-			m_cLogic[i]->setCallback( this, (CallbackPtr)(&MagnitudeComparator::inStateChanged));
+			m_cLogic[i]->setCallback( this, reinterpret_cast<CallbackPtr>(&MagnitudeComparator::inStateChanged));
 		}
-		
+
 		m_output.resize(3);
 		for ( int i = 0; i < outputs; i++ )
 		{
@@ -149,7 +149,7 @@ void MagnitudeComparator::initPins()
 		}
 		firstTime = false;
 	}
-		
+
 	if ( newABLogicCount > m_oldABLogicCount )
 	{
 		m_aLogic.resize(newABLogicCount);
@@ -157,15 +157,15 @@ void MagnitudeComparator::initPins()
 		{
 			node = ecNodeWithID("A"+QString::number(i));
 			m_aLogic.insert( i, createLogicIn(node) );
-			m_aLogic[i]->setCallback( this, (CallbackPtr)(&MagnitudeComparator::inStateChanged) );
+			m_aLogic[i]->setCallback( this, reinterpret_cast<CallbackPtr>(&MagnitudeComparator::inStateChanged) );
 		}
-		
+
 		m_bLogic.resize(newABLogicCount);
 		for ( int i=m_oldABLogicCount; i<newABLogicCount; ++i )
 		{
 			node = ecNodeWithID("B"+QString::number(i));
 			m_bLogic.insert( i, createLogicIn(node) );
-			m_bLogic[i]->setCallback( this, (CallbackPtr)(&MagnitudeComparator::inStateChanged) );
+			m_bLogic[i]->setCallback( this, reinterpret_cast<CallbackPtr>(&MagnitudeComparator::inStateChanged) );
 		}
 	}
 	else
@@ -191,5 +191,3 @@ void MagnitudeComparator::initPins()
 	m_oldABLogicCount = newABLogicCount;
 	inStateChanged();
 }
-
-

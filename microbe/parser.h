@@ -1,32 +1,11 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke                              *
- *   daniel.jc@gmail.com                                                   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
-#ifndef PARSER_H
-#define PARSER_H
+#pragma once
 
 #include "expression.h"
 #include "instruction.h"
 #include "microbe.h"
 
-#include <qmap.h>
-#include <qlist.h>
+#include <QMap>
+#include <QList>
 
 class PIC14;
 
@@ -89,24 +68,24 @@ class Field
 			// not need to be there depending on the statement (e.g. "then" in
 			// the if-statement).
 			FixedString,
-			
+
 			// Label, Variable, Name are all treated similarly (only different
 			// error messages are given).
 			Label, // e.g. in "goto [Label]"
 			Variable, // e.g. in "increment [Variable]"
 			Name, // e.g. in "sevenseg [Name]"
-			
+
 			// List of strings which should be pin names.
 			PinList,
-			
+
 			// Braced code.
 			Code,
-			
+
 			Expression,
 			Newline,
 			None
 		};
-	
+
 		/**
 		 * Create a Field of type None.
 		 */
@@ -120,7 +99,7 @@ class Field
 		 * FixedStrings.
 		 */
 		Field( Type type, const QString & key, const QString & string, bool compulsory = true);
-		
+
 		/**
 		 * The type of field expected.
 		 */
@@ -130,21 +109,21 @@ class Field
 		 */
 		QString string() const { return m_string; }
 		/**
-		 * The key in which the found token will be attached to 
-		 * in the output map. If it is an empty string, then the field will be 
+		 * The key in which the found token will be attached to
+		 * in the output map. If it is an empty string, then the field will be
 		 * processed but not put in the output, effectively ignoring it.
 		 */
 		QString key() const { return m_key; }
 		/**
 		 * Only FixedStrings may be compulsory, that is the only type that can
 		 * actually have its presence checked.
-		 * This flag is set to indicate that no error should be rasied if the 
+		 * This flag is set to indicate that no error should be rasied if the
 		 * field is not present. Note that if a field is found missing, then
 		 * the rest of the statement is ignored (regardless of whether the rest
 		 * is marked compulsory or not.)
 		 */
 		bool compulsory() const { return m_compulsory; }
-	
+
 	private:
 		Type m_type;
 		QString m_string;
@@ -168,11 +147,11 @@ class OutputField
 		 * Constructs an output field consisting of a single string.
 		 */
 		OutputField( const QString &string );
-	
+
 		QString string() const { return m_string; }
 		SourceLineList bracedCode() const { return m_bracedCode; }
 		bool found() const { return m_found; }
-	
+
 	private:
 		QString m_string;
 		SourceLineList m_bracedCode;
@@ -196,7 +175,7 @@ class Parser
 	public:
 		Parser( Microbe * mb );
 		~Parser();
-	
+
 		/**
 		 * Report a compile error to Microbe; the current source line will be
 		 * sent. Context is extra information to be inserted into the error
@@ -223,7 +202,7 @@ class Parser
 		 * Returns the lines between the braces, excluding the braces, e.g.
 		 * defproc name
 		 * {
-		 * more code 
+		 * more code
 		 * some more code
 		 * }
 		 * returns ("more code","some more code").
@@ -265,10 +244,10 @@ class Parser
 		 * the proper form).
 		 */
 		bool processAssignment(const QString &line);
-	
+
 		void compileConditionalExpression( const QString & expression, Code * ifCode, Code * elseCode ) const;
 		QString processConstant(const QString &expression, bool * isConstant, bool suppressNumberTooBig = false) const;
-	
+
 	private:
 		/**
 		 * This is called when the bulk of the actual parsing has been carried
@@ -284,10 +263,8 @@ class Parser
 		Microbe * mb;
 		Code * m_code;
 		SourceLine m_currentSourceLine;
-		
+
 	private: // Disable copy constructor and operator=
 		Parser( const Parser & );
 		Parser &operator=( const Parser & );
 };
-
-#endif

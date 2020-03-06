@@ -17,18 +17,18 @@
 @short Double Pole Double Throw
 @author David Saxton
 */
-class ECDPDT : public Component
+class ECDPDT final : public Component
 {
 public:
 	ECDPDT( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECDPDT() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void buttonStateChanged( const QString &id, bool state ) override;
 	void dataChanged() override;
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 
@@ -44,18 +44,18 @@ private:
 @short Double Pole Single Throw
 @author David Saxton
 */
-class ECDPST : public Component
+class ECDPST final : public Component
 {
 public:
 	ECDPST( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECDPST() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void buttonStateChanged( const QString &id, bool state ) override;
 	void dataChanged() override;
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 
@@ -69,18 +69,18 @@ private:
 @short Single Pole Double Throw
 @author David Saxton
 */
-class ECSPDT : public Component
+class ECSPDT final : public Component
 {
 public:
 	ECSPDT( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECSPDT() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void buttonStateChanged( const QString &id, bool state ) override;
 	void dataChanged() override;
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 
@@ -94,18 +94,18 @@ private:
 @short Single-Pole Single-Throw Switch
 @author David Saxton
 */
-class ECSPST : public Component
+class ECSPST final : public Component
 {
 public:
 	ECSPST( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECSPST() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void buttonStateChanged( const QString &id, bool state ) override;
 	void dataChanged() override;
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 	Switch *m_switch;

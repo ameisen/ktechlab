@@ -22,7 +22,7 @@ AsmParser::AsmParser( const QString &url )
 	: m_url(url)
 {
 	m_bContainsRadix = false;
-	m_type = Absolute;
+	m_type = Type::Absolute;
 }
 
 
@@ -36,27 +36,27 @@ bool AsmParser::parse( GpsimDebugger * debugger )
 	QFile file(m_url);
 	if ( !file.open(QIODevice::ReadOnly) )
 		return false;
-	
+
 	QTextStream stream( &file );
-	
-	m_type = Absolute;
+
+	m_type = Type::Absolute;
 	m_bContainsRadix = false;
 	m_picID = QString::null;
-	
+
 	//QStringList nonAbsoluteOps = QStringList::split( ",",
 	//		"code,.def,.dim,.direct,endw,extern,.file,global,idata,.ident,.line,.type,udata,udata_acs,udata_ovr,udata_shr" );
     QStringList nonAbsoluteOps = QString(
         "code,.def,.dim,.direct,endw,extern,.file,global,idata,.ident,.line,.type,udata,udata_acs,udata_ovr,udata_shr")
         .split(",");
-	
+
 	unsigned inputAtLine = 0;
 	while ( !stream.atEnd() ) {
 		const QString line = stream.readLine().trimmed();
-		if ( m_type != Relocatable ) {
+		if ( m_type != Type::Relocatable ) {
 			QString col0 = line.section( QRegExp("[; ]"), 0, 0 );
 			col0 = col0.trimmed();
 			if ( nonAbsoluteOps.contains(col0) )
-				m_type = Relocatable;
+				m_type = Type::Relocatable;
 		}
 
 		if ( !m_bContainsRadix ) {
@@ -68,7 +68,7 @@ bool AsmParser::parse( GpsimDebugger * debugger )
 			// We look for "list p = ", and "list p = picid ", and subtract the positions / lengths away from each other to get the picid text position
 			QRegExp fullRegExp("[lL][iI][sS][tT][\\s]+[pP][\\s]*=[\\s]*[\\d\\w]+");
 			QRegExp halfRegExp("[lL][iI][sS][tT][\\s]+[pP][\\s]*=[\\s]*");
-			
+
 			int startPos = fullRegExp.indexIn(line);
 			if ( (startPos != -1) && (startPos == halfRegExp.indexIn(line)) )
 			{
@@ -85,20 +85,20 @@ bool AsmParser::parse( GpsimDebugger * debugger )
 			// ;#CSRC\t[file-name] [file-line]
 			// The filename can contain spaces.
 			int fileLineAt = line.lastIndexOf(" ");
-			
+
 			if ( fileLineAt == -1 )
 				qWarning() << Q_FUNC_INFO << "Syntax error in line \"" << line << "\" while looking for file-line" << endl;
 			else {
 				// 7 = length_of(";#CSRC\t")
 				QString fileName = line.mid( 7, fileLineAt-7 );
 				QString fileLineString = line.mid( fileLineAt+1, line.length() - fileLineAt - 1 );
-					
+
 				if ( fileName.startsWith("\"") ) {
 					// Newer versions of SDCC insert " around the filename
 					fileName.remove( 0, 1 ); // First "
 					fileName.remove( fileName.length()-1, 1 ); // Last "
 				}
-				
+
 				bool ok;
 				int fileLine = fileLineString.toInt(&ok) - 1;
 				if ( ok && fileLine >= 0 )
@@ -123,13 +123,13 @@ bool AsmParser::parse( GpsimDebugger * debugger )
 				else {
 					QString fileName = lineAndFile.mid( lineFileSplit + 2 );
 					QString fileLineString = lineAndFile.left( lineFileSplit );
-					
+
 					if ( fileName.startsWith("\"") ) {
 						// Newer versions of SDCC insert " around the filename
 						fileName.remove( 0, 1 ); // First "
 						fileName.remove( fileName.length()-1, 1 ); // Last "
 					}
-				
+
 					bool ok;
 					int fileLine = fileLineString.toInt(&ok) - 1;
 					if ( ok && fileLine >= 0 )
@@ -141,7 +141,6 @@ bool AsmParser::parse( GpsimDebugger * debugger )
 #endif // !NO_GPSIM
 		inputAtLine++;
 	}
-	
+
 	return true;
 }
-

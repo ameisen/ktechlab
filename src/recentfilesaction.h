@@ -27,9 +27,9 @@ class RecentFilesAction : public KSelectAction
 	Q_OBJECT
 	public:
 		RecentFilesAction( const QString & configGroupName, const QString & text, const QObject * receiver, const char* slot, QObject* parent, const char * name );
-		
+
 		~RecentFilesAction() override;
-		
+
 		/**
 		 *  Loads the recent files entries from a given KConfig object.
 		 *  You can provide the name of the group used to load the entries.
@@ -52,7 +52,7 @@ class RecentFilesAction : public KSelectAction
 		 *  @param url The URL of the file
 		 */
 		void addURL( const KUrl& url );
-		
+
 	signals:
 		/**
 		 *  This signal gets emited when the user selects an URL.
@@ -60,7 +60,7 @@ class RecentFilesAction : public KSelectAction
 		 *  @param url The URL thats the user selected.
 		 */
 		void urlSelected( const KUrl& url );
-		
+
 	protected slots:
 		void itemSelected( const QString& string );
 		void menuAboutToShow();
@@ -71,7 +71,7 @@ class RecentFilesAction : public KSelectAction
 		virtual void slotActivated();
 
 	protected:
-		unsigned m_maxItems;
+		int m_maxItems;
 		KMenu * m_popup;
 		QString m_configGroupName;
 };

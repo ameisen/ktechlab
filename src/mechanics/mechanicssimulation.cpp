@@ -53,7 +53,7 @@ bool RigidBody::addMechanicsItem( MechanicsItem *item )
 {
 	if ( !item || m_mechanicsItemList.contains(item) )
 		return false;
-	
+
 	m_mechanicsItemList.append(item);
 	findOverallParent();
 	return true;
@@ -79,25 +79,25 @@ bool RigidBody::findOverallParent()
 	p_overallParent = 0l;
 	if ( m_mechanicsItemList.isEmpty() )
 		return false;
-	
+
 	m_mechanicsItemList.removeAll(0l);
-	
+
 	const MechanicsItemList::iterator end = m_mechanicsItemList.end();
 	for ( MechanicsItemList::iterator it = m_mechanicsItemList.begin(); it != end; ++it )
 	{
 		MechanicsItem *parentItem = *it;
 		MechanicsItem *parentCandidate = dynamic_cast<MechanicsItem*>((*it)->parentItem());
-		
+
 		while (parentCandidate)
 		{
 			parentItem = parentCandidate;
 			parentCandidate = dynamic_cast<MechanicsItem*>(parentItem->parentItem());
 		}
-		
+
 		if ( !p_overallParent )
 			// Must be the first item to test
 			p_overallParent = parentItem;
-		
+
 		if ( p_overallParent != parentItem )
 		{
 			p_overallParent = 0l;
@@ -112,7 +112,7 @@ void RigidBody::updateRigidBodyInfo()
 {
 	if (!p_overallParent)
 		return;
-	
+
 	m_mass = p_overallParent->mechanicsInfoCombined()->mass;
 	m_momentOfInertia = p_overallParent->mechanicsInfoCombined()->momentOfInertia;
 }
@@ -136,4 +136,4 @@ RigidBodyState::RigidBodyState()
 
 
 
-#include "mechanicssimulation.moc"
+#include "moc_mechanicssimulation.cpp"

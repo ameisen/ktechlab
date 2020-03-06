@@ -11,6 +11,8 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
+#include "pch.hpp"
+
 //#include <canvas.h> // 2018.10.16 - not needed
 #include "canvasitems.h"
 #include <qpointer.h>
@@ -27,9 +29,7 @@ class NodeGroup;
 class Wire;
 
 typedef QList<ConnectorLine*> ConnectorLineList;
-typedef QList<QPoint> QPointList;
 typedef QVector<QPointer<Wire> > WireVector;
-
 
 /**
 @short Represents a connection between two Nodes on a ICNDocument
@@ -107,7 +107,7 @@ public:
 	 * @param setManual if true then the connector will change to a manual route one
 	 * @param checkEndPoints if true then will  check to see if the end points are at the nodes, and adds them if not
 	 */
-	void setRoutePoints(QPointList pointList, bool setManual, bool checkEndPoints = false);
+	void setRoutePoints(QList<QPoint> pointList, bool setManual, bool checkEndPoints = false);
 
 	/**
 	 * Call this function (e.g. when moving a CNItem connected to the connector)
@@ -135,7 +135,7 @@ public:
 	 * Returns two sets of points (in canvas-reference) that define the connector
 	 * from start to finish, when it is split at the given point (in canvas-reference)
 	 */
-	QList<QPointList> splitConnectorPoints(const QPoint &pos) const;
+	QList<QList<QPoint>> splitConnectorPoints(const QPoint &pos) const;
 
 	/**
 	 * @returns pointer to ICNDocument that this connector is a member of
@@ -146,14 +146,14 @@ public:
 	 * Looks at the set of canvas points and tries to determine whether they are
 	 * in the reverse order from start to end node
 	 */
-	bool pointsAreReverse(const QPointList &pointList) const;
+	bool pointsAreReverse(const QList<QPoint> &pointList) const;
 
 	/**
 	 * Returns the points, given in canvas-reference, in order of start node to
 	 * end node if reverse is false
 	 * @param reverse whether or not to reverse the points from start node to end node
 	 */
-	QPointList connectorPoints(bool reverse = false) const;
+	QList<QPoint> connectorPoints(bool reverse = false) const;
 
 	/**
 	 * Reroute the connector. Note that if this connector is controlled by a
@@ -172,8 +172,8 @@ public:
 	Methods relating to wire lists
 	*/
 	WireVector wires() const { return m_wires; }
-	unsigned numWires() const { return m_wires.size(); }
-	Wire* wire(unsigned num=0) const;
+	int numWires() const { return m_wires.size(); }
+	Wire* wire(int num=0) const;
 
 	void updateConnectorLines(bool forceRedraw = false);
 
@@ -223,8 +223,6 @@ private:
 	ConnectorLineList m_connectorLineList;
 };
 
-typedef QList<QPointer<Connector> > ConnectorList;
-
 //BEGIN ConnectorLine things
 
 class ConnectorLine : /* public QObject, */ public KtlQCanvasLine {
@@ -251,4 +249,3 @@ protected:
 //END ConnectorLine things
 
 #endif
-

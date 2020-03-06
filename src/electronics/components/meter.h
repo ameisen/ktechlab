@@ -21,12 +21,12 @@ class Meter : public Component
 public:
 	Meter( ICNDocument *icnDocument, bool newItem, const char *id );
 	~Meter() override;
-	
+
 	void stepNonLogic() override;
 	bool doesStepNonLogic() const override { return true; }
 	void drawShape( QPainter &p ) override;
 	bool contentChanged() const override;
-	
+
 protected:
 	QString displayText();
 	void dataChanged() override;
@@ -54,7 +54,7 @@ protected:
 @short Measures the frequency at a point in the circuit
 @author David Saxton
 */
-class FrequencyMeter : public Meter
+class FrequencyMeter final : public Meter
 {
 public:
 	FrequencyMeter( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
@@ -72,12 +72,12 @@ protected:
 @short Simple resistor
 @author David Saxton
 */
-class ECAmmeter : public Meter
+class ECAmmeter final : public Meter
 {
 public:
 	ECAmmeter( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECAmmeter() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 
@@ -92,12 +92,12 @@ private:
 @short Displays voltage across terminals
 @author David Saxton
 */
-class ECVoltMeter : public Meter
+class ECVoltMeter final : public Meter
 {
 public:
 	ECVoltMeter( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECVoltMeter() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 

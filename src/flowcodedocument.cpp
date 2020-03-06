@@ -38,14 +38,14 @@ FlowCodeDocument::FlowCodeDocument( const QString &caption, const char *name )
 	m_microSettings = 0L;
 	m_picItem = 0L;
 	m_pLastTextOutputTarget = 0l;
-	
+
 	m_cmManager->addManipulatorInfo( CMSelect::manipulatorInfo() );
 	m_cmManager->addManipulatorInfo( CMDraw::manipulatorInfo() );
 	m_cmManager->addManipulatorInfo( CMRightClick::manipulatorInfo() );
 	m_cmManager->addManipulatorInfo( CMRepeatedItemAdd::manipulatorInfo() );
 	m_cmManager->addManipulatorInfo( CMItemResize::manipulatorInfo() );
 	m_cmManager->addManipulatorInfo( CMItemDrag::manipulatorInfo() );
-	
+
 	m_fileExtensionInfo = QString("*.flowcode|FlowCode (*.flowcode)\n*|%1").arg( i18n("All Files") );
 	requestStateSave();
 }
@@ -73,29 +73,29 @@ void FlowCodeDocument::setPicType( const QString &id )
 {
 	if ( m_microSettings && m_microSettings->microInfo() && m_microSettings->microInfo()->id() == id )
 		return;
-	
+
 	MicroInfo *microInfo = MicroLibrary::self()->microInfoWithID(id);
-	
+
 	if ( !microInfo ) {
 		qWarning() << "FlowCodeDocument::setPicType: Could not set the pic type to PIC \""<<id<<"\"\n";
 		return;
 	}
-	
+
 	m_microInfo = microInfo;
-	
+
 	if (m_microSettings) {
 		//TODO write the pic settings to somewhere temporary and then restore them
 		delete m_microSettings;
 	}
-	
+
 	m_microSettings = new MicroSettings(m_microInfo);
 	connect( m_microSettings, SIGNAL(pinMappingsChanged()), this, SIGNAL(pinMappingsChanged()) );
 	//TODO restore pic settings from temporary location if appropriate
-	
+
 	delete m_picItem;
 	m_picItem = new PicItem( this, true, "picItem", m_microSettings );
 	m_picItem->show();
-	
+
 	emit picTypeChanged();
 }
 
@@ -110,15 +110,15 @@ bool FlowCodeDocument::isValidItem( Item *item )
 {
 	if ( !dynamic_cast<FlowPart*>(item) && !dynamic_cast<DrawPart*>(item) )
 		return false;
-	
+
 	if ( !item->id().startsWith("START") && !item->id().startsWith("PPEND") )
 		return true;
-	
+
 	const ItemMap::iterator ciEnd = m_itemList.end();
-	
+
 	if ( item->id().startsWith("START") ) {
 		int count = 0;
-		
+
 		for ( ItemMap::iterator it = m_itemList.begin(); it != ciEnd; ++it )
 		{
 			if ( (*it)->id().startsWith("START") )
@@ -137,7 +137,7 @@ bool FlowCodeDocument::isValidItem( Item *item )
 		if ( count > 1 )
 			return false;
 	}
-	
+
 	return true;
 }
 
@@ -156,15 +156,15 @@ void FlowCodeDocument::slotConvertTo( QAction *action )
 	case FlowCodeDocument::MicrobeOutput:
 		convertToMicrobe();
 		break;
-			
+
 	case FlowCodeDocument::AssemblyOutput:
 		convertToAssembly();
 		break;
-			
+
 	case FlowCodeDocument::HexOutput:
 		convertToHex();
 		break;
-			
+
 	case FlowCodeDocument::PICOutput:
 		convertToPIC();
 		break;
@@ -183,13 +183,13 @@ void FlowCodeDocument::convertToMicrobe()
 		delete dlg;
 		return;
 	}
-	
+
 	ProcessOptions o( dlg->info() );
 	o.setTextOutputTarget( m_pLastTextOutputTarget, this, SLOT(setLastTextOutputTarget( TextDocument* )) );
 	o.p_flowCodeDocument = this;
-	o.setProcessPath( ProcessOptions::ProcessPath::FlowCode_Microbe );
+	o.setProcessPath( ProcessOptions::Path::FlowCode_Microbe );
 	LanguageManager::self()->compile(o);
-	
+
 	delete dlg;
 }
 
@@ -205,13 +205,13 @@ void FlowCodeDocument::convertToAssembly()
 		delete dlg;
 		return;
 	}
-	
+
 	ProcessOptions o( dlg->info() );
 	o.setTextOutputTarget( m_pLastTextOutputTarget, this, SLOT(setLastTextOutputTarget( TextDocument* )) );
 	o.p_flowCodeDocument = this;
-	o.setProcessPath( ProcessOptions::ProcessPath::FlowCode_AssemblyAbsolute );
+	o.setProcessPath( ProcessOptions::Path::FlowCode_AssemblyAbsolute );
 	LanguageManager::self()->compile(o);
-	
+
 	delete dlg;
 }
 
@@ -227,13 +227,13 @@ void FlowCodeDocument::convertToHex()
 		delete dlg;
 		return;
 	}
-	
+
 	ProcessOptions o( dlg->info() );
 	o.setTextOutputTarget( m_pLastTextOutputTarget, this, SLOT(setLastTextOutputTarget( TextDocument* )) );
 	o.p_flowCodeDocument = this;
-	o.setProcessPath( ProcessOptions::ProcessPath::FlowCode_Program );
+	o.setProcessPath( ProcessOptions::Path::FlowCode_Program );
 	LanguageManager::self()->compile(o);
-	
+
 	delete dlg;
 }
 
@@ -247,13 +247,13 @@ void FlowCodeDocument::convertToPIC()
 		dlg->deleteLater();
 		return;
 	}
-	
+
 	ProcessOptions o;
 	dlg->initOptions( & o );
 	o.p_flowCodeDocument = this;
-	o.setProcessPath( ProcessOptions::ProcessPath::FlowCode_PIC );
+	o.setProcessPath( ProcessOptions::Path::FlowCode_PIC );
 	LanguageManager::self()->compile( o );
-	
+
 	dlg->deleteLater();
 }
 
@@ -261,7 +261,7 @@ void FlowCodeDocument::convertToPIC()
 void FlowCodeDocument::varNameChanged( const QString &newValue, const QString &oldValue )
 {
 	if (m_bDeleted) return;
-	
+
 	// Decrease the old variable count
 	// If none are left after, remove it from microsettings
 	StringIntMap::iterator it = m_varNames.find(oldValue);
@@ -273,7 +273,7 @@ void FlowCodeDocument::varNameChanged( const QString &newValue, const QString &o
 			m_varNames.erase(it);
 		}
 	}
-	
+
 	// Add the new variable to a count, tell microsettings about it if it is new
 	if ( !newValue.isEmpty() ) {
 		it = m_varNames.find(newValue);
@@ -284,15 +284,15 @@ void FlowCodeDocument::varNameChanged( const QString &newValue, const QString &o
 			microSettings()->setVariable( newValue, QVariant(), false );
 		}
 	}
-	
+
 	// Tell all FlowParts to update their variable lists
 	const ItemMap::iterator end = m_itemList.end();
 	for ( ItemMap::iterator it = m_itemList.begin(); it != end; ++it )
 	{
-		if ( FlowPart *flowPart = dynamic_cast<FlowPart*>(*it) ) 
+		if ( FlowPart *flowPart = dynamic_cast<FlowPart*>(*it) )
 			flowPart->updateVarNames();
 	}
 }
 
 
-#include "flowcodedocument.moc"
+#include "moc_flowcodedocument.cpp"

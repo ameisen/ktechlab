@@ -19,15 +19,15 @@
 @short 555 IC
 @author David Saxton
 */
-class EC555 : public Component
+class EC555 final : public Component
 {
 public:
 	EC555( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~EC555() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void stepNonLogic() override;
 	bool doesStepNonLogic() const override { return true; }
 

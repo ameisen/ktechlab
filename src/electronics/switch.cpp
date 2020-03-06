@@ -125,7 +125,7 @@ void Switch::stopBouncing() {
 
 
 bool Switch::calculateCurrent() {
-	if (!m_pP1 || !m_pP2) return false;
+	if (m_pP1.isNull() || m_pP2.isNull()) return false;
 
 	if (state() == Open) {
 		m_pP1->setSwitchCurrentKnown(this);
@@ -142,15 +142,15 @@ bool Switch::calculateCurrent() {
 	for (unsigned i = 0; i < 2; ++i) {
 		pol = (i == 0) ? 1 : -1;
 
-		const WireList inputs = pins[i]->inputWireList();
-		const WireList outputs = pins[i]->outputWireList();
+		const QPtrList<Wire> inputs = pins[i]->inputWireList();
+		const QPtrList<Wire> outputs = pins[i]->outputWireList();
 
 		currentKnown = true;
 		current = 0.0;
 
-		WireList::const_iterator end = inputs.end();
+		QPtrList<Wire>::const_iterator end = inputs.end();
 
-		for (WireList::const_iterator it = inputs.begin(); it != end; ++it) {
+		for (QPtrList<Wire>::const_iterator it = inputs.begin(); it != end; ++it) {
 			if (!(*it))
 				continue;
 
@@ -166,7 +166,7 @@ bool Switch::calculateCurrent() {
 
 		end = outputs.end();
 
-		for (WireList::const_iterator it = outputs.begin(); it != end; ++it) {
+		for (QPtrList<Wire>::const_iterator it = outputs.begin(); it != end; ++it) {
 			if (!(*it)) continue;
 
 			if (!(*it)->currentIsKnown()) {
@@ -190,5 +190,4 @@ bool Switch::calculateCurrent() {
 	return true;
 }
 
-#include "switch.moc"
-
+#include "moc_switch.cpp"

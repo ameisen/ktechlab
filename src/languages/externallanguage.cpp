@@ -19,8 +19,18 @@
 #include <qregexp.h>
 #include <qtimer.h>
 
-ExternalLanguage::ExternalLanguage( ProcessChain *processChain, const QString &name )
- : Language( processChain, name )
+ExternalLanguage::ExternalLanguage(
+	ProcessChain *processChain,
+	const QString &name,
+	const QString &successMessage,
+	const QString &failureMessage
+) :
+	Language(
+		processChain,
+		name,
+		successMessage,
+		failureMessage
+	)
 {
 	m_languageProcess = 0l;
 }
@@ -36,14 +46,14 @@ void ExternalLanguage::deleteLanguageProcess()
 {
 	if (!m_languageProcess)
 		return;
-	
+
 	// I'm not too sure if this combination of killing the process is the best way....
 // 	m_languageProcess->tryTerminate();
 // 	QTimer::singleShot( 5000, m_languageProcess, SLOT( kill() ) );
 //  	delete m_languageProcess;
 	m_languageProcess->kill();
 	m_languageProcess->deleteLater();
-	
+
 	m_languageProcess = 0L;
 }
 
@@ -53,7 +63,7 @@ void ExternalLanguage::processStdout()
     QString allOut = m_languageProcess->readAllStandardOutput();
 	QStringList lines = allOut.split('\n', QString::SkipEmptyParts); //QStringList::split( '\n', allOut, false ); // 2018.12.01
 	QStringList::iterator end = lines.end();
-	
+
 	for ( QStringList::iterator it = lines.begin(); it != end; ++it )
 	{
 		if ( isError( *it ) )
@@ -80,7 +90,7 @@ void ExternalLanguage::processStderr()
     QString allStdErr = m_languageProcess->readAllStandardError();
 	QStringList lines = allStdErr.split('\n', QString::SkipEmptyParts); // QStringList::split( '\n', allStdErr, false );
 	QStringList::iterator end = lines.end();
-	
+
 	for ( QStringList::iterator it = lines.begin(); it != end; ++it )
 	{
 		if ( isStderrOutputFatal( *it ) )
@@ -103,15 +113,15 @@ void ExternalLanguage::processExited( int, QProcess::ExitStatus )
         qDebug() << Q_FUNC_INFO << " m_languageProcess == NULL, returning";
 		return;
     }
-	bool allOk = processExited( (m_languageProcess->exitStatus() == QProcess::NormalExit) && (m_errorCount == 0) );
-	finish(allOk);
+	bool allOk = processExited( (m_languageProcess->exitStatus() == QProcess::NormalExit) && (errorCount_ == 0) );
+	finish(Result(allOk));
 	deleteLanguageProcess();
 }
 
 
 void ExternalLanguage::processInitFailed()
 {
-	finish(false);
+	finish(Result::Failure);
 	deleteLanguageProcess();
 }
 
@@ -119,7 +129,7 @@ void ExternalLanguage::processInitFailed()
 bool ExternalLanguage::start()
 {
 	displayProcessCommand();
-	
+
     m_languageProcess->setOutputChannelMode(KProcess::SeparateChannels);
 
 	m_languageProcess->start( );
@@ -131,16 +141,16 @@ void ExternalLanguage::resetLanguageProcess()
 {
 	reset();
 	deleteLanguageProcess();
-	m_errorCount = 0;
-	
+	errorCount_ = 0;
+
 	m_languageProcess = new KProcess(this);
-	
+
 	connect( m_languageProcess, SIGNAL(readyReadStandardOutput()),
 			 this, SLOT(processStdout()) );
-	
+
 	connect( m_languageProcess, SIGNAL(readyReadStandardError()),
 			 this, SLOT(processStderr()) );
-	
+
 	connect( m_languageProcess, SIGNAL(finished(int, QProcess::ExitStatus)),
 			 this, SLOT(processExited(int, QProcess::ExitStatus )) );
 }
@@ -156,14 +166,14 @@ void ExternalLanguage::displayProcessCommand()
 //          ++itArgs) {
 //         arguments.append(QString(*itArgs));
 //     }
-	
+
 	if ( arguments.size() == 1 )
 		quotedArguments << arguments[0];
-		
+
 	else
 	{
 		QList<QString>::const_iterator end = arguments.end();
-	
+
 		for ( QList<QString>::const_iterator it = arguments.begin(); it != end; ++it )
 		{
 			if ( (*it).isEmpty() || (*it).contains( QRegExp("[\\s]") ) )
@@ -172,11 +182,11 @@ void ExternalLanguage::displayProcessCommand()
 				quotedArguments << *it;
 		}
 	}
-	
+
 // 	outputMessage( "<i>" + quotedArguments.join(" ") + "</i>" );
 	outputMessage( quotedArguments.join(" ") );
 // 	LanguageManager::self()->logView()->addOutput( quotedArguments.join(" "), LogView::ot_info );
 }
 
 
-#include "externallanguage.moc"
+#include "moc_externallanguage.cpp"

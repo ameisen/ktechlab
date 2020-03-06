@@ -24,7 +24,7 @@
 #include <cmath>
 #include <map>
 
-typedef std::multimap<int, PinList> PinListMap;
+typedef std::multimap<int, QPtrList<Pin>> PinListMap;
 
 //BEGIN class Circuit
 Circuit::Circuit()
@@ -67,7 +67,7 @@ bool Circuit::contains( Pin *node )
 
 
 // static function
-int Circuit::identifyGround( PinList nodeList, int *highest )
+int Circuit::identifyGround( QPtrList<Pin> nodeList, int *highest )
 {
 	// What this function does:
 	// We are given a list of pins. First, we divide them into groups of pins
@@ -80,17 +80,17 @@ int Circuit::identifyGround( PinList nodeList, int *highest )
 	// (their eq-id is set to -1). Otherwise, the first group of pins with the
 	// highest ground priority found is marked as ground, and all others are
 	// marked as non ground (their eq-id is set to 0).
-	
+
 	int temp_highest;
 	if (!highest)
 		highest = &temp_highest;
-	
+
 	// Now to give all the Pins ids
 	PinListMap eqs;
 	while ( !nodeList.isEmpty() )
 	{
-		PinList associated;
-		PinList nodes;
+		QPtrList<Pin> associated;
+		QPtrList<Pin> nodes;
 		Pin *node = *nodeList.begin();
 		recursivePinAdd( node, &nodeList, &associated, &nodes );
 		if ( nodes.size() > 0 )
@@ -98,9 +98,9 @@ int Circuit::identifyGround( PinList nodeList, int *highest )
 			eqs.insert( std::make_pair( associated.size(), nodes ) );
 		}
 	}
-	
-	
-	// Now, we want to look through the associated Pins, 
+
+
+	// Now, we want to look through the associated Pins,
 	// to find the ones with the highest "Ground Priority". Anything with a lower
 	// priority than Pin::gt_never will not be considered
 	*highest = Pin::gt_never; // The highest priority found so far
@@ -109,23 +109,23 @@ int Circuit::identifyGround( PinList nodeList, int *highest )
 	for ( PinListMap::iterator it = eqs.begin(); it != eqsEnd; ++it )
 	{
 		int highPri = Pin::gt_never; // The highest priority found in these group of nodes
-		const PinList::iterator send = it->second.end();
-		for ( PinList::iterator sit = it->second.begin(); sit != send; ++sit )
+		const QPtrList<Pin>::iterator send = it->second.end();
+		for ( QPtrList<Pin>::iterator sit = it->second.begin(); sit != send; ++sit )
 		{
 			if ( (*sit)->groundType() < highPri )
 				highPri = (*sit)->groundType();
 		}
-		
+
 		if ( highPri == *highest )
 			numGround++;
-		
-		else if ( highPri < *highest ) 
+
+		else if ( highPri < *highest )
 		{
 			numGround = 1;
 			*highest = highPri;
 		}
 	}
-	
+
 	if ( *highest == Pin::gt_never )
 	{
 		(*highest)--;
@@ -134,21 +134,21 @@ int Circuit::identifyGround( PinList nodeList, int *highest )
 	// If there are no Always Ground nodes, then we only want to set one of the nodes as ground
 	else if ( *highest > Pin::gt_always )
 		numGround = 1;
-	
-	
+
+
 	// Now, we can give the nodes their cnode ids, or tell them they are ground
 	bool foundGround = false; // This is only used when we don't have a Always ground node
 	for ( PinListMap::iterator it = eqs.begin(); it != eqsEnd; ++it )
 	{
 		bool ground = false;
-		const PinList::iterator send = it->second.end();
-		for ( PinList::iterator sit = it->second.begin(); sit != send; ++sit )
+		const QPtrList<Pin>::iterator send = it->second.end();
+		for ( QPtrList<Pin>::iterator sit = it->second.begin(); sit != send; ++sit )
 		{
 			ground |= (*sit)->groundType() <= (*highest);
 		}
 		if ( ground && (!foundGround || *highest == Pin::gt_always ) )
 		{
-			for ( PinList::iterator sit = it->second.begin(); sit != send; ++sit )
+			for ( QPtrList<Pin>::iterator sit = it->second.begin(); sit != send; ++sit )
 			{
 				(*sit)->setEqId(-1);
 			}
@@ -156,13 +156,13 @@ int Circuit::identifyGround( PinList nodeList, int *highest )
 		}
 		else
 		{
-			for ( PinList::iterator sit = it->second.begin(); sit != send; ++sit )
+			for ( QPtrList<Pin>::iterator sit = it->second.begin(); sit != send; ++sit )
 			{
 				(*sit)->setEqId(0);
 			}
 		}
 	}
-	
+
 	return numGround;
 }
 
@@ -170,21 +170,21 @@ int Circuit::identifyGround( PinList nodeList, int *highest )
 void Circuit::init()
 {
 	m_branchCount = 0;
-	
-	const ElementList::iterator listEnd = m_elementList.end();
-	for ( ElementList::iterator it = m_elementList.begin(); it != listEnd; ++it )
+
+	const QList<Element *>::iterator listEnd = m_elementList.end();
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != listEnd; ++it )
 	{
 		m_branchCount += (*it)->numCBranches();
 	}
-	
+
 	// Now to give all the Pins ids
 	int groundCount = 0;
 	PinListMap eqs;
-	PinList unassignedNodes = m_pinList;
+	QPtrList<Pin> unassignedNodes = m_pinList;
 	while ( !unassignedNodes.isEmpty() )
 	{
-		PinList associated;
-		PinList nodes;
+		QPtrList<Pin> associated;
+		QPtrList<Pin> nodes;
 		Pin *node = *unassignedNodes.begin();
 		if ( recursivePinAdd( node, &unassignedNodes, &associated, &nodes ) ) {
 			groundCount++;
@@ -193,15 +193,15 @@ void Circuit::init()
 			eqs.insert( std::make_pair( associated.size(), nodes ) );
 		}
 	}
-	
+
 	m_cnodeCount = eqs.size() - groundCount;
-	
+
 	delete m_pLogicCacheBase;
 	m_pLogicCacheBase = 0l;
-	
+
 	delete m_elementSet;
 	m_elementSet = new ElementSet( this, m_cnodeCount, m_branchCount );
-	
+
 	// Now, we can give the nodes their cnode ids, or tell them they are ground
 	QuickVector *x = m_elementSet->x();
 	int i=0;
@@ -209,28 +209,28 @@ void Circuit::init()
 	for ( PinListMap::iterator it = eqs.begin(); it != eqsEnd; ++it )
 	{
 		bool foundGround = false;
-		
-		const PinList::iterator sEnd = it->second.end();
-		for ( PinList::iterator sit = it->second.begin(); sit != sEnd; ++sit )
+
+		const QPtrList<Pin>::iterator sEnd = it->second.end();
+		for ( QPtrList<Pin>::iterator sit = it->second.begin(); sit != sEnd; ++sit )
 			foundGround |= (*sit)->eqId() == -1;
-			
+
 		if ( foundGround )
 			continue;
-		
+
 		bool foundEnergyStoragePin = false;
-		
-		for ( PinList::iterator sit = it->second.begin(); sit != sEnd; ++sit )
+
+		for ( QPtrList<Pin>::iterator sit = it->second.begin(); sit != sEnd; ++sit )
 		{
 			(*sit)->setEqId(i);
-			
+
 			bool energyStorage = false;
-			const ElementList elements = (*sit)->elements();
-			ElementList::const_iterator elementsEnd = elements.end();
-			for ( ElementList::const_iterator it = elements.begin(); it != elementsEnd; ++it )
+			const QList<Element *> elements = (*sit)->elements();
+			QList<Element *>::const_iterator elementsEnd = elements.end();
+			for ( QList<Element *>::const_iterator it = elements.begin(); it != elementsEnd; ++it )
 			{
 				if ( !*it )
 					continue;
-				
+
 				if ( ((*it)->type() == Element::Element_Capacitance)
 									|| ((*it)->type() == Element::Element_Inductance) )
 				{
@@ -238,42 +238,42 @@ void Circuit::init()
 					break;
 				}
 			}
-			
+
 			// A pin attached to an energy storage pin overrides one that doesn't.
 			// If the two pins have equal status with in this regard, we pick the
 			// one with the highest absolute voltage on it.
-			
+
 			if ( foundEnergyStoragePin && !energyStorage )
 				continue;
-			
+
 			double v = (*sit)->voltage();
-			
+
 			if ( energyStorage && !foundEnergyStoragePin )
 			{
 				foundEnergyStoragePin = true;
 				(*x)[i] = v;
 				continue;
 			}
-			
+
 			if ( std::abs(v) > std::abs( (*x)[i] ) )
 				(*x)[i] = v;
 		}
 		i++;
 	}
-	
-	
+
+
 	// And add the elements to the elementSet
-	for ( ElementList::iterator it = m_elementList.begin(); it != listEnd; ++it )
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != listEnd; ++it )
 	{
 		// We don't want the element to prematurely try to do anything,
 		// as it doesn't know its actual cnode ids yet
 		(*it)->setCNodes();
 		(*it)->setCBranches();
 		m_elementSet->addElement(*it);
-	}	
+	}
 	// And give the branch ids to the elements
 	i=0;
-	for ( ElementList::iterator it = m_elementList.begin(); it != listEnd; ++it )
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != listEnd; ++it )
 	{
 		switch ( (*it)->numCBranches() )
 		{
@@ -302,18 +302,18 @@ void Circuit::init()
 void Circuit::initCache()
 {
 	m_elementSet->updateInfo();
-	
+
 	m_bCanCache = true;
 	m_logicOutCount = 0;
-	
+
 	delete[] m_pLogicOut;
 	m_pLogicOut = 0l;
-	
+
 	delete m_pLogicCacheBase;
 	m_pLogicCacheBase = 0l;
-	
-	const ElementList::iterator end = m_elementList.end();
-	for ( ElementList::iterator it = m_elementList.begin(); it != end && m_bCanCache; ++it )
+
+	const QList<Element *>::iterator end = m_elementList.end();
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != end && m_bCanCache; ++it )
 	{
 		switch ( (*it)->type() )
 		{
@@ -334,13 +334,13 @@ void Circuit::initCache()
 			{
 				break;
 			}
-				
+
 			case Element::Element_LogicOut:
 			{
 				m_logicOutCount++;
 				break;
 			}
-				
+
 			case Element::Element_CurrentSignal:
 			case Element::Element_VoltageSignal:
 			case Element::Element_Capacitance:
@@ -351,18 +351,18 @@ void Circuit::initCache()
 			}
 		}
 	}
-	
+
 	if ( !m_bCanCache )
 		return;
-	
+
 	m_pLogicOut = new LogicOut*[m_logicOutCount];
 	unsigned i = 0;
-	for ( ElementList::iterator it = m_elementList.begin(); it != end && m_bCanCache; ++it )
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != end && m_bCanCache; ++it )
 	{
 		if ( (*it)->type() == Element::Element_LogicOut )
 			m_pLogicOut[i++] = static_cast<LogicOut*>(*it);
 	}
-	
+
 	m_pLogicCacheBase = new LogicCacheNode;
 }
 
@@ -373,10 +373,10 @@ void Circuit::setCacheInvalidated()
 	{
 		delete m_pLogicCacheBase->high;
 		m_pLogicCacheBase->high = 0l;
-	
+
 		delete m_pLogicCacheBase->low;
 		m_pLogicCacheBase->low = 0l;
-	
+
 		delete m_pLogicCacheBase->data;
 		m_pLogicCacheBase->data = 0l;
 	}
@@ -392,22 +392,22 @@ void Circuit::cacheAndUpdate()
 		{
 			if (!node->high)
 				node->high = new LogicCacheNode;
-			
+
 			node = node->high;
 		} else {
 			if (!node->low)
 				node->low = new LogicCacheNode;
-			
+
 			node = node->low;
 		}
 	}
-	
+
 	if(node->data) {
 		(*m_elementSet->x()) = *node->data;
 		m_elementSet->updateInfo();
 		return;
 	}
-	
+
 	if ( m_elementSet->containsNonLinear() )
 		m_elementSet->doNonLinear( 150, 1e-10, 1e-13 );
 	else	m_elementSet->doLinear(true);
@@ -431,29 +431,29 @@ void Circuit::createMatrixMap()
 }
 
 
-bool Circuit::recursivePinAdd( Pin *node, PinList *unassignedNodes, PinList *associated, PinList *nodes )
+bool Circuit::recursivePinAdd( Pin *node, QPtrList<Pin> *unassignedNodes, QPtrList<Pin> *associated, QPtrList<Pin> *nodes )
 {
 	if ( !unassignedNodes->contains(node) )
 		return false;
 	unassignedNodes->removeAll(node);
-	
+
 	bool foundGround = node->eqId() == -1;
-	
-	const PinList circuitDependentPins = node->circuitDependentPins();
-	const PinList::const_iterator dEnd = circuitDependentPins.end();
-	for ( PinList::const_iterator it = circuitDependentPins.begin(); it != dEnd; ++it )
+
+	const QPtrList<Pin> circuitDependentPins = node->circuitDependentPins();
+	const QPtrList<Pin>::const_iterator dEnd = circuitDependentPins.end();
+	for ( QPtrList<Pin>::const_iterator it = circuitDependentPins.begin(); it != dEnd; ++it )
 	{
 		if ( !associated->contains(*it) )
 			associated->append(*it);
 	}
-	
+
 	nodes->append(node);
-	
-	const PinList localConnectedPins = node->localConnectedPins();
-	const PinList::const_iterator end = localConnectedPins.end();
-	for ( PinList::const_iterator it = localConnectedPins.begin(); it != end; ++it )
+
+	const QPtrList<Pin> localConnectedPins = node->localConnectedPins();
+	const QPtrList<Pin>::const_iterator end = localConnectedPins.end();
+	for ( QPtrList<Pin>::const_iterator it = localConnectedPins.begin(); it != end; ++it )
 		foundGround |= recursivePinAdd( *it, unassignedNodes, associated, nodes );
-	
+
 	return foundGround;
 }
 
@@ -486,8 +486,8 @@ void Circuit::doNonLogic()
 
 void Circuit::stepReactive()
 {
-	ElementList::iterator listEnd = m_elementList.end();
-	for ( ElementList::iterator it = m_elementList.begin(); it != listEnd; ++it )
+	QList<Element *>::iterator listEnd = m_elementList.end();
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != listEnd; ++it )
 	{
 		Element * const e = *it;
 		if ( e && e->isReactive() )
@@ -499,9 +499,9 @@ void Circuit::stepReactive()
 void Circuit::updateNodalVoltages()
 {
 	CNode **_cnodes = m_elementSet->cnodes();
-	
-	const PinList::iterator endIt = m_pinList.end();
-	for ( PinList::iterator it = m_pinList.begin(); it != endIt; ++it )
+
+	const QPtrList<Pin>::iterator endIt = m_pinList.end();
+	for ( QPtrList<Pin>::iterator it = m_pinList.begin(); it != endIt; ++it )
 	{
 		Pin * const node = *it;
 		int i = node->eqId();
@@ -518,8 +518,8 @@ void Circuit::updateNodalVoltages()
 
 void Circuit::updateCurrents()
 {
-	ElementList::iterator listEnd = m_elementList.end();
-	for ( ElementList::iterator it = m_elementList.begin(); it != listEnd; ++it )
+	QList<Element *>::iterator listEnd = m_elementList.end();
+	for ( QList<Element *>::iterator it = m_elementList.begin(); it != listEnd; ++it )
 	{
 		(*it)->updateCurrents();
 	}
@@ -549,5 +549,3 @@ LogicCacheNode::~LogicCacheNode()
 	if(data) delete data;
 }
 //END class LogicCacheNode
-
-

@@ -34,12 +34,12 @@ FPNode::~FPNode()
 FlowPart *FPNode::outputFlowPart() const
 {
 	// for InputFlowNode this member is overridden
-	
+
 	if (!m_outputConnector)
 		return 0;
 	if( m_outputConnector->endNode() == 0)
 		return 0;
-	
+
 	return (dynamic_cast<FPNode*>(m_outputConnector->endNode()))->outputFlowPart();
 }
 
@@ -47,7 +47,7 @@ FlowPart *FPNode::outputFlowPart() const
 FlowPartList FPNode::inputFlowParts() const
 {
 	// for InputFlowNode it's overridden
-	
+
 	FlowPartList list;
 	FlowPart *flowPart = dynamic_cast<FlowPart*>(parentItem());
 
@@ -57,7 +57,7 @@ FlowPartList FPNode::inputFlowParts() const
 		return list;
 	}
 
-	
+
 	const FlowConnectorList::const_iterator end = m_inFlowConnList.end();
 	for ( FlowConnectorList::const_iterator it = m_inFlowConnList.begin(); it != end; ++it )
 	{
@@ -121,7 +121,7 @@ void FPNode::addInputConnector( Connector * const connector )
 	// for Junction and Input flownodes
 	if( !handleNewConnector(connector) )
 		return;
-	
+
 	// FIXME dynamic_cast connector
 	m_inFlowConnList.append( dynamic_cast<FlowConnector*> (connector) );
 }
@@ -133,7 +133,7 @@ bool FPNode::handleNewConnector( Connector * connector )
 		return false;
 
 	// FIXME dynamic_cast connector
-	if ( m_inFlowConnList.contains(dynamic_cast<FlowConnector *> (connector) ) || 
+	if ( m_inFlowConnList.contains(dynamic_cast<FlowConnector *> (connector) ) ||
 		    ((Connector*)m_outputConnector == connector) )
 	{
 		qWarning() << Q_FUNC_INFO << " Already have connector = " << connector << endl;
@@ -155,11 +155,11 @@ Connector* FPNode::createInputConnector( Node * startNode )
 {
 	if( (!acceptInput()) || !startNode )
 		return 0l;
-	
+
 	// FIXME dynamic_cast used
 	Connector *connector = new FlowConnector( dynamic_cast<FPNode*>(startNode), dynamic_cast<FPNode*>(this), p_icnDocument );
 	addInputConnector(connector);
-	
+
 	return connector;
 }
 
@@ -167,18 +167,18 @@ Connector* FPNode::createInputConnector( Node * startNode )
 int FPNode::numCon( bool includeParentItem, bool includeHiddenConnectors ) const
 {
 	unsigned count = 0;
-	
+
 	FlowConnectorList connectors = m_inFlowConnList;
 	if ( m_outputConnector )
 		connectors.append ( m_outputConnector );
-	
+
 	FlowConnectorList::const_iterator end = connectors.end();
 	for ( FlowConnectorList::const_iterator it = connectors.begin(); it != end; ++it )
 	{
 		if ( *it && ( includeHiddenConnectors || ( *it )->canvas() ) )
 			count++;
 	}
-	
+
 	if ( isChildNode() && includeParentItem )
 		count++;
 
@@ -189,9 +189,9 @@ int FPNode::numCon( bool includeParentItem, bool includeHiddenConnectors ) const
 void FPNode::removeConnector( Connector *connector )
 {
 	if (!connector) return;
-	
+
 	FlowConnectorList::iterator it;
-	
+
 	// FIXME dynamic_cast connector
 	it = m_inFlowConnList.find( dynamic_cast<FlowConnector*>(connector) );
 	if ( it != m_inFlowConnList.end() )
@@ -199,7 +199,7 @@ void FPNode::removeConnector( Connector *connector )
 		(*it)->removeConnector();
 		(*it) = 0L;
 	}
-	
+
 	if((Connector *)m_outputConnector == connector)
 	{
 		connector->removeConnector();
@@ -212,9 +212,9 @@ void FPNode::checkForRemoval( Connector *connector )
 {
 	removeConnector(connector);
 	setNodeSelected(false);
-	
+
 	removeNullConnectors();
-	
+
 	if (!p_parentItem) {
 		int conCount = m_inFlowConnList.count();
 		if( m_outputConnector)
@@ -242,15 +242,15 @@ QPoint FPNode::findConnectorDivergePoint( bool * found )
 	if ( numCon( false, false ) != 2 )
 		return QPoint(0,0);
 
-	QPointList p1;
-	QPointList p2;
+	QList<QPoint> p1;
+	QList<QPoint> p2;
 
 	int inSize = m_inFlowConnList.count();
 
 	FlowConnectorList connectors = m_inFlowConnList;
 	if(m_outputConnector)
 		connectors.append(m_outputConnector);
-	
+
 	const FlowConnectorList::const_iterator end = connectors.end();
 	bool gotP1 = false;
 	bool gotP2 = false;
@@ -272,9 +272,9 @@ QPoint FPNode::findConnectorDivergePoint( bool * found )
 
 	if ( !gotP1 || !gotP2 )
 		return QPoint(0,0);
-	
+
 	unsigned maxLength = p1.size() > p2.size() ? p1.size() : p2.size();
-	
+
 	for ( unsigned i = 1; i < maxLength; ++i )
 	{
 		if ( p1[i] != p2[i] ) {
@@ -289,9 +289,9 @@ QPoint FPNode::findConnectorDivergePoint( bool * found )
 void FPNode::setVisible( bool yes )
 {
 	if ( isVisible() == yes ) return;
-	
+
 	KtlQCanvasPolygon::setVisible(yes);
-	
+
 	const FlowConnectorList::iterator inputEnd = m_inFlowConnList.end();
 	for ( FlowConnectorList::iterator it = m_inFlowConnList.begin(); it != inputEnd; ++it )
 	{
@@ -307,8 +307,8 @@ void FPNode::setVisible( bool yes )
 			}
 		}
 	}
-	
-	Connector *connector = m_outputConnector; 
+
+	Connector *connector = m_outputConnector;
 	if ( connector )
 	{
 		if ( isVisible() )
@@ -321,14 +321,14 @@ void FPNode::setVisible( bool yes )
 	}
 }
 
-bool FPNode::isConnected( Node *node, NodeList *checkedNodes )
+bool FPNode::isConnected( Node *node, QPtrList<Node> *checkedNodes )
 {
 	if ( this == node )
 		return true;
 
 	bool firstNode = !checkedNodes;
 	if (firstNode)
-		checkedNodes = new NodeList();
+		checkedNodes = new QPtrList<Node>();
 
 	else if ( checkedNodes->contains(this) )
 		return false;
@@ -347,9 +347,9 @@ bool FPNode::isConnected( Node *node, NodeList *checkedNodes )
 				}
 				return true;
 			}
-		}	
+		}
 	}
-	
+
 	Connector *connector = m_outputConnector;
 	if ( connector )
 	{
@@ -372,21 +372,21 @@ bool FPNode::isConnected( Node *node, NodeList *checkedNodes )
 	return false;
 }
 
-ConnectorList FPNode::inputConnectorList() const  {
-    return (ConnectorList)(FlowConnectorList) m_inFlowConnList;
+QPtrList<Connector> FPNode::inputConnectorList() const  {
+    return (QPtrList<Connector>)(FlowConnectorList) m_inFlowConnList;
 }
-		
-ConnectorList FPNode::outputConnectorList() const 
-{  
-	ConnectorList out;
+
+QPtrList<Connector> FPNode::outputConnectorList() const
+{
+	QPtrList<Connector> out;
 	if( m_outputConnector)
 		out.append( (Connector *) m_outputConnector);	// un upcast between downcasts :o
 	return out;
 }
 
-ConnectorList FPNode::getAllConnectors() const
+QPtrList<Connector> FPNode::getAllConnectors() const
 {
-	ConnectorList all = (ConnectorList)(FlowConnectorList)m_inFlowConnList;
+	QPtrList<Connector> all = (QPtrList<Connector>)(FlowConnectorList)m_inFlowConnList;
 	if ( m_outputConnector )
 		all.append ( (Connector *) m_outputConnector );
 	return all;
@@ -398,9 +398,8 @@ Connector* FPNode::getAConnector() const {
 
 	if( m_outputConnector)
 		return m_outputConnector;
-	
+
 	return 0l;
 }
 
-#include "fpnode.moc"
-
+#include "moc_fpnode.cpp"

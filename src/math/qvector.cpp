@@ -22,11 +22,12 @@
 #include "qvector.h"
 // #endif
 
-#include <cstdlib> // for null 
+#include <cstdlib> // for null
 #include <cmath>
 #include <cassert>
 #include <qdebug.h>
 #include <iostream>
+#include <algorithm>
 
 
 
@@ -69,11 +70,11 @@ bool QuickVector::atAdd(CUI m_a, const double val) {
 // #####################################
 
 QuickVector::QuickVector(CUI m_in)
-	: m(m_in), changed(true)
+	: m(m_in)
 {
 	assert(m);
 	values = new double[m];
-	memset(values, 0, sizeof(double) *m);
+	memset(values, 0, sizeof(double) * m);
 }
 
 // #####################################
@@ -83,7 +84,7 @@ QuickVector::QuickVector(const QuickVector *old)
 	assert(m);
 	values = new double[m];
 
-	for(unsigned int j = 0; j < m; j++) 
+	for (unsigned int j = 0; j < m; j++)
 		values[j] = old->values[j];
 }
 
@@ -91,6 +92,7 @@ QuickVector::QuickVector(const QuickVector *old)
 
 QuickVector::~QuickVector() {
 	delete[] values;
+	values = nullptr;
 }
 
 // #####################################
@@ -105,7 +107,7 @@ void QuickVector::fillWithRandom() {
 // #####################################
 
 void QuickVector::fillWithZeros() {
-	memset(values, 0, m*sizeof(double));
+	memset(values, 0, m * sizeof(double));
 	changed = true;
 }
 
@@ -114,10 +116,10 @@ void QuickVector::fillWithZeros() {
 QuickVector &QuickVector::operator-(const QuickVector &y) const {
 //	if(y.m != m) abort();
 
-	QuickVector *ret;
-	ret = new QuickVector(m);
+	QuickVector *ret = new QuickVector(m);
 
-	for(unsigned int i = 0; i < m; i++) ret->values[i] = values[i] - y.values[i];
+	for (unsigned int i = 0; i < m; i++)
+		ret->values[i] = values[i] - y.values[i];
 
 	return *ret;
 }
@@ -125,18 +127,17 @@ QuickVector &QuickVector::operator-(const QuickVector &y) const {
 // ####################################
 
 void QuickVector::dumpToAux() const {
-	for(unsigned int i = 0; i < m; i++) cout << values[i] << ' ';
+	for (unsigned int i = 0; i < m; i++)
+		cout << values[i] << ' ';
 	cout << endl;
 }
 
 // ####################################
 
 bool QuickVector::swapElements(CUI m_a, CUI m_b) {
-	if(m_a >= m || m_b >= m) return false;
+	if (m_a >= m || m_b >= m) return false;
 
-	double temp = values[m_a];
-	values[m_a] = values[m_b];
-	values[m_b] = temp;
+	std::swap(values[m_a], values[m_b]);
 	changed = true;
 
 	return true;
@@ -147,7 +148,8 @@ bool QuickVector::swapElements(CUI m_a, CUI m_b) {
 QuickVector &QuickVector::operator=(const QuickVector &y) {
 	assert(y.m == m);
 
-	for(unsigned int i = 0; i < m; i++) values[i] = y.values[i];
+	for (unsigned int i = 0; i < m; i++)
+		values[i] = y.values[i];
 	changed = true;
 	return *this;
 }
@@ -157,7 +159,8 @@ QuickVector &QuickVector::operator=(const QuickVector &y) {
 QuickVector &QuickVector::operator *=(const QuickVector &y) {
 //	if(y.m != m) return NULL;
 
-	for(unsigned int i = 0; i < m; i++) values[i] *= y.values[i];
+	for (unsigned int i = 0; i < m; i++)
+		values[i] *= y.values[i];
 	changed = true;
 	return *this;
 }
@@ -167,10 +170,10 @@ QuickVector &QuickVector::operator *=(const QuickVector &y) {
 QuickVector &QuickVector::operator +=(const QuickVector &y) {
 //	if(y.m != m) return NULL;
 
-	for(unsigned int i = 0; i < m; i++) values[i] += y.values[i];
+	for (unsigned int i = 0; i < m; i++)
+		values[i] += y.values[i];
 	changed = true;
 	return *this;
 }
 
 // ###################################
-

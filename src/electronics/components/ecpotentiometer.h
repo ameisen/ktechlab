@@ -19,17 +19,17 @@ class QSlider;
 @short Potentiometer
 @author David Saxton
 */
-class ECPotentiometer : public Component
+class ECPotentiometer final : public Component
 {
 public:
 	ECPotentiometer( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECPotentiometer() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void sliderValueChanged( const QString &id, int newValue ) override;
-	
+
 private:
 	void dataChanged() override;
 	void drawShape( QPainter &p ) override;

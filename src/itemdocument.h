@@ -11,6 +11,8 @@
 #ifndef ITEMDOCUMENT_H
 #define ITEMDOCUMENT_H
 
+#include "pch.hpp"
+
 #include <set>
 #include <document.h>
 #include <canvas.h>
@@ -38,8 +40,6 @@ typedef QStack<ItemDocumentData*> IDDStack;
 typedef QPointer<Item> GuardedItem;
 typedef QMap< int, GuardedItem > IntItemMap;
 typedef QMap< QString, Item* > ItemMap;
-typedef QList<GuardedItem> ItemList;
-typedef QList<QPoint> QPointList;
 
 /**
 @author David Saxton
@@ -139,11 +139,11 @@ class ItemDocument : public Document
 		/**
 		 * Increases the "height" of the given list of items by "one".
 		 */
-		void raiseZ( const ItemList & itemList );
+		void raiseZ( const QPtrList<Item> & itemList );
 		/**
 		 * Decreases the "height" of the given list of items by "one".
 		 */
-		void lowerZ( const ItemList & itemList );
+		void lowerZ( const QPtrList<Item> & itemList );
 		/**
 		 * @return ItemGroup that is used as the select list for this document.
 		 */
@@ -200,7 +200,7 @@ class ItemDocument : public Document
 		/**
 		 * List of items in the ItemDocument
 		 */
-		ItemList itemList() const;
+		QPtrList<Item> itemList() const;
 		/**
 		 * Set the given KtlQCanvasItem (which will attempt to be casted to known
 		 * items to be deleted.
@@ -375,7 +375,7 @@ public slots:
 		CMManager	*m_cmManager;
 		CanvasTip	*m_canvasTip;
 
-		ItemList	 m_itemDeleteList;
+		QPtrList<Item>	 m_itemDeleteList;
 		ItemMap		 m_itemList;
 
 		QString		 m_fileExtensionInfo; // For displaying in the save file dialog

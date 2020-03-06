@@ -77,7 +77,7 @@ void ComponentModelLibrary::loadModels()
 	// Used to check that maxComponentModels isn't too small
 	typedef QMap< ModelType, int > IntMap;
 	IntMap modelCount;
-	
+
 	QStringList::iterator end = files.end();
 	for ( QStringList::iterator it = files.begin(); it != end; ++it )
 	{
@@ -166,7 +166,7 @@ void ComponentModelLibrary::loadModels()
 				else {
 					bool ok;
 					double realValue = value.toDouble( & ok );
-					
+
 					if ( !ok )
 						qCritical() << Q_FUNC_INFO << "Could not convert \""<<value<<"\" to a real number (for property \""<<name<<"\".\n";
 					else	model->setProperty( name, realValue );
@@ -180,5 +180,4 @@ void ComponentModelLibrary::loadModels()
 //END class ComponentModelLibrary
 
 
-#include "componentmodellibrary.moc"
-
+#include "moc_componentmodellibrary.cpp"

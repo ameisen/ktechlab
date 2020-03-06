@@ -11,6 +11,8 @@
 #ifndef LOGIC_H
 #define LOGIC_H
 
+#include "pch.hpp"
+
 #include "element.h"
 
 #include <qpointer.h>
@@ -19,8 +21,6 @@
 class Component;
 class Pin;
 class Simulator;
-
-typedef QList<QPointer<Pin> > PinList;
 
 class LogicConfig
 {
@@ -51,7 +51,7 @@ class LogicIn : public Element
 	public:
 		LogicIn( LogicConfig config );
 		~LogicIn() override;
-	
+
 		Type type() const override { return Element_LogicIn; }
 		void setElementSet( ElementSet *c ) override;
 
@@ -103,7 +103,7 @@ class LogicIn : public Element
 	protected:
 		void updateCurrents() override;
 		void add_initial_dc() override;
-	
+
 		// TODO: fix this crap NO FUNCTION POINTERS
 		CallbackPtr m_pCallbackFunction;
 		CallbackClass * m_pCallbackObject;
@@ -121,11 +121,11 @@ class LogicOut : public LogicIn
 	public:
 		LogicOut( LogicConfig config, bool _high );
 		~LogicOut() override;
-	
+
 		void setLogic( LogicConfig config ) override;
 		void setElementSet( ElementSet *c ) override;
 		Type type() const override { return Element_LogicOut; }
-	
+
 		/**
 		 * Call this function to override the logic-high output impedance as set by
 		 * the user. Once set, the impedance will not be changed by the user
@@ -181,15 +181,15 @@ class LogicOut : public LogicIn
 		 * @see setNextChanged
 		 */
 		LogicOut * nextChanged( unsigned char chain ) const { return m_pNextChanged[chain]; }
-		PinList pinList;
-		PinList::iterator pinListBegin;
-		PinList::iterator pinListEnd;
+		QPtrList<Pin> pinList;
+		QPtrList<Pin>::iterator pinListBegin;
+		QPtrList<Pin>::iterator pinListEnd;
 
 	protected:
 		void configChanged();
 		void updateCurrents() override;
 		void add_initial_dc() override;
-	
+
 		// Pre-initalized levels from config
 		double m_gHigh;
 		double m_gLow;
@@ -212,4 +212,3 @@ class LogicOut : public LogicIn
 };
 
 #endif
-

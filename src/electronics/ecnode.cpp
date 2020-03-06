@@ -8,6 +8,9 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
 
+#include <algorithm>
+#include <memory>
+
 #include "circuitdocument.h"
 #include "component.h"
 #include "connector.h"
@@ -20,39 +23,33 @@
 
 #include <ktlconfig.h>
 
-ECNode::ECNode( ICNDocument *icnDocument, Node::node_type _type, int dir, const QPoint &pos, QString *_id )
-	: Node( icnDocument, _type, dir, pos, _id )
+ECNode::ECNode( ICNDocument *icnDocument, Node::node_type _type, int dir, const QPoint &pos, QString *_id ) :
+	Node( icnDocument, _type, dir, pos, _id ),
+	m_bShowVoltageBars(KTLConfig::showVoltageBars()),
+	m_bShowVoltageColor(KTLConfig::showVoltageColor())
 {
-	m_prevV = 0;
-	m_prevI = 0;
-	m_pinPoint = 0l;
-	m_bShowVoltageBars = KTLConfig::showVoltageBars();
-	m_bShowVoltageColor = KTLConfig::showVoltageColor();
-
 	if ( icnDocument )
 		icnDocument->registerItem(this);
 
-
-	m_pins.resize(1);
-	m_pins[0] = new Pin(this);
+	m_pins.push_back(new Pin(this));
 }
 
 ECNode::~ECNode()
 {
 	if (m_pinPoint) {
-		m_pinPoint->setCanvas(0l);
+		m_pinPoint->setCanvas(nullptr);
 		delete m_pinPoint;
 	}
 
-	for ( unsigned i = 0; i < m_pins.size(); i++ )
-		delete m_pins[i];
-	m_pins.resize(0);
+	for (auto &pin : m_pins) {
+			delete pin.data();
+	}
 }
 
 
 void ECNode::setNumPins( unsigned num )
 {
-	unsigned oldNum = m_pins.size();
+	auto oldNum = unsigned(m_pins.size());
 
 	if ( num == oldNum ) return;
 
@@ -60,7 +57,8 @@ void ECNode::setNumPins( unsigned num )
 		m_pins.resize(num);
 		for ( unsigned i = oldNum; i < num; i++ )
 			m_pins[i] = new Pin(this);
-	} else {
+	}
+	else {
 		for ( unsigned i = num; i < oldNum; i++ )
 			delete m_pins[i];
 		m_pins.resize(num);
@@ -70,20 +68,23 @@ void ECNode::setNumPins( unsigned num )
 }
 
 Pin *ECNode::pin( unsigned num ) const
-    { return (num < m_pins.size()) ? m_pins[num] : 0l; }
+{
+	return (llong(num) < m_pins.size()) ?
+		m_pins[num] :
+		nullptr;
+}
 
 void ECNode::setNodeChanged()
 {
 	if ( !canvas() || numPins() != 1 ) return;
 
-	Pin * pin = m_pins[0];
+	auto &pin = m_pins[0];
 
 	double v = pin->voltage();
 	double i = pin->current();
 
 	if ( v != m_prevV || i != m_prevI ) {
-		QRect r = boundingRect();
-// 		r.setCoords( r.left()+(r.width()/2)-1, r.top()+(r.height()/2)-1, r.right()-(r.width()/2)+1, r.bottom()-(r.height()/2)+1 );
+		auto r = boundingRect();
 		canvas()->setChanged(r);
 		m_prevV = v;
 		m_prevI = i;
@@ -95,7 +96,7 @@ void ECNode::setParentItem( CNItem * parentItem )
 {
 	Node::setParentItem(parentItem);
 
-	if ( Component * component = dynamic_cast<Component*>(parentItem) ) {
+	if ( auto *component = dynamic_cast<Component*>(parentItem) ) {
 		connect( component, SIGNAL(elementDestroyed(Element* )), this, SLOT(removeElement(Element* )) );
 		connect( component, SIGNAL(switchDestroyed( Switch* )), this, SLOT(removeSwitch( Switch* )) );
 	}
@@ -104,51 +105,47 @@ void ECNode::setParentItem( CNItem * parentItem )
 
 void ECNode::removeElement( Element * e )
 {
-	for ( unsigned i = 0; i < m_pins.size(); i++ )
-		m_pins[i]->removeElement(e);
+	for (auto &pin : m_pins) {
+		pin->removeElement(e);
+	}
 }
 
 
 void ECNode::removeSwitch( Switch * sw )
 {
-	for ( unsigned i = 0; i < m_pins.size(); i++ )
-		m_pins[i]->removeSwitch( sw );
+	for (auto &pin : m_pins) {
+		pin->removeSwitch(sw);
+	}
 }
 
 
 // -- functionality from node.cpp --
 
-bool ECNode::isConnected( Node *node, NodeList *checkedNodes )
+bool ECNode::isConnected( Node *node, QPtrList<Node> *checkedNodes )
 {
 	if ( this == node )
 		return true;
 
-	bool firstNode = !checkedNodes;
-	if (firstNode)
-		checkedNodes = new NodeList();
+	// This way, it will automatically delete when this function exits.
+	std::unique_ptr<QPtrList<Node>> localCheckedNodes;
 
+	if (!checkedNodes) {
+		checkedNodes = new QPtrList<Node>();
+		localCheckedNodes.reset(checkedNodes);
+	}
 	else if ( checkedNodes->contains(this) )
 		return false;
 
 	checkedNodes->append(this);
 
-	const ConnectorList::const_iterator inputEnd = m_connectorList.end();
-	for ( ConnectorList::const_iterator it = m_connectorList.begin(); it != inputEnd; ++it )
+	for (auto &connector : m_connectorList)
 	{
-		Connector *connector = *it;
-		if (connector) {
-			Node *startNode = connector->startNode();
-			if ( startNode && startNode->isConnected( node, checkedNodes ) ) {
-				if (firstNode) {
-					delete checkedNodes;
-				}
-				return true;
-			}
-		}
-	}
+		if (!connector) continue;
 
-	if (firstNode) {
-		delete checkedNodes;
+		auto *startNode = connector->startNode();
+		if ( startNode && startNode->isConnected( node, checkedNodes ) ) {
+			return true;
+		}
 	}
 
 	return false;
@@ -161,84 +158,80 @@ void ECNode::checkForRemoval( Connector *connector )
 
 	removeNullConnectors();
 
-	if (!p_parentItem) {
-		int conCount = m_connectorList.count();
-		if ( conCount < 1 )
-			removeNode();
+	if ( !p_parentItem && m_connectorList.empty() ) {
+		removeNode();
 	}
 }
 
-void ECNode::setVisible( bool yes )
+void ECNode::setVisible( bool visible )
 {
-	if ( isVisible() == yes ) return;
+	if ( isVisible() == visible ) return;
 
-	KtlQCanvasPolygon::setVisible(yes);
+	KtlQCanvasPolygon::setVisible(visible);
 
-	const ConnectorList::iterator inputEnd = m_connectorList.end();
-	for ( ConnectorList::iterator it = m_connectorList.begin(); it != inputEnd; ++it ) {
-		Connector *connector = *it;
-		if (connector) {
-			if ( isVisible() )
-				connector->setVisible(true);
-			else {
-				Node *node = connector->startNode();
-				connector->setVisible( node && node->isVisible() );
-			}
+	for (auto &connector : m_connectorList) {
+		if (!connector) continue;
+
+		if ( isVisible() ) {
+			connector->setVisible(true);
+		}
+		else {
+			auto *node = connector->startNode();
+			connector->setVisible( node && node->isVisible() );
 		}
 	}
 }
 
-QPoint ECNode::findConnectorDivergePoint( bool * found )
+QPoint ECNode::findConnectorDivergePoint( bool * found ) // TODO : Really? A pointer to a boolean?
 {
 	// FIXME someone should check that this function is OK ... I just don't understand what it does
-	bool temp;
-	if (!found)
-		found = &temp;
-	*found = false;
+	if (found)
+		*found = false;
 
 	if ( numCon( false, false ) != 2 )
-		return QPoint(0,0);
+		return QPoint{};
 
-	QPointList p1;
-	QPointList p2;
+	QList<QPoint> p1;
+	QList<QPoint> p2;
 
-	int inSize = m_connectorList.count();
-
-	const ConnectorList connectors = m_connectorList;
-	const ConnectorList::const_iterator end = connectors.end();
+	const auto inSize = m_connectorList.count();
 
 	bool gotP1 = false;
 	bool gotP2 = false;
 
 	int at = -1;
-	for ( ConnectorList::const_iterator it = connectors.begin(); it != end && !gotP2; ++it )
+	for (auto &connector : m_connectorList)
 	{
 		at++;
-		if ( !(*it) || !(*it)->canvas() )
+
+		if ( !connector || !connector->canvas() )
 			continue;
 
 		if (gotP1) {
-			p2 = (*it)->connectorPoints( at < inSize );
+			p2 = connector->connectorPoints( at < inSize );
 			gotP2 = true;
-		} else {
-			p1 = (*it)->connectorPoints( at < inSize );
+			break;
+		}
+		else {
+			p1 = connector->connectorPoints( at < inSize );
 			gotP1 = true;
 		}
 	}
 
 	if ( !gotP1 || !gotP2 )
-		return QPoint(0,0);
+		return QPoint{};
 
-	unsigned maxLength = p1.size() > p2.size() ? p1.size() : p2.size();
+	int maxLength = std::max(p1.size(), p2.size());
 
-	for ( unsigned i = 1; i < maxLength; ++i )
+	for ( int i = 1; i < maxLength; ++i )
 	{
 		if ( p1[i] != p2[i] ) {
-			*found = true;
-			return p1[i-1];
+			if (found)
+				*found = true;
+			return p1[i - 1];
 		}
 	}
-	return QPoint(0, 0);
+	return QPoint{};
 }
 
 void ECNode::addConnector( Connector * const connector )
@@ -270,10 +263,14 @@ bool ECNode::handleNewConnector( Connector * connector )
 	return true;
 }
 
-Connector* ECNode::createConnector( Node * node)
+Connector* ECNode::createConnector( Node * node )
 {
 	// FIXME dynamic_cast used
-	Connector *connector = new ElectronicConnector( dynamic_cast<ECNode*>(node), dynamic_cast<ECNode*>(this), p_icnDocument );
+	auto *connector = new ElectronicConnector(
+		dynamic_cast<ECNode*>(node),
+		dynamic_cast<ECNode*>(this),
+		p_icnDocument
+	);
 	addConnector(connector);
 
 	return connector;
@@ -281,25 +278,22 @@ Connector* ECNode::createConnector( Node * node)
 
 void ECNode::removeNullConnectors()
 {
-	m_connectorList.removeAll((Connector*)0L);
+	m_connectorList.removeAll(nullptr);
 }
 
 int ECNode::numCon( bool includeParentItem, bool includeHiddenConnectors ) const
 {
-	unsigned count = 0;
+	int count = 0;
 
-	const ConnectorList connectors = m_connectorList;
-
-	ConnectorList::const_iterator end = connectors.end();
-	for ( ConnectorList::const_iterator it = connectors.begin(); it != end; ++it )
+	for (auto &connector : m_connectorList)
 	{
-		if ( *it && (includeHiddenConnectors || (*it)->canvas()) )
-			count++;
+		if ( connector && (includeHiddenConnectors || connector->canvas()) )
+			++count;
 	}
 
 
 	if ( isChildNode() && includeParentItem )
-		count++;
+		++count;
 
 	return count;
 }
@@ -308,23 +302,19 @@ void ECNode::removeConnector( Connector *connector )
 {
 	if (!connector) return;
 
-	ConnectorList::iterator it;
-
-	//it = m_connectorList.find(connector); // 2018.12.02
-    int i = m_connectorList.indexOf(connector);
-    it = (i == -1 ? m_connectorList.end() : (m_connectorList.begin()+i));
-	if ( it != m_connectorList.end() )
+  const int i = m_connectorList.indexOf(connector);
+	if ( i != -1 )
 	{
-		(*it)->removeConnector();
-		(*it) = 0L;
+		connector->removeConnector();
+		m_connectorList[i] = nullptr;
 	}
 }
 
 Connector* ECNode::getAConnector() const
 {
-	if( ! m_connectorList.isEmpty() )
-		return *m_connectorList.begin();
-	else	return 0l;
+	return !m_connectorList.isEmpty() ?
+		m_connectorList.first() :
+		nullptr;
 }
 
-#include "ecnode.moc"
+#include "moc_ecnode.cpp"

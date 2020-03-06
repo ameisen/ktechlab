@@ -128,12 +128,12 @@ class PinMapView : public ICNView
 };
 
 
-class PIC_IC : public Component
+class PIC_IC final : public Component
 {
 	public:
 		PIC_IC( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~PIC_IC() override;
-		
+
 		static Item *construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
 

@@ -16,15 +16,15 @@
 /**
 @author David Saxton
  */
-class MatrixDisplayDriver : public Component
+class MatrixDisplayDriver final : public Component
 {
 	public:
 		MatrixDisplayDriver( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~MatrixDisplayDriver() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-	
+
 		void stepNonLogic() override;
 		bool doesStepNonLogic() const override { return true; }
 

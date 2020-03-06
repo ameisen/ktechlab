@@ -30,84 +30,93 @@
 #include <kcmdlineargs.h>
 #include <klocalizedstring.h>
 
-#include <qdebug.h>
-#include <qtest.h>
-#include <qtemporaryfile.h>
+#include <QDebug>
+#include <QTest>
+#include <QTemporaryFile>
 
-static const char description[] =
-    I18N_NOOP("An IDE for microcontrollers and electronics");
+static constexpr const char description[] =
+	I18N_NOOP("An IDE for microcontrollers and electronics");
 
-class KtlTestsAppFixture : public QObject {
-    Q_OBJECT
+class KtlTestsAppFixture final : public QObject {
+	Q_OBJECT
 
 public:
-    KApplication *app;
-    KTechlab *ktechlab;
+	KApplication *app = nullptr;
+	KTechlab *ktechlab = nullptr;
 
 private slots:
-    void initTestCase() {
-        int argc = 1;
-        char argv0[] = "tests_app";
-        char *argv[] = { argv0, NULL };
+	void initTestCase() {
+		[[maybe_unused]] int argc = 1;
+		[[maybe_unused]] char argv0[] = "tests_app";
+		[[maybe_unused]] char *argv[] = { argv0, nullptr };
 
 
-        KAboutData about("ktechlab", i18n("KTechLab"), VERSION, i18n(description),
-                    KAboutLicense::LicenseKey::GPL_V2, i18n("(C) 2003-2017, The KTechLab developers"),
-                    "", "https://userbase.kde.org/KTechlab", "ktechlab-devel@kde.org" );
-        KCmdLineArgs *args = KCmdLineArgs::parsedArgs();
-        app = new KApplication;
-        ktechlab = new KTechlab;
+		[[maybe_unused]] KAboutData about(
+			"ktechlab",
+			i18n("KTechLab"),
+			VERSION,
+			i18n(description),
+			KAboutLicense::LicenseKey::GPL_V2,
+			i18n("(C) 2003-2020, The KTechLab developers"),
+			"",
+			"https://userbase.kde.org/KTechlab",
+			"ktechlab-devel@kde.org"
+		);
+		[[maybe_unused]] KCmdLineArgs *args = KCmdLineArgs::parsedArgs();
+		app = new KApplication;
+		ktechlab = new KTechlab;
 
-    }
-    void cleanupTestCase() {
-        delete ktechlab;
-        ktechlab = NULL;
-        //delete app; // this crashes apparently
-        app = NULL;
-    }
+	}
+	void cleanupTestCase() {
+		delete ktechlab;
+		ktechlab = nullptr;
+		// TODO : Isn't this the POINT of a test?
+		//delete app; // this crashes apparently
+		app = nullptr;
+	}
 
-    void testDocumentOpen() {
-        DocManager::self()->closeAll();
-        QCOMPARE( DocManager::self()->m_documentList.size(), 0);
-        QFile exFile(SRC_TESTS_DATA_DIR "test-document-draw-1.circuit");
-        KUrl exUrl(exFile.fileName());
-        qDebug() << "open example: " << exUrl;
-        DocManager::self()->openURL(exUrl, NULL);
-        QCOMPARE( DocManager::self()->m_documentList.size(), 1);
-        Document *doc = DocManager::self()->m_documentList.first();
-        QVERIFY( doc != NULL );
-        QCOMPARE( doc->type(), Document::dt_circuit );
-        CircuitDocument *circDoc = static_cast<CircuitDocument*>( doc );
-        QVERIFY( circDoc != NULL );
-        QVERIFY( circDoc->m_canvas );
-        qDebug() << "item list size " << circDoc->m_itemList.size();
+	void testDocumentOpen() {
+		DocManager::self()->closeAll();
+		QCOMPARE( DocManager::self()->m_documentList.size(), 0);
+		QFile exFile(SRC_TESTS_DATA_DIR "test-document-draw-1.circuit");
+		KUrl exUrl(exFile.fileName());
+		qDebug() << "open example: " << exUrl;
+		DocManager::self()->openURL(exUrl, NULL);
+		QCOMPARE( DocManager::self()->m_documentList.size(), 1);
+		Document *doc = DocManager::self()->m_documentList.first();
+		QVERIFY( doc != NULL );
+		QCOMPARE( doc->type(), Document::dt_circuit );
+		CircuitDocument *circDoc = static_cast<CircuitDocument*>( doc );
+		QVERIFY( circDoc != NULL );
+		QVERIFY( circDoc->m_canvas );
+		qDebug() << "item list size " << circDoc->m_itemList.size();
 
-        //QRect saveArea = circDoc->m_canvas->rect();   // is empty
-        QRect resizeArea(0, -500, 400, 1080);
-        qDebug() << " resizeArea " << resizeArea;
-        circDoc->m_canvas->resize(resizeArea);
+		//QRect saveArea = circDoc->m_canvas->rect();   // is empty
+		QRect resizeArea(0, -500, 400, 1080);
+		qDebug() << " resizeArea " << resizeArea;
+		circDoc->m_canvas->resize(resizeArea);
 
-        QRect saveArea(-500, -500, 1040, 1080);
-        qDebug() << "save area " << saveArea;
-        QPixmap *outputImage = new QPixmap( saveArea.size() );
-        outputImage->fill(Qt::green);
+		QRect saveArea(-500, -500, 1040, 1080);
+		qDebug() << "save area " << saveArea;
+		QPixmap *outputImage = new QPixmap( saveArea.size() );
+		outputImage->fill(Qt::green);
 
-        circDoc->exportToImageDraw(saveArea, *outputImage);
+		circDoc->exportToImageDraw(saveArea, *outputImage);
 
-        QImage img = dynamic_cast<QPixmap*>(outputImage)->toImage();
-        img = img.copy();
-        QTemporaryFile imgFile("testDocumentOpen_output_XXXXXX.png");
-        imgFile.setAutoRemove(false);
-        imgFile.open();
-        qDebug() << "imgFile.fileName() = " << imgFile.fileName();
-        bool saveResult = img.save(imgFile.fileName());
-        QCOMPARE( saveResult, true );
+		QImage img = dynamic_cast<QPixmap*>(outputImage)->toImage();
+		img = img.copy();
+		QTemporaryFile imgFile("testDocumentOpen_output_XXXXXX.png");
+		imgFile.setAutoRemove(false);
+		imgFile.open();
+		qDebug() << "imgFile.fileName() = " << imgFile.fileName();
+		bool saveResult = img.save(imgFile.fileName());
+		QCOMPARE( saveResult, true );
 
-        delete outputImage;
+		delete outputImage;
 
-        DocManager::self()->closeAll();
-        QCOMPARE( DocManager::self()->m_documentList.size(), 0);
-    }
+		DocManager::self()->closeAll();
+		QCOMPARE( DocManager::self()->m_documentList.size(), 0);
+	}
 };
 
 QTEST_MAIN(KtlTestsAppFixture)

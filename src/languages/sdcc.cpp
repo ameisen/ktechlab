@@ -21,30 +21,32 @@
 
 #include <ktlconfig.h>
 
-SDCC::SDCC( ProcessChain * processChain )
-	: ExternalLanguage( processChain, "SDCC" )
-{
-	m_successfulMessage = i18n("*** Compilation successful ***");
-	m_failedMessage = i18n("*** Compilation failed ***");
-}
+SDCC::SDCC(ProcessChain * processChain) :
+	ExternalLanguage(
+		processChain,
+		"SDCC",
+		"*** Compilation successful ***",
+		"*** Compilation failed ***"
+	)
+{}
 
 SDCC::~SDCC()
 {
 }
 
-void SDCC::processInput( ProcessOptions options )
+void SDCC::processInput(const ProcessOptions &options)
 {
 	resetLanguageProcess();
-	
+
 	MicroInfo * info = MicroLibrary::self()->microInfoWithID( options.m_picID );
 	if (!info)
 	{
 		outputError( i18n("Could not find PIC with ID \"%1\".", options.m_picID) );
 		return;
 	}
-	
-	m_processOptions = options;
-	
+
+	processOptions_ = options;
+
     if ( KTLConfig::sDCC_install_prefix().isEmpty()) {
         qDebug() << Q_FUNC_INFO << "using system sdcc";
         *m_languageProcess << ("sdcc");
@@ -52,7 +54,7 @@ void SDCC::processInput( ProcessOptions options )
         qDebug() << Q_FUNC_INFO << "using sdcc at " << KTLConfig::sDCC_install_prefix();
         *m_languageProcess << ( KTLConfig::sDCC_install_prefix().append("/bin/sdcc") );
     }
-	
+
 	//BEGIN Pass custom sdcc options
 #define ARG(text,option) if ( KTLConfig::text() ) *m_languageProcess << ( QString("--%1").arg(option) );
 	// General
@@ -62,7 +64,7 @@ void SDCC::processInput( ProcessOptions options )
 	ARG( sDCC_std_c89,			"std-c89" )
 	ARG( sDCC_std_c99,			"std-c99" )
     ARG( sDCC_use_non_free,   "use-non-free" );
-	
+
 	// Code generation
 	ARG( sDCC_stack_auto,			"stack-auto" )
 	ARG( sDCC_int_long_reent,		"int-long-reent" )
@@ -70,7 +72,7 @@ void SDCC::processInput( ProcessOptions options )
 	ARG( sDCC_fommit_frame_pointer,	"fommit-frame-pointer" )
 	ARG( sDCC_no_xinit_opt,			"no-xinit-opt" )
 	ARG( sDCC_all_callee_saves,		"all-callee-saves" )
-	
+
 	// Optimization
 	ARG( sDCC_nooverlay,			"nooverlay" )
 	ARG( sDCC_nogcse,			"nogcse" )
@@ -83,7 +85,7 @@ void SDCC::processInput( ProcessOptions options )
 	ARG( sDCC_opt_code_speed,		"opt-code-speed" )
 	ARG( sDCC_peep_asm,			"peep-asm" )
 	ARG( sDCC_nojtbound,			"nojtbound" )
-	
+
 	// PIC16 Specific
 	if ( info->instructionSet()->set() == AsmInfo::PIC16 )
 	{
@@ -118,11 +120,11 @@ void SDCC::processInput( ProcessOptions options )
 		*m_languageProcess << ( KTLConfig::miscSDCCOptions().split(QRegExp(" ")) );
     }
 	//END Pass custom sdcc options
-	
-	
+
+
 	*m_languageProcess << ("--debug"); // Enable debugging symbol output
 	*m_languageProcess << ("-S"); // Compile only; do not assemble or link
-	
+
 	QString asmSwitch;
 	switch ( info->instructionSet()->set() )
 	{
@@ -137,16 +139,16 @@ void SDCC::processInput( ProcessOptions options )
 			asmSwitch = "-mpic16";
 			break;
 	}
-	
+
 	*m_languageProcess << (asmSwitch);
-	
+
 	*m_languageProcess << ( "-"+options.m_picID.toLower() );
-	
+
 	*m_languageProcess << ( options.inputFiles().first() );
-	
+
 	*m_languageProcess << ("-o");
 	*m_languageProcess << ( options.intermediaryOutput() );
-	
+
 	if ( !start() )
 	{
 		KMessageBox::sorry( LanguageManager::self()->logView(), i18n("Compilation failed. Please check you have sdcc installed.") );
@@ -169,7 +171,7 @@ bool SDCC::isStderrOutputFatal( const QString & message ) const
     qDebug() << Q_FUNC_INFO << "message=" << message;
 	if ( message.startsWith("Processor:") )
 		return false;
-	
+
     return false; // note: return code from SDCC will tell if anything is fatal
 	//return true; // 2017.06.18 - by default stderr messages are not fatal
 }
@@ -181,49 +183,25 @@ bool SDCC::isWarning( const QString &message ) const
 	return false;
 }
 
-ProcessOptions::ProcessPath::Path SDCC::outputPath( ProcessOptions::ProcessPath::Path inputPath ) const
+ProcessOptions::Path SDCC::outputPath( ProcessOptions::Path inputPath ) const
 {
 	switch (inputPath)
 	{
-		case ProcessOptions::ProcessPath::C_AssemblyRelocatable:
-			return ProcessOptions::ProcessPath::None;
-			
-		case ProcessOptions::ProcessPath::C_Library:
-			return ProcessOptions::ProcessPath::AssemblyRelocatable_Library;
-			
-		case ProcessOptions::ProcessPath::C_Object:
-			return ProcessOptions::ProcessPath::AssemblyRelocatable_Object;
-			
-		case ProcessOptions::ProcessPath::C_PIC:
-			return ProcessOptions::ProcessPath::AssemblyAbsolute_PIC;
-			
-		case ProcessOptions::ProcessPath::C_Program:
-			return ProcessOptions::ProcessPath::AssemblyRelocatable_Program;
-			
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_PIC:
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_Program:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Library:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Object:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_PIC:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Program:
-		case ProcessOptions::ProcessPath::FlowCode_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::FlowCode_Microbe:
-		case ProcessOptions::ProcessPath::FlowCode_PIC:
-		case ProcessOptions::ProcessPath::FlowCode_Program:
-		case ProcessOptions::ProcessPath::Microbe_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Microbe_PIC:
-		case ProcessOptions::ProcessPath::Microbe_Program:
-		case ProcessOptions::ProcessPath::Object_Disassembly:
-		case ProcessOptions::ProcessPath::Object_Library:
-		case ProcessOptions::ProcessPath::Object_PIC:
-		case ProcessOptions::ProcessPath::Object_Program:
-		case ProcessOptions::ProcessPath::PIC_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Program_Disassembly:
-		case ProcessOptions::ProcessPath::Program_PIC:
-		case ProcessOptions::ProcessPath::Invalid:
-		case ProcessOptions::ProcessPath::None:
-			return ProcessOptions::ProcessPath::Invalid;
+		case ProcessOptions::Path::AssemblyRelocatable_Library:
+			return ProcessOptions::Path::AssemblyRelocatable_Library;
+
+		case ProcessOptions::Path::AssemblyRelocatable_Object:
+			return ProcessOptions::Path::AssemblyRelocatable_Object;
+
+		case ProcessOptions::Path::AssemblyRelocatable_PIC:
+			return ProcessOptions::Path::AssemblyAbsolute_PIC;
+
+		case ProcessOptions::Path::AssemblyRelocatable_Program:
+			return ProcessOptions::Path::AssemblyRelocatable_Program;
+
+		default:
+			return ProcessOptions::Path::Invalid;
 	}
-	
-	return ProcessOptions::ProcessPath::Invalid;
+
+	return ProcessOptions::Path::Invalid;
 }

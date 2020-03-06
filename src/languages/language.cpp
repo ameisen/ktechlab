@@ -1,13 +1,3 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include "asmparser.h"
 #include "ktechlab.h"
 #include "logview.h"
@@ -17,129 +7,124 @@
 #include "projectmanager.h"
 #include "languagemanager.h"
 
-#include <qdebug.h>
-//#include <kio/netaccess.h>
 #include <kmessagebox.h>
 #include <kprocess.h>
 
-#include <qregexp.h>
-#include <qtimer.h>
+#include <QDebug>
+#include <QRegExp>
+#include <QTimer>
 
 #include <ktlconfig.h>
 
 //BEGIN class Language
-Language::Language( ProcessChain *processChain, const QString &name )
-	: QObject( KTechlab::self() /*, name */ )
+Language::Language(
+	ProcessChain *processChain,
+	const QString &name,
+	const QString &successMessage,
+	const QString &failureMessage
+) :
+	QObject(KTechlab::self()),
+	successMessage_(i18n(successMessage)),
+	failureMessage_(i18n(failureMessage)),
+	processChain_(processChain)
 {
-    setObjectName(name);
-	p_processChain = processChain;
+	setObjectName(name);
 }
 
-
-Language::~Language()
-{
+void Language::outputMessage(const QString &message) {
+	LanguageManager::self()->slotMessage(
+		message,
+		extractMessageInfo(message)
+	);
 }
 
-
-void Language::outputMessage( const QString &message )
-{
-	LanguageManager::self()->slotMessage( message, extractMessageInfo(message) );
+void Language::outputWarning(const QString &message) {
+	LanguageManager::self()->slotWarning(
+		message, extractMessageInfo(message)
+	);
 }
 
-
-void Language::outputWarning( const QString &message )
-{
-	LanguageManager::self()->slotWarning( message, extractMessageInfo(message) );
+void Language::outputError(const QString &message) {
+	LanguageManager::self()->slotError(
+		message,
+		extractMessageInfo(message)
+	);
+	++errorCount_;
 }
 
-
-void Language::outputError( const QString &message )
-{
-	LanguageManager::self()->slotError( message, extractMessageInfo(message) );
-	m_errorCount++;
-}
-
-
-void Language::finish( bool successful )
-{
-	if (successful)
-	{
-		outputMessage(m_successfulMessage + "\n");
-		KTechlab::self()->slotChangeStatusbar(m_successfulMessage);
-
-		ProcessOptions::ProcessPath::Path newPath = outputPath( m_processOptions.processPath() );
-
-		if ( newPath == ProcessOptions::ProcessPath::None )
-			emit processSucceeded(this);
-
-		else if (p_processChain)
-		{
-			m_processOptions.setInputFiles( QStringList( m_processOptions.intermediaryOutput() ) );
-			m_processOptions.setIntermediaryOutput( m_processOptions.targetFile() );
-			m_processOptions.setProcessPath(newPath);
-// 			p_processChain->compile(m_processOptions);
-			p_processChain->setProcessOptions(m_processOptions);
-			p_processChain->compile();
-		}
-	}
-	else
-	{
-		outputError(m_failedMessage + "\n");
-		KTechlab::self()->slotChangeStatusbar(m_failedMessage);
+void Language::finish(Result result) {
+	if (result == Result::Failure) {
+		outputError(failureMessage_ + "\n");
+		KTechlab::self()->slotChangeStatusbar(failureMessage_);
 		emit processFailed(this);
 		return;
 	}
+
+	outputMessage(successMessage_ + "\n");
+	KTechlab::self()->slotChangeStatusbar(successMessage_);
+
+	auto newPath = outputPath(processOptions_.processPath());
+
+	if (newPath == ProcessOptions::Path::None) {
+		emit processSucceeded(this);
+	}
+	else if (processChain_) {
+		processOptions_.setInputFiles({ processOptions_.intermediaryOutput() });
+		processOptions_.setIntermediaryOutput(processOptions_.targetFile());
+		processOptions_.setProcessPath(newPath);
+		processChain_->setProcessOptions(processOptions_);
+		processChain_->compile();
+	}
 }
 
-
-void Language::reset()
-{
-	m_errorCount = 0;
+void Language::reset() {
+	errorCount_ = 0;
 }
 
+MessageInfo Language::extractMessageInfo(const QString &text) {
+	if (!text.startsWith("/")) {
+		return MessageInfo{};
+	}
 
-MessageInfo Language::extractMessageInfo( const QString &text )
-{
-	if ( !text.startsWith("/") )
-		return MessageInfo();
+	const int index = text.indexOf(
+		":",
+		0,
+		Qt::CaseInsensitive
+	);
+	if (index == -1) {
+		return MessageInfo{};
+	}
 
-	const int index = text.indexOf( ":", 0, Qt::CaseInsensitive );
-	if ( index == -1 )
-		return MessageInfo();
-	const QString fileName = text.left(index);
+	const auto fileName = text.left(index);
 
 	// Extra line number
-	const QString message = text.right(text.length()-index);
-	const int linePos = message.indexOf( QRegExp(":[\\d]+") );
+	const auto message = text.right(text.length() - index);
+	const int linePos = message.indexOf(QRegExp(":[\\d]+"));
 	int line = -1;
-	if ( linePos != -1 )
-	{
-		const int linePosEnd = message.indexOf( ':', linePos+1 );
-		if ( linePosEnd != -1 )
-		{
-			const QString number = message.mid( linePos+1, linePosEnd-linePos-1 ).trimmed();
-			bool ok;
-			line = number.toInt(&ok)-1;
+	if (linePos != -1) {
+		const int linePosEnd = message.indexOf(':', linePos + 1);
+		if (linePosEnd != -1) {
+			const QString number = message.mid(
+				linePos + 1,
+				linePosEnd - linePos - 1
+			).trimmed();
+			bool ok = false;
+			line = number.toInt(&ok) - 1;
 			if (!ok) line = -1;
 		}
 	}
-	return MessageInfo( fileName, line );
+	return MessageInfo(
+		fileName,
+		line
+	);
 }
 //END class Language
 
-
-
 //BEGIN class ProcessOptionsSpecial
-ProcessOptionsSpecial::ProcessOptionsSpecial()
+ProcessOptionsSpecial::ProcessOptionsSpecial() :
+	b_addToProject(ProjectManager::self()->currentProject())
 {
-	m_bOutputMapFile = true;
-	b_forceList = true;
-	b_addToProject = ProjectManager::self()->currentProject();
-
-	p_flowCodeDocument = 0l;
-
-	switch ( KTLConfig::hexFormat() )
-	{
+	switch (KTLConfig::hexFormat()) {
 		case KTLConfig::EnumHexFormat::inhx8m:
 			m_hexFormat = "inhx8m";
 			break;
@@ -160,392 +145,358 @@ ProcessOptionsSpecial::ProcessOptionsSpecial()
 }
 //END class ProcessOptionsSpecial
 
-
 //BEGIN class ProcessOptions
-ProcessOptions::ProcessOptions()
+ProcessOptions::ProcessOptions(const OutputMethodInfo &info) :
+	helper_(new ProcessOptionsHelper)
 {
-	m_pHelper = new ProcessOptionsHelper;
+	setTargetFile(info.outputFile().path());
 
-	b_targetFileSet = false;
-	m_pTextOutputTarget = 0l;
-}
+	Super::m_picID = info.picID();
+	Super::b_addToProject = info.addToProject();
 
-
-ProcessOptions::ProcessOptions( OutputMethodInfo info )
-{
-	m_pHelper = new ProcessOptionsHelper;
-
-	b_addToProject = info.addToProject();
-	m_picID = info.picID();
-	b_targetFileSet = false;
-
-	setTargetFile( info.outputFile().path() );
-
-	switch ( info.method() )
-	{
+	switch (info.method()) {
 		case OutputMethodInfo::Method::Direct:
-			m_method = Method::LoadAsNew;
+			method_ = Method::LoadAsNew;
 			break;
 
+		default:
 		case OutputMethodInfo::Method::SaveAndForget:
-			m_method = Method::Forget;
+			method_ = Method::Forget;
 			break;
 
 		case OutputMethodInfo::Method::SaveAndLoad:
-			m_method = Method::Load;
+			method_ = Method::Load;
 			break;
 	}
 }
 
-
-void ProcessOptions::setTextOutputTarget( TextDocument * target, QObject * receiver, const char * slot )
-{
-	m_pTextOutputTarget = target;
-	QObject::connect( m_pHelper, SIGNAL(textOutputtedTo( TextDocument* )), receiver, slot );
+void ProcessOptions::setTextOutputTarget(TextDocument *target, QObject *receiver, const char *slot) {
+	textOutputTarget_ = target;
+	QObject::connect(
+		helper_,
+		SIGNAL(textOutputtedTo(TextDocument *)),
+		receiver,
+		slot
+	);
 }
 
-
-void ProcessOptions::setTextOutputtedTo( TextDocument * outputtedTo )
-{
-	m_pTextOutputTarget = outputtedTo;
-	emit m_pHelper->textOutputtedTo( m_pTextOutputTarget );
+void ProcessOptions::setTextOutputtedTo(TextDocument *outputtedTo) {
+	textOutputTarget_ = outputtedTo;
+	emit helper_->textOutputtedTo(textOutputTarget_);
 }
 
-
-void ProcessOptions::setTargetFile( const QString &file )
-{
-	if (b_targetFileSet)
-	{
+void ProcessOptions::setTargetFile(const QString &file) {
+	if (targetFileSet_) {
 		qWarning() << "Trying to reset target file!"<<endl;
 		return;
 	}
-	m_targetFile = file;
-	m_intermediaryFile = file;
-	b_targetFileSet = true;
+	targetFile_ = file;
+	intermediaryFile_ = file;
+	targetFileSet_ = true;
 }
 
-
-ProcessOptions::ProcessPath::MediaType ProcessOptions::guessMediaType( const QString & url )
-{
+ProcessOptions::MediaType ProcessOptions::guessMediaType(const QString &url) {
 	QString extension = url.right( url.length() - url.lastIndexOf('.') - 1 );
 	extension = extension.toLower();
 
-	if ( extension == "asm" )
-	{
+	// TODO : Replace with a hash-switch
+	if (extension == "asm") {
 		// We'll have to look at the file contents to determine its type...
-		AsmParser p( url );
+		AsmParser p = AsmParser(url);
 		p.parse();
-		switch ( p.type() )
-		{
-			case AsmParser::Relocatable:
-				return ProcessPath::AssemblyRelocatable;
 
-			case AsmParser::Absolute:
-				return ProcessPath::AssemblyAbsolute;
+		switch (p.type()) {
+			case AsmParser::Type::Relocatable:
+				return MediaType::AssemblyRelocatable;
+
+			case AsmParser::Type::Absolute:
+				return MediaType::AssemblyAbsolute;
 		}
 	}
 
-	if ( extension == "c" )
-		return ProcessPath::C;
+	if (extension == "c")
+		return MediaType::AssemblyRelocatable;
 
-	if ( extension == "flowcode" )
-		return ProcessPath::FlowCode;
+	if (extension == "flowcode")
+		return MediaType::FlowCode;
 
-	if ( extension == "a" || extension == "lib" )
-		return ProcessPath::Library;
+	if (extension == "a" || extension == "lib")
+		return MediaType::Library;
 
-	if ( extension == "microbe" || extension == "basic" )
-		return ProcessPath::Microbe;
+	if (extension == "microbe" || extension == "basic")
+		return MediaType::Microbe;
 
-	if ( extension == "o" )
-		return ProcessPath::Object;
+	if (extension == "o")
+		return MediaType::Object;
 
-	if ( extension == "hex" )
-		return ProcessPath::Program;
+	if (extension == "hex")
+		return MediaType::Program;
 
-	return ProcessPath::Unknown;
+	return MediaType::Unknown;
 }
 
 
-ProcessOptions::ProcessPath::Path ProcessOptions::ProcessPath::path( MediaType from, MediaType to )
-{
-	switch (from)
-	{
-		case AssemblyAbsolute:
-			switch (to)
-			{
-				case AssemblyAbsolute:
-					return None;
-				case Pic:
-					return AssemblyAbsolute_PIC;
-				case Program:
-					return AssemblyAbsolute_Program;
-
-				case AssemblyRelocatable:
-				case C:
-				case Disassembly:
-				case FlowCode:
-				case Library:
-				case Microbe:
-				case Object:
-				case Unknown:
-					return Invalid;
+ProcessOptions::Path ProcessOptions::path(MediaType from, MediaType to) {
+	switch (from) {
+		case MediaType::AssemblyAbsolute:
+			switch (to) {
+				case MediaType::AssemblyAbsolute:
+					return Path::None;
+				case MediaType::Pic:
+					return Path::AssemblyAbsolute_PIC;
+				case MediaType::Program:
+					return Path::AssemblyAbsolute_Program;
+				case MediaType::AssemblyRelocatable:
+				case MediaType::C:
+				case MediaType::Disassembly:
+				case MediaType::FlowCode:
+				case MediaType::Library:
+				case MediaType::Microbe:
+				case MediaType::Object:
+				case MediaType::Unknown:
+					return Path::Invalid;
 			}
+			_fallthrough;
 
-		case AssemblyRelocatable:
-			switch (to)
-			{
-				case Library:
-					return AssemblyRelocatable_Library;
-				case Object:
-					return AssemblyRelocatable_Object;
-				case Pic:
-					return AssemblyRelocatable_PIC;
-				case Program:
-					return AssemblyRelocatable_Program;
-
-				case AssemblyAbsolute:
-				case AssemblyRelocatable:
-				case C:
-				case Disassembly:
-				case FlowCode:
-				case Microbe:
-				case Unknown:
-					return Invalid;
+		case MediaType::AssemblyRelocatable:
+			switch (to) {
+				case MediaType::Library:
+					return Path::AssemblyRelocatable_Library;
+				case MediaType::Object:
+					return Path::AssemblyRelocatable_Object;
+				case MediaType::Pic:
+					return Path::AssemblyRelocatable_PIC;
+				case MediaType::Program:
+					return Path::AssemblyRelocatable_Program;
+				case MediaType::AssemblyAbsolute:
+				case MediaType::AssemblyRelocatable:
+				case MediaType::C:
+				case MediaType::Disassembly:
+				case MediaType::FlowCode:
+				case MediaType::Microbe:
+				case MediaType::Unknown:
+					return Path::Invalid;
 			}
+			_fallthrough;
 
-		case C:
-			switch (to)
-			{
-				case AssemblyRelocatable:
-					return C_AssemblyRelocatable;
-				case Library:
-					return C_Library;
-				case Object:
-					return C_Object;
-				case Pic:
-					return C_PIC;
-				case Program:
-					return C_Program;
-
-				case AssemblyAbsolute:
-				case C:
-				case Disassembly:
-				case FlowCode:
-				case Microbe:
-				case Unknown:
-					return Invalid;
+		case MediaType::C:
+			switch (to) {
+				case MediaType::AssemblyRelocatable:
+					return Path::C_AssemblyRelocatable;
+				case MediaType::Library:
+					return Path::C_Library;
+				case MediaType::Object:
+					return Path::C_Object;
+				case MediaType::Pic:
+					return Path::C_PIC;
+				case MediaType::Program:
+					return Path::C_Program;
+				case MediaType::AssemblyAbsolute:
+				case MediaType::C:
+				case MediaType::Disassembly:
+				case MediaType::FlowCode:
+				case MediaType::Microbe:
+				case MediaType::Unknown:
+					return Path::Invalid;
 			}
+			_fallthrough;
 
-		case Disassembly:
-			return Invalid;
+		case MediaType::Disassembly:
+			return Path::Invalid;
 
-		case FlowCode:
-			switch (to)
-			{
-				case AssemblyAbsolute:
-					return FlowCode_AssemblyAbsolute;
-				case Microbe:
-					return FlowCode_Microbe;
-				case Pic:
-					return FlowCode_PIC;
-				case Program:
-					return FlowCode_Program;
-
-				case AssemblyRelocatable:
-				case C:
-				case Disassembly:
-				case FlowCode:
-				case Library:
-				case Object:
-				case Unknown:
-					return Invalid;
+		case MediaType::FlowCode:
+			switch (to) {
+				case MediaType::AssemblyAbsolute:
+					return Path::FlowCode_AssemblyAbsolute;
+				case MediaType::Microbe:
+					return Path::FlowCode_Microbe;
+				case MediaType::Pic:
+					return Path::FlowCode_PIC;
+				case MediaType::Program:
+					return Path::FlowCode_Program;
+				case MediaType::AssemblyRelocatable:
+				case MediaType::C:
+				case MediaType::Disassembly:
+				case MediaType::FlowCode:
+				case MediaType::Library:
+				case MediaType::Object:
+				case MediaType::Unknown:
+					return Path::Invalid;
 			}
+			_fallthrough;
 
-		case Library:
-			return Invalid;
+		case MediaType::Library:
+			return Path::Invalid;
 
-		case Microbe:
-			switch (to)
-			{
-				case AssemblyAbsolute:
-					return Microbe_AssemblyAbsolute;
-				case Pic:
-					return Microbe_PIC;
-				case Program:
-					return Microbe_Program;
-
-				case AssemblyRelocatable:
-				case C:
-				case Disassembly:
-				case FlowCode:
-				case Library:
-				case Microbe:
-				case Object:
-				case Unknown:
-					return Invalid;
+		case MediaType::Microbe:
+			switch (to) {
+				case MediaType::AssemblyAbsolute:
+					return Path::Microbe_AssemblyAbsolute;
+				case MediaType::Pic:
+					return Path::Microbe_PIC;
+				case MediaType::Program:
+					return Path::Microbe_Program;
+				case MediaType::AssemblyRelocatable:
+				case MediaType::C:
+				case MediaType::Disassembly:
+				case MediaType::FlowCode:
+				case MediaType::Library:
+				case MediaType::Microbe:
+				case MediaType::Object:
+				case MediaType::Unknown:
+					return Path::Invalid;
 			}
+			_fallthrough;
 
-		case Object:
-			switch (to)
-			{
-				case Disassembly:
-					return Object_Disassembly;
-				case Library:
-					return Object_Library;
-				case Pic:
-					return Object_PIC;
-				case Program:
-					return Object_Program;
-
-				case AssemblyAbsolute:
-				case AssemblyRelocatable:
-				case C:
-				case FlowCode:
-				case Microbe:
-				case Object:
-				case Unknown:
-					return Invalid;
+		case MediaType::Object:
+			switch (to) {
+				case MediaType::Disassembly:
+					return Path::Object_Disassembly;
+				case MediaType::Library:
+					return Path::Object_Library;
+				case MediaType::Pic:
+					return Path::Object_PIC;
+				case MediaType::Program:
+					return Path::Object_Program;
+				case MediaType::AssemblyAbsolute:
+				case MediaType::AssemblyRelocatable:
+				case MediaType::C:
+				case MediaType::FlowCode:
+				case MediaType::Microbe:
+				case MediaType::Object:
+				case MediaType::Unknown:
+					return Path::Invalid;
 			}
+			_fallthrough;
 
-		case Pic:
-			return Invalid;
+		case MediaType::Pic:
+			return Path::Invalid;
 
-		case Program:
-			switch (to)
-			{
-				case Disassembly:
-					return Program_Disassembly;
-				case Pic:
-					return Program_PIC;
-
-				case AssemblyAbsolute:
-				case AssemblyRelocatable:
-				case C:
-				case FlowCode:
-				case Library:
-				case Microbe:
-				case Object:
-				case Program:
-				case Unknown:
-					return Invalid;
+		case MediaType::Program:
+			switch (to) {
+				case MediaType::Disassembly:
+					return Path::Program_Disassembly;
+				case MediaType::Pic:
+					return Path::Program_PIC;
+				case MediaType::AssemblyAbsolute:
+				case MediaType::AssemblyRelocatable:
+				case MediaType::C:
+				case MediaType::FlowCode:
+				case MediaType::Library:
+				case MediaType::Microbe:
+				case MediaType::Object:
+				case MediaType::Program:
+				case MediaType::Unknown:
+					return Path::Invalid;
 			}
+			_fallthrough;
 
-		case Unknown:
-			return Invalid;
+		case MediaType::Unknown:
+			return Path::Invalid;
 	}
 
-	return Invalid;
+	return Path::Invalid;
 }
 
 
-ProcessOptions::ProcessPath::MediaType ProcessOptions::ProcessPath::from( Path path )
-{
-	switch (path)
-	{
-		case ProcessPath::AssemblyAbsolute_PIC:
-		case ProcessPath::AssemblyAbsolute_Program:
-			return AssemblyAbsolute;
+ProcessOptions::MediaType ProcessOptions::from(Path path) {
+	switch (path) {
+		case Path::AssemblyAbsolute_PIC:
+		case Path::AssemblyAbsolute_Program:
+			return MediaType::AssemblyAbsolute;
 
-		case ProcessPath::AssemblyRelocatable_Library:
-		case ProcessPath::AssemblyRelocatable_Object:
-		case ProcessPath::AssemblyRelocatable_PIC:
-		case ProcessPath::AssemblyRelocatable_Program:
-			return AssemblyRelocatable;
+		case Path::AssemblyRelocatable_Library:
+		case Path::AssemblyRelocatable_Object:
+		case Path::AssemblyRelocatable_PIC:
+		case Path::AssemblyRelocatable_Program:
+		case Path::C_AssemblyRelocatable:
+		case Path::C_Library:
+			return MediaType::AssemblyRelocatable;
 
-		case ProcessPath::C_AssemblyRelocatable:
-		case ProcessPath::C_Library:
-		case ProcessPath::C_Object:
-		case ProcessPath::C_PIC:
-		case ProcessPath::C_Program:
-			return C;
+		case Path::FlowCode_AssemblyAbsolute:
+		case Path::FlowCode_Microbe:
+		case Path::FlowCode_PIC:
+		case Path::FlowCode_Program:
+			return MediaType::FlowCode;
 
-		case ProcessPath::FlowCode_AssemblyAbsolute:
-		case ProcessPath::FlowCode_Microbe:
-		case ProcessPath::FlowCode_PIC:
-		case ProcessPath::FlowCode_Program:
-			return FlowCode;
+		case Path::Microbe_AssemblyAbsolute:
+		case Path::Microbe_PIC:
+		case Path::Microbe_Program:
+			return MediaType::Microbe;
 
-		case ProcessPath::Microbe_AssemblyAbsolute:
-		case ProcessPath::Microbe_PIC:
-		case ProcessPath::Microbe_Program:
-			return Microbe;
+		case Path::Object_Disassembly:
+		case Path::Object_Library:
+		case Path::Object_PIC:
+		case Path::Object_Program:
+		case Path::C_Object:
+			return MediaType::Object;
 
-		case ProcessPath::Object_Disassembly:
-		case ProcessPath::Object_Library:
-		case ProcessPath::Object_PIC:
-		case ProcessPath::Object_Program:
-			return Object;
+		case Path::PIC_AssemblyAbsolute:
+		case Path::C_PIC:
+			return MediaType::Pic;
 
-		case ProcessPath::PIC_AssemblyAbsolute:
-			return Pic;
+		case Path::Program_Disassembly:
+		case Path::Program_PIC:
+		case Path::C_Program:
+			return MediaType::Program;
 
-		case ProcessPath::Program_Disassembly:
-		case ProcessPath::Program_PIC:
-			return Program;
-
-		case ProcessPath::Invalid:
-		case ProcessPath::None:
-			return Unknown;
+		case Path::Invalid:
+		case Path::None:
+			return MediaType::Unknown;
 	}
 
-	return Unknown;
+	return MediaType::Unknown;
 }
 
 
-ProcessOptions::ProcessPath::MediaType ProcessOptions::ProcessPath::to( Path path )
-{
-	switch (path)
-	{
-		case ProcessPath::FlowCode_AssemblyAbsolute:
-		case ProcessPath::Microbe_AssemblyAbsolute:
-		case ProcessPath::PIC_AssemblyAbsolute:
-			return AssemblyAbsolute;
+ProcessOptions::MediaType ProcessOptions::to(Path path) {
+	switch (path) {
+		case Path::FlowCode_AssemblyAbsolute:
+		case Path::Microbe_AssemblyAbsolute:
+		case Path::PIC_AssemblyAbsolute:
+			return MediaType::AssemblyAbsolute;
 
-		case ProcessPath::C_AssemblyRelocatable:
-			return AssemblyRelocatable;
+		case Path::Object_Disassembly:
+		case Path::Program_Disassembly:
+			return MediaType::Disassembly;
 
-		case ProcessPath::Object_Disassembly:
-		case ProcessPath::Program_Disassembly:
-			return Disassembly;
+		case Path::AssemblyRelocatable_Library:
+		case Path::Object_Library:
+		case Path::C_Library:
+			return MediaType::Library;
 
-		case ProcessPath::AssemblyRelocatable_Library:
-		case ProcessPath::C_Library:
-		case ProcessPath::Object_Library:
-			return Library;
+		case Path::FlowCode_Microbe:
+			return MediaType::Microbe;
 
-		case ProcessPath::FlowCode_Microbe:
-			return Microbe;
+		case Path::AssemblyRelocatable_Object:
+		case Path::C_AssemblyRelocatable:
+		case Path::C_Object:
+			return MediaType::Object;
 
-		case ProcessPath::AssemblyRelocatable_Object:
-		case ProcessPath::C_Object:
-			return Object;
+		case Path::AssemblyAbsolute_PIC:
+		case Path::AssemblyRelocatable_PIC:
+		case Path::FlowCode_PIC:
+		case Path::Microbe_PIC:
+		case Path::Object_PIC:
+		case Path::Program_PIC:
+		case Path::C_PIC:
+			return MediaType::Pic;
 
-		case ProcessPath::AssemblyAbsolute_PIC:
-		case ProcessPath::AssemblyRelocatable_PIC:
-		case ProcessPath::C_PIC:
-		case ProcessPath::FlowCode_PIC:
-		case ProcessPath::Microbe_PIC:
-		case ProcessPath::Object_PIC:
-		case ProcessPath::Program_PIC:
-			return Pic;
+		case Path::AssemblyAbsolute_Program:
+		case Path::AssemblyRelocatable_Program:
+		case Path::FlowCode_Program:
+		case Path::Microbe_Program:
+		case Path::Object_Program:
+		case Path::C_Program:
+			return MediaType::Program;
 
-		case ProcessPath::AssemblyAbsolute_Program:
-		case ProcessPath::AssemblyRelocatable_Program:
-		case ProcessPath::C_Program:
-		case ProcessPath::FlowCode_Program:
-		case ProcessPath::Microbe_Program:
-		case ProcessPath::Object_Program:
-			return Program;
-
-		case ProcessPath::Invalid:
-		case ProcessPath::None:
-			return Unknown;
+		case Path::Invalid:
+		case Path::None:
+			return MediaType::Unknown;
 	}
 
-	return Unknown;
+	return MediaType::Unknown;
 }
 //END class ProcessOptions
 
-
-#include "language.moc"
+#include "moc_language.cpp"

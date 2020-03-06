@@ -19,31 +19,32 @@
 #include <qbrush.h>
 
 
-static bool isCanvasDebugEnabled() {
-    return false;
+namespace {
+    static constexpr const bool isCanvasDebugEnabled = false;
 }
 
-KtlQCanvasItem::KtlQCanvasItem(KtlQCanvas* canvas)
-    : val(false), myx(0), myy(0), myz(0), cnv(canvas),
-     ext(0), m_bNeedRedraw(true), vis(false), sel(false)
+KtlQCanvasItem::KtlQCanvasItem(KtlQCanvas *canvas) :
+    cnv(canvas)
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
-    if (cnv) cnv->addItem(this);
+    if (cnv)
+        cnv->addItem(this);
 }
 
 
 KtlQCanvasItem::~KtlQCanvasItem()
 {
-    if (cnv) cnv->removeItem(this);
+    if (cnv)
+        cnv->removeItem(this);
     delete ext;
 }
 
 
 KtlQCanvasItemExtra& KtlQCanvasItem::extra()
 {
-    if ( !ext )
+    if (!ext)
         ext = new KtlQCanvasItemExtra;
     return *ext;
 }
@@ -51,11 +52,10 @@ KtlQCanvasItemExtra& KtlQCanvasItem::extra()
 
 void KtlQCanvasItem::setZ(double a)
 {
-    if ( myz == a )
-        return;
-    
+		if (myz == a) return;
+
     // remove and then add the item so that z-ordered list in canvas is updated
-    
+
     if (cnv)
         cnv->removeItem(this);
 
@@ -69,12 +69,12 @@ void KtlQCanvasItem::setZ(double a)
 
 void KtlQCanvasItem::moveBy(const double dx, const double dy )
 {
-    if ( dx || dy ) {
-        removeFromChunks();
-        myx += dx;
-        myy += dy;
-        addToChunks();
-    }
+    if ( !dx && !dy ) return;
+
+		removeFromChunks();
+		myx += dx;
+		myy += dy;
+		addToChunks();
 }
 
 
@@ -86,7 +86,7 @@ void KtlQCanvasItem::move(const double x, const double y )
 
 void KtlQCanvasItem::setCanvas(KtlQCanvas* c)
 {
-    bool v=isVisible();
+    bool v = isVisible();
     setVisible(false);
     if (cnv) {
         cnv->removeItem(this);
@@ -112,26 +112,27 @@ void KtlQCanvasItem::hide()
     setVisible(false);
 }
 
-void KtlQCanvasItem::setVisible(bool yes)
+void KtlQCanvasItem::setVisible(bool visible)
 {
-    if (vis != yes) {
-        if (yes) {
-            vis=(uint)yes;
-            addToChunks();
-        } else {
-            removeFromChunks();
-            vis=(uint)yes;
-        }
-    }
+	if (vis == visible) return;
+
+	if (visible) {
+			vis = visible;
+			addToChunks();
+	}
+	else {
+			removeFromChunks();
+			vis = visible;
+	}
 }
 
 
-void KtlQCanvasItem::setSelected(const bool yes)
+void KtlQCanvasItem::setSelected(const bool selected)
 {
-    if ((bool)sel!=yes) {
-        sel=(uint)yes;
-        changeChunks();
-    }
+	if (sel == selected) return;
+
+	sel = selected;
+	changeChunks();
 }
 
 
@@ -297,33 +298,29 @@ QPolygon KtlQCanvasItem::chunks() const
 */
 static const QPen& defaultPolygonPen()
 {
-    static QPen* dp=0;
-    if ( !dp )
-        dp = new QPen;
-    return *dp;
+	static QPen * const dp = new QPen;
+	return *dp;
 }
 
 static const QBrush& defaultPolygonBrush()
 {
-    static QBrush* db=0;
-    if ( !db )
-        db = new QBrush;
-    return *db;
+	static QBrush * const db = new QBrush;
+	return *db;
 }
 
-KtlQCanvasPolygonalItem::KtlQCanvasPolygonalItem(KtlQCanvas* canvas)
-    : KtlQCanvasItem(canvas),
-    br(defaultPolygonBrush()),
-    pn(defaultPolygonPen()), wind(false)
+KtlQCanvasPolygonalItem::KtlQCanvasPolygonalItem(KtlQCanvas* canvas) :
+	KtlQCanvasItem(canvas),
+  br(defaultPolygonBrush()),
+  pn(defaultPolygonPen())
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << "created KtlQCanvasPolygonalItem at " << this;
     }
 }
 
 KtlQCanvasPolygonalItem::~KtlQCanvasPolygonalItem()
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << "destroying KtlQCanvasPolygonalItem at " << this;
     }
 }
@@ -385,9 +382,9 @@ void KtlQCanvasPolygonalItem::setPen( const QPen & p )
 {
     if ( pn == p )
         return;
-    
+
     pn.setColor( p.color() );
-    
+
     // if only the color was different, then don't need to re-add to chunks
     if ( pn == p ) {
         changeChunks();
@@ -415,7 +412,7 @@ KtlQCanvasPolygon::KtlQCanvasPolygon(KtlQCanvas* canvas)
     , poly(new QPolygon)
     , guardAft()
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
 }
@@ -485,7 +482,7 @@ QPolygon KtlQCanvasPolygon::areaPoints() const
 KtlQCanvasLine::KtlQCanvasLine(KtlQCanvas* canvas)
     : KtlQCanvasPolygonalItem(canvas)
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
     x1 = y1 = x2 = y2 = 0;
@@ -565,11 +562,10 @@ void KtlQCanvasLine::moveBy(double dx, double dy)
 
 
 KtlQCanvasRectangle::KtlQCanvasRectangle(KtlQCanvas* canvas) :
-        KtlQCanvasPolygonalItem(canvas),
-    w(32), h(32)
+        KtlQCanvasPolygonalItem(canvas)
 {
     setObjectName("KtlQCanvasRectangle");
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
 }
@@ -581,7 +577,7 @@ KtlQCanvasRectangle::KtlQCanvasRectangle(const QRect& r, KtlQCanvas* canvas) :
 {
     setObjectName("KtlQCanvasRectangle");
     move(r.x(),r.y());
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
 }
@@ -593,7 +589,7 @@ KtlQCanvasRectangle::KtlQCanvasRectangle(int x, int y, int width, int height, Kt
 {
     setObjectName("KtlQCanvasRectangle");
     move(x,y);
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
 }
@@ -648,11 +644,9 @@ void KtlQCanvasRectangle::drawShape(QPainter &p)
 
 
 KtlQCanvasEllipse::KtlQCanvasEllipse(KtlQCanvas* canvas)
-    : KtlQCanvasPolygonalItem(canvas),
-    w(32), h(32),
-    a1(0), a2(360*16)
+    : KtlQCanvasPolygonalItem(canvas)
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
 }
@@ -663,10 +657,9 @@ KtlQCanvasEllipse::KtlQCanvasEllipse(KtlQCanvas* canvas)
  */
     KtlQCanvasEllipse::KtlQCanvasEllipse(int width, int height, KtlQCanvas* canvas)
     : KtlQCanvasPolygonalItem(canvas),
-    w(width),h(height),
-    a1(0),a2(360*16)
+    w(width),h(height)
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
 }
@@ -678,7 +671,7 @@ KtlQCanvasEllipse::KtlQCanvasEllipse(int width, int height,
     w(width),h(height),
     a1(startangle),a2(angle)
 {
-    if (isCanvasDebugEnabled()) {
+    if (isCanvasDebugEnabled) {
         qDebug() << Q_FUNC_INFO << " this=" << this;
     }
 }
@@ -757,4 +750,4 @@ void KtlQCanvasPolygonalItem::scanPolygon(const QPolygon& pa, int winding, KtlQP
     scanner.scan(pa,winding);
 }
 
-#include "canvasitems.moc"
+#include "moc_canvasitems.cpp"

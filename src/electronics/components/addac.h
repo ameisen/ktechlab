@@ -24,7 +24,7 @@ public:
 	public:
 		ADDAC( ICNDocument *icnDocument, bool newItem, const char *id = 0 );
 		~ADDAC() override;
-		
+
 	protected:
 		void dataChanged() override;
 		/**
@@ -45,19 +45,19 @@ class ADC : public ADDAC
 	public:
 		ADC( ICNDocument *icnDocument, bool newItem, const char *id = 0 );
 		~ADC() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-	
+
 		void stepNonLogic() override;
 		bool doesStepNonLogic() const override { return true; }
-	
+
 	protected:
 		/**
 		 * Add / remove pins according to the number of outputs the user has requested
 		 */
 		void initPins() override;
-	
+
 		LogicOut *m_logic[max_ADDAC_bits];
 		ECNode *m_realNode;
 };
@@ -71,19 +71,19 @@ class DAC : public ADDAC
 	public:
 		DAC( ICNDocument *icnDocument, bool newItem, const char *id = 0 );
 		~DAC() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-	
+
 		void stepNonLogic() override;
 		bool doesStepNonLogic() const override { return true; }
-	
+
 	protected:
 		/**
 		 * Add / remove pins according to the number of outputs the user has requested
 		 */
 		void initPins() override;
-	
+
 		LogicIn *m_logic[max_ADDAC_bits];
 		VoltagePoint *m_voltagePoint;
 };

@@ -34,8 +34,8 @@ ComponentModelWidget::ComponentModelWidget( QWidget *parent, const char *name )
 	QVBoxLayout * vlayout = new QVBoxLayout( this /*, 0, 6  - 2018.12.07 */);
     vlayout->setMargin(0);
     vlayout->setSpacing(6);
-	
-	
+
+
 	// parts of the following code are stolen from amarok/src/playlistwindow.cpp :)
 	//BEGIN Filter lineedit
     QHBoxLayout *h1Layout = new QHBoxLayout;
@@ -61,13 +61,13 @@ ComponentModelWidget::ComponentModelWidget( QWidget *parent, const char *name )
 
 	button->setToolTip( i18n( "Clear filter" ) );
 	QString filtertip = i18n( "Enter space-separated terms to filter the component library." );
-	
+
 	m_pSearchEdit->setToolTip( filtertip );
 
     h1Layout->addWidget(m_pSearchEdit);
     h1Layout->addWidget(button);
 	//END Filter lineedit
-	
+
 	m_pList = new QListWidget( this );
 // 	m_pList->setItemMargin( 3 );
 	//m_pList->addColumn( "model" ); // 2018.06.02 - should not be needed
@@ -75,7 +75,7 @@ ComponentModelWidget::ComponentModelWidget( QWidget *parent, const char *name )
     m_pList->setSizePolicy( QSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding) );
 	//m_pList->header()->hide();
 	m_pList->setToolTip( i18n( "Select a predefined component configuration from this list." ) );
-	
+
 	vlayout->addWidget( bar );
     //vlayout->addWidget( m_pSearchEdit );
     vlayout->addLayout(h1Layout);
@@ -101,7 +101,7 @@ void ComponentModelWidget::init( Component * component )
 	reset();
 	if ( !component )
 		return;
-	
+
 	QStringList types;
 	if ( component->type() == "ec/npnbjt" )
 	{
@@ -113,7 +113,7 @@ void ComponentModelWidget::init( Component * component )
 	}
 	else
 		return;
-	
+
 	QStringList::iterator end = types.end();
 	for ( QStringList::iterator it = types.begin(); it != end; ++it )
 	{
@@ -126,7 +126,7 @@ void ComponentModelWidget::init( Component * component )
 void ComponentModelWidget::setFilter( const QString & filter )
 {
 	QString lower = filter.toLower();
-	
+
 	for ( int itemNr = 0; itemNr < m_pList->count(); ++itemNr)
 	{
 		QListWidgetItem * item = m_pList->item(itemNr);
@@ -202,4 +202,4 @@ void ClickLineEdit::focusOutEvent( QFocusEvent *ev )
 }
 //END class ClickLineEdit
 
-#include "componentmodelwidget.moc"
+#include "moc_componentmodelwidget.cpp"

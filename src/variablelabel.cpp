@@ -24,7 +24,7 @@ VariableLabel::VariableLabel( TextView * parent )
     setObjectName("toolTipTip");
 
 	m_value = -1;
-	
+
 	setMargin(1);
 	//setAutoMask( false ); // TODO is this needed?
 	setFrameStyle( QFrame::Plain | QFrame::Box );
@@ -39,17 +39,17 @@ VariableLabel::VariableLabel( TextView * parent )
 void VariableLabel::setRegister( RegisterInfo * info, const QString & name )
 {
 	disconnectRegisterInfo();
-	
+
 	if ( !info )
 		return;
-	
+
 	m_value = -1;
 	m_pRegisterInfo = info;
 	m_registerName = name;
-	
+
 	connect( m_pRegisterInfo, SIGNAL(destroyed()), this, SLOT(hide()) );
 	connect( m_pRegisterInfo, SIGNAL(valueChanged(unsigned)), this, SLOT(updateText()) );
-	
+
 	updateText();
 }
 
@@ -58,10 +58,10 @@ void VariableLabel::disconnectRegisterInfo()
 {
 	if ( !m_pRegisterInfo )
 		return;
-	
+
 	disconnect( m_pRegisterInfo, SIGNAL(destroyed()), this, SLOT(hide()) );
 	disconnect( m_pRegisterInfo, SIGNAL(valueChanged(unsigned)), this, SLOT(updateText()) );
-	
+
 	m_pRegisterInfo = 0l;
 	m_registerName = QString::null;
 }
@@ -71,7 +71,7 @@ void VariableLabel::setValue( unsigned value )
 {
 	disconnectRegisterInfo();
 	m_value = value;
-	
+
 	updateText();
 }
 
@@ -80,14 +80,14 @@ void VariableLabel::updateText()
 {
 	if ( m_pRegisterInfo )
 		setText( QString("%1 = %2").arg( m_registerName ).arg( SymbolViewer::self()->toDisplayString( m_pRegisterInfo->value() ) ) );
-	
+
 	else if ( m_value != -1 )
 		setText( QString::number( m_value ) );
-	
+
 	adjustSize();
 }
 //END class VariableLabel
 
-#include "variablelabel.moc"
+#include "moc_variablelabel.cpp"
 
 #endif // !NO_GPSIM

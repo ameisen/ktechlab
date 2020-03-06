@@ -16,7 +16,7 @@
 /**
 @author David Saxton
 */
-class Inductor : public Component
+class Inductor final : public Component
 {
 	public:
 		Inductor( ICNDocument *icnDocument, bool newItem, const char *id = 0L );

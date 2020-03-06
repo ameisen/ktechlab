@@ -8,8 +8,7 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
 
-#ifndef ITEMDOCUMENTDATA_H
-#define ITEMDOCUMENTDATA_H
+#pragma once
 
 #include "item.h"
 #include "microsettings.h"
@@ -22,25 +21,21 @@ class KUrl;
 class Node;
 class PinMapping;
 
-typedef QList<QPointer<Connector> > ConnectorList;
-typedef QList<QPointer<Item> > ItemList;
-typedef QList<QPointer<Node> > NodeList;
-typedef QMap< QString, PinMapping > PinMappingMap;
+using PinMappingMap = QMap<QString, PinMapping>;
 
-typedef QList<QPoint> QPointList;
-typedef QMap<QString, bool> BoolMap;
-typedef QMap<QString, double> DoubleMap;
-typedef QMap<QString, int> IntMap;
-typedef QMap<QString, QColor> QColorMap;
-typedef QMap<QString, QString> QStringMap;
-typedef QMap<QString, QBitArray> QBitArrayMap;
+using BoolMap = QMap<QString, bool>;
+using DoubleMap = QMap<QString, double>;
+using IntMap = QMap<QString, int>;
+using QColorMap = QMap<QString, QColor>;
+using QStringMap = QMap<QString, QString>;
+using QBitArrayMap = QMap<QString, QBitArray>;
 
 
 class ItemData
 {
 	public:
 		ItemData();
-		
+
 		QString type;
 		double x;
 		double y;
@@ -59,58 +54,55 @@ class ItemData
 		QStringMap dataString;
 		QBitArrayMap dataRaw;
 };
-typedef QMap< QString, ItemData > ItemDataMap;
+using ItemDataMap = QMap<QString, ItemData>;
 
 
 class ConnectorData
 {
 	public:
 		ConnectorData();
-		
-		QPointList route;
+
+		QList<QPoint> route;
 		bool manualRoute;
-		
+
 		bool startNodeIsChild;
 		bool endNodeIsChild;
-		
+
 		QString startNodeCId;
 		QString endNodeCId;
-		
+
 		QString startNodeParent;
 		QString endNodeParent;
-		
+
 		QString startNodeId;
 		QString endNodeId;
 };
-typedef QMap< QString, ConnectorData > ConnectorDataMap;
+using ConnectorDataMap = QMap<QString, ConnectorData>;
 
 
-class NodeData
+struct NodeData
 {
-	public:
-		NodeData();
-		
-		double x;
-		double y;
+		double x = 0;
+		double y = 0;
 };
-typedef QMap< QString, NodeData > NodeDataMap;
+using NodeDataMap = QMap<QString, NodeData>;
 
 class PinData
 {
 	public:
 		PinData();
-		
+
 		PinSettings::pin_type type;
 		PinSettings::pin_state state;
 };
-typedef QMap< QString, PinData > PinDataMap;
+using PinDataMap = QMap<QString, PinData>;
 
 class MicroData
 {
 	public:
 		MicroData();
 		void reset();
-		
+
 		QString id;
 		PinDataMap pinMap;
 		QStringMap variableMap;
@@ -180,13 +172,13 @@ class ItemDocumentData
 		 * @see Document::DocumentType
 		 */
 		uint documentType() const { return m_documentType; }
-		
+
 		//BEGIN functions for adding data
 		void setMicroData( const MicroData &data );
-		void addItems( const ItemList &itemList );
-		void addConnectors( const ConnectorList &connectorList );
-		void addNodes( const NodeList &nodeList );
-		
+		void addItems( const QPtrList<Item> &itemList );
+		void addConnectors( const QPtrList<Connector> &connectorList );
+		void addNodes( const QPtrList<Node> &nodeList );
+
 		/**
 		 * Add the given ItemData to the stored data
 		 */
@@ -200,12 +192,12 @@ class ItemDocumentData
 		 */
 		void addNodeData( NodeData nodeData, QString id );
 		//END functions for adding data
-		
+
 		//BEGIN functions for returning strings for saving to xml
 		QString documentTypeString() const;
 		QString revisionString() const;
 		//END functions for returning strings for saving to xml
-		
+
 	protected:
 		//BEGIN functions for generating QDomElements
 		QDomElement microDataToElement( QDomDocument &doc );
@@ -213,14 +205,14 @@ class ItemDocumentData
 		QDomElement nodeDataToElement( QDomDocument &doc, const NodeData &nodeData );
 		QDomElement connectorDataToElement( QDomDocument &doc, const ConnectorData &connectorData );
 		//END functions for generating QDomElements
-		
+
 		//BEGIN functions for reading QDomElements to stored data
 		void elementToMicroData( QDomElement element );
 		void elementToItemData( QDomElement element );
 		void elementToNodeData( QDomElement element );
 		void elementToConnectorData( QDomElement element );
 		//END functions for reading QDomElements to stored data
-		
+
 		ItemDataMap m_itemDataMap;
 		ConnectorDataMap m_connectorDataMap;
 		NodeDataMap m_nodeDataMap;
@@ -234,5 +226,3 @@ class SubcircuitData : public ItemDocumentData
 		SubcircuitData();
 		void initECSubcircuit( ECSubcircuit * ecSubcircuit );
 };
-
-#endif

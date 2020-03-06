@@ -11,6 +11,8 @@
 #ifndef CANVASITEMGROUP_H
 #define CANVASITEMGROUP_H
 
+#include "pch.hpp"
+
 #include "itemgroup.h"
 
 
@@ -27,10 +29,6 @@ class ICNDocument;
 class KtlQCanvasItem;
 class KtlQCanvasItemList;
 
-typedef QList<QPointer<Item> > ItemList;
-typedef QList<QPointer<Node> > NodeList;
-typedef QList<QPointer<Connector> > ConnectorList;
-
 /**
 @author David Saxton
 */
@@ -40,7 +38,7 @@ Q_OBJECT
 public:
 	CNItemGroup( ICNDocument *icnDocument, const char *name = 0 );
 	~CNItemGroup() override;
-	
+
 	/**
 	 * Adds a CNItem to the group, if it is not already in it, or other items at
 	 * a lower levels are already in the group. If there are items are a high level,
@@ -138,13 +136,13 @@ public:
 	 * @param excludeParented if false, then nodes that are fully contained
 	 * within item children will also be returned.
 	 */
-	NodeList nodes( bool excludeParented = true ) const;
+	QPtrList<Node> nodes( bool excludeParented = true ) const;
 	/**
 	 * Returns a list of all the Connectors in the group.
 	 * @param excludeParented if false, then connectors that are fully contained
 	 * within item children will also be returned.
 	 */
-	ConnectorList connectors( bool excludeParented = true ) const;
+	QPtrList<Connector> connectors( bool excludeParented = true ) const;
 	/**
 	 * Returns a list of the ids of all the CNItems in the group.
 	 */
@@ -214,8 +212,8 @@ protected:
 
 private:
 	ICNDocument *p_icnDocument;
-	ConnectorList m_connectorList;
-	NodeList m_nodeList;
+	QPtrList<Connector> m_connectorList;
+	QPtrList<Node> m_nodeList;
 	uint m_connectorCount;
 	uint m_nodeCount;
 	int m_currentLevel; // We can only accept CNItems of one level

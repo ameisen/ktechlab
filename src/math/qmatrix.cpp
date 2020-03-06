@@ -27,14 +27,7 @@
 #include <cassert>
 #include <iostream>
 #include <cstring>
-
-
-
-/*
-#ifndef BADRNG_H
-#include "badrng.h"
-#endif
-*/
+#include <algorithm>
 
 using namespace std;
 
@@ -42,7 +35,7 @@ using namespace std;
 
 bool QuickMatrix::isSquare() const {
 	return m == n;
-} 
+}
 
 // ####################################
 
@@ -67,7 +60,7 @@ void QuickMatrix::allocator() {
 	assert(n);
 
 	values = new double*[m];
-	for(unsigned int i = 0; i < m; i++) {
+	for (unsigned int i = 0; i < m; i++) {
 		values[i] = new double[n];
 	}
 }
@@ -77,10 +70,10 @@ void QuickMatrix::allocator() {
 QuickMatrix *QuickMatrix::transposeSquare() const {
 	QuickMatrix *newmat = new QuickMatrix(n);
 
-	for(unsigned int i= 0; i < n; i++) {
-		for(unsigned int j = 0; j < n; j++) {
+	for (unsigned int i= 0; i < n; i++) {
+		for (unsigned int j = 0; j < n; j++) {
 			newmat->values[i][j] = 0;
-			for(unsigned int k = 0; k < m; k++) {
+			for (unsigned int k = 0; k < m; k++) {
 				newmat->values[i][j] += values[k][i] * values[k][j];
 			}
 		}
@@ -92,13 +85,13 @@ QuickMatrix *QuickMatrix::transposeSquare() const {
 // #####################################
 
 QuickVector *QuickMatrix::transposeMult(const QuickVector *operandvec) const {
-	if(operandvec->size() != m) return NULL;
+	if (operandvec->size() != m) return NULL;
 
 	QuickVector *ret = new QuickVector(n);
 
-	for(unsigned int i = 0; i < n; i++) {
+	for (unsigned int i = 0; i < n; i++) {
 		double sum = 0;
-		for(unsigned int j = 0; j < m; j++)
+		for (unsigned int j = 0; j < m; j++)
 			sum += values[j][i] * (*operandvec)[j];
 		(*ret)[i] = sum;
 	}
@@ -128,16 +121,20 @@ QuickMatrix::QuickMatrix(const QuickMatrix *old)
 	: m(old->m), n(old->n) {
 	allocator();
 
-	for(unsigned int j = 0; j < m; j++) {
-		memcpy(values[j], old->values[j], n*sizeof(double)); // fastest method. =)
+	for (unsigned int j = 0; j < m; j++) {
+		memcpy(values[j], old->values[j], n * sizeof(double)); // fastest method. =)
 	}
 }
 
 // ####################################
 
 QuickMatrix::~QuickMatrix() {
-	for(unsigned int i = 0; i < m; i++) delete[] values[i];
-	delete[] values;
+	if (values) {
+		for (unsigned int i = 0; i < m; i++)
+			delete[] values[i];
+		delete[] values;
+		values = nullptr;
+	}
 }
 
 // ####################################
@@ -163,7 +160,7 @@ double QuickMatrix::multRowCol(CUI row, CUI col, CUI lim) const
 	const double *rowVals = values[row];
 
 	double sum = 0;
-	for(unsigned int i = 0; i < lim; i++)
+	for (unsigned int i = 0; i < lim; i++)
 		sum += rowVals[i] * values[i][col];
 	return sum;
 }
@@ -171,7 +168,7 @@ double QuickMatrix::multRowCol(CUI row, CUI col, CUI lim) const
 // ####################################
 
 bool QuickMatrix::atPut(CUI m_a, CUI n_a, const double val) {
-	if(m_a >= m || n_a >= n) return false;
+	if (m_a >= m || n_a >= n) return false;
 
 	values[m_a][n_a] = val;
 	return true;
@@ -180,7 +177,7 @@ bool QuickMatrix::atPut(CUI m_a, CUI n_a, const double val) {
 // ####################################
 
 bool QuickMatrix::atAdd(CUI m_a, CUI n_a, const double val) {
-	if(m_a >= m || n_a >= n) return false;
+	if (m_a >= m || n_a >= n) return false;
 
 	values[m_a][n_a] += val;
 	return true;
@@ -189,11 +186,9 @@ bool QuickMatrix::atAdd(CUI m_a, CUI n_a, const double val) {
 // ####################################
 
 bool QuickMatrix::swapRows(CUI m_a, CUI m_b) {
-	if(m_a >= m || m_b >= m) return false;
+	if (m_a >= m || m_b >= m) return false;
 
-	double *temp = values[m_a];
-	values[m_a] = values[m_b];
-	values[m_b] = temp;
+	std::swap(values[m_a], values[m_b]);
 
 	return true;
 }
@@ -201,12 +196,13 @@ bool QuickMatrix::swapRows(CUI m_a, CUI m_b) {
 // ####################################
 
 bool QuickMatrix::scaleRow(CUI m_a, const double scalor) {
-	if(m_a >= m) return false;
+	if (m_a >= m) return false;
 
 	double *arow = values[m_a];
 
-// iterate over n columns. 
-	for(unsigned int j = 0; j < n; j++) arow[j] *= scalor;
+	// iterate over n columns.
+	for (unsigned int j = 0; j < n; j++)
+		arow[j] *= scalor;
 
 	return true;
 }
@@ -214,14 +210,18 @@ bool QuickMatrix::scaleRow(CUI m_a, const double scalor) {
 // ####################################
 
 double QuickMatrix::rowsum(CUI m) {
-	if(m >= m) return NAN;
+	if (std::isnan(m))
+	{
+		return NAN;
+	}
 
-	double *arow = values[m];
+	const double *arow = values[m];
 
 	double sum = 0.0;
 
-// iterate over n columns. 
-	for(unsigned int j = 0; j < n; j++) sum += arow[j];
+	// iterate over n columns.
+	for (unsigned int j = 0; j < n; j++)
+		sum += arow[j];
 
 	return sum;
 }
@@ -229,14 +229,18 @@ double QuickMatrix::rowsum(CUI m) {
 // ####################################
 
 double QuickMatrix::absrowsum(CUI m) {
-	if(m >= m) return NAN;
+	if (std::isnan(m))
+	{
+		return NAN;
+	}
 
-	double *arow = values[m];
+	const double *arow = values[m];
 
 	double sum = 0.0;
 
-// iterate over n columns. 
-	for(unsigned int j = 0; j < n; j++) sum += fabs(arow[j]);
+	// iterate over n columns.
+	for (unsigned int j = 0; j < n; j++)
+		sum += std::abs(arow[j]);
 
 	return sum;
 }
@@ -245,13 +249,13 @@ double QuickMatrix::absrowsum(CUI m) {
 
 // behaves oddly but doesn't crash if m_a == m_b
 bool QuickMatrix::scaleAndAdd(CUI m_a, CUI m_b, const double scalor) {
-	if(m_a >= m || m_b >= m) return false;
+	if (m_a >= m || m_b >= m) return false;
 
 	const double *arow = values[m_a];
 	double *brow = values[m_b];
 
-// iterate over n columns. 
-	for(unsigned int j = 0; j < n; j++)
+	// iterate over n columns.
+	for (unsigned int j = 0; j < n; j++)
 		brow[j] += arow[j] * scalor;
 
 	return true;
@@ -261,13 +265,13 @@ bool QuickMatrix::scaleAndAdd(CUI m_a, CUI m_b, const double scalor) {
 
 // behaves oddly but doesn't crash if m_a == m_b
 bool QuickMatrix::partialScaleAndAdd(CUI m_a, CUI m_b, const double scalor) {
-	if(m_a >= m || m_b >= m) return false;
+	if (m_a >= m || m_b >= m) return false;
 
 	const double *arow = values[m_a];
 	double *brow = values[m_b];
 
-// iterate over n - m_a columns.
-	for(unsigned int j = m_a; j < n; j++)
+	// iterate over n - m_a columns.
+	for (unsigned int j = m_a; j < n; j++)
 		brow[j] += arow[j] * scalor;
 
 	return true;
@@ -276,13 +280,13 @@ bool QuickMatrix::partialScaleAndAdd(CUI m_a, CUI m_b, const double scalor) {
 // ########################################
 
 bool QuickMatrix::partialSAF(CUI m_a, CUI m_b, CUI from, const double scalor) {
-	if(m_a >= m || m_b >= m) return false;
+	if (m_a >= m || m_b >= m) return false;
 
 	const double *arow = values[m_a];
 	double *brow = values[m_b];
 
-// iterate over n - m_a columns.
-	for(unsigned int j = from; j < n; j++)
+	// iterate over n - m_a columns.
+	for (unsigned int j = from; j < n; j++)
 		brow[j] += arow[j] * scalor;
 
 	return true;
@@ -303,19 +307,19 @@ void QuickMatrix::fillWithRandom() {
 QuickVector *QuickMatrix::normalizeRows() {
 	QuickVector *ret = new QuickVector(m);
 
-	for(unsigned int j = 0; j < m; j++) {
+	for (decltype(m) j = 0; j < m; j++) {
 		double *row = values[j];
 		unsigned int max_loc = 0;
 
-		for(unsigned int i = 0; i < n; i++) {
-			if(fabs(row[max_loc]) < fabs(row[i])) max_loc = i;
+		for (unsigned int i = 0; i < n; i++) {
+			if (std::abs(row[max_loc]) < std::abs(row[i])) max_loc = i;
 		}
 
 		double scalar = 1.0 / row[max_loc];
 
 		(*ret)[j] = scalar;
 
-		for(unsigned int i = 0; i < n; i++) row[i] *= scalar;
+		for (unsigned int i = 0; i < n; i++) row[i] *= scalar;
 	}
 
 	return ret;
@@ -324,13 +328,13 @@ QuickVector *QuickMatrix::normalizeRows() {
 // ####################################
 
 QuickVector *QuickMatrix::operator *(const QuickVector *operandvec) const {
-	if(operandvec->size() != n) return NULL;
+	if (operandvec->size() != n) return NULL;
 
 	QuickVector *ret = new QuickVector(m);
 
-	for(unsigned int i = 0; i < m; i++) {
+	for (unsigned int i = 0; i < m; i++) {
 		double sum = 0;
-		for(unsigned int j = 0; j < n; j++)
+		for (unsigned int j = 0; j < n; j++)
 			sum += values[i][j] * (*operandvec)[j];
 		(*ret)[i] = sum;
 	}
@@ -341,10 +345,10 @@ QuickVector *QuickMatrix::operator *(const QuickVector *operandvec) const {
 // ####################################
 
 QuickMatrix *QuickMatrix::operator +=(const QuickMatrix *operandmat) {
-	if(operandmat->n != n || operandmat->m != m) return NULL;
+	if (operandmat->n != n || operandmat->m != m) return NULL;
 
-	for(unsigned int i = 0; i < m; i++) {
-		for(unsigned int j = 0; j < n; j++)
+	for (unsigned int i = 0; i < m; i++) {
+		for (unsigned int j = 0; j < n; j++)
 			values[i][j] += operandmat->values[i][j];
 	}
 
@@ -354,14 +358,14 @@ QuickMatrix *QuickMatrix::operator +=(const QuickMatrix *operandmat) {
 // ####################################
 
 QuickMatrix *QuickMatrix::operator *(const QuickMatrix *operandmat) const {
-	if(operandmat->m != n) return NULL;
+	if (operandmat->m != n) return NULL;
 
 	QuickMatrix *ret = new QuickMatrix(m,operandmat->n);
 
-	for(unsigned int i = 0; i < m; i++) {
-		for(unsigned int j = 0; j < operandmat->n; j++) {
+	for (unsigned int i = 0; i < m; i++) {
+		for (unsigned int j = 0; j < operandmat->n; j++) {
 			double sum = 0;
-			for(unsigned int k = 0; k < n; k++) 
+			for (unsigned int k = 0; k < n; k++)
 				sum += values[i][k] * operandmat->values[k][j];
 			ret->values[i][j] = sum;
 		}
@@ -373,18 +377,18 @@ QuickMatrix *QuickMatrix::operator *(const QuickMatrix *operandmat) const {
 // ###################################
 
 void QuickMatrix::dumpToAux() const {
-	for(unsigned int j = 0; j < m; j++) {
-		for(unsigned int i = 0; i < n; i++)
+	for (unsigned int j = 0; j < m; j++) {
+		for (unsigned int i = 0; i < n; i++)
 			cout << values[j][i] << ' ';
 		cout << endl;
-	} 
+	}
 }
 
 // ###################################
 
 void QuickMatrix::fillWithZero() {
-	for(unsigned int j = 0; j < m; j++) {
-		memset(values[j], 0, n*sizeof(double)); // fastest method. =)
+	for (unsigned int j = 0; j < m; j++) {
+		memset(values[j], 0, n * sizeof(double)); // fastest method. =)
 	}
 }
 
@@ -392,10 +396,9 @@ void QuickMatrix::fillWithZero() {
 // sets the diagonal to a constant.
 QuickMatrix *QuickMatrix::operator =(const double y) {
 	fillWithZero();
-	unsigned int size = n;
-	if(size > m) size = m;
+	auto size = std::min(n, m);
 
-	for(unsigned int i = 0; i < size; i++) values[i][i] = y;
+	for (unsigned int i = 0; i < size; i++)
+		values[i][i] = y;
 	return this;
 }
-

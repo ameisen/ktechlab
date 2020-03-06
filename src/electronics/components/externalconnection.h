@@ -18,12 +18,12 @@ For connecting to something "outside" - e.g. a mechanical component, or as part
 of a circuit part
 @author David Saxton
 */
-class ExternalConnection : public Component
+class ExternalConnection final : public Component
 {
 public:
 	ExternalConnection( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ExternalConnection() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 

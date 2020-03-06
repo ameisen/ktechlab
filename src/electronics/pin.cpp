@@ -15,6 +15,8 @@
 
 #include <qdebug.h>
 
+#include <algorithm>
+
 Pin::Pin( ECNode * parent )
 {
 	assert(parent);
@@ -29,38 +31,36 @@ Pin::Pin( ECNode * parent )
 
 Pin::~Pin()
 {
-	WireList::iterator end = m_inputWireList.end();
-	for ( WireList::iterator it = m_inputWireList.begin(); it != end; ++it )
-		delete (Wire *)(*it);
-	
-	end = m_outputWireList.end();
-	for ( WireList::iterator it = m_outputWireList.begin(); it != end; ++it )
-		delete (Wire *)(*it);
+	for (auto &wire : m_inputWireList) {
+		if (wire.isNull()) continue;
+		delete (Wire *)wire;
+	}
+
+	for (auto &wire : m_outputWireList) {
+		if (wire.isNull()) continue;
+		delete (Wire *)wire;
+	}
 }
 
 
-PinList Pin::localConnectedPins( ) const
+QPtrList<Pin> Pin::localConnectedPins( ) const
 {
 // 	qDebug() << Q_FUNC_INFO << "Input wires: "<<m_inputWireList.size()<<"   Output wires: " << m_outputWireList.size() << "   Switch connected: " << m_switchConnectedPins.size() << endl;
-	
-	PinList pins;
-	
-	WireList::const_iterator end = m_inputWireList.end();
-	for ( WireList::const_iterator it = m_inputWireList.begin(); it != end; ++it )
-	{
-		if (*it)
-			pins << (*it)->startPin();
+
+	QPtrList<Pin> pins;
+
+	for (auto &wire : m_inputWireList) {
+		if (wire.isNull() || !(Wire *)wire) continue;
+		pins << wire->startPin();
 	}
-	
-	end = m_outputWireList.end();
-	for ( WireList::const_iterator it = m_outputWireList.begin(); it != end; ++it )
-	{
-		if (*it)
-			pins << (*it)->endPin();
+
+	for (auto &wire : m_outputWireList) {
+		if (wire.isNull() || !(Wire *)wire) continue;
+		pins << wire->endPin();
 	}
-	
+
 	pins += m_switchConnectedPins;
-	
+
 	return pins;
 }
 
@@ -69,7 +69,7 @@ void Pin::setSwitchConnected( Pin * pin, bool isConnected )
 {
 	if (!pin)
 		return;
-	
+
 	if (isConnected)
 	{
 		if ( !m_switchConnectedPins.contains(pin) )
@@ -153,33 +153,45 @@ void Pin::addOutputWire( Wire * wire )
 
 bool Pin::calculateCurrentFromWires()
 {
-	m_inputWireList.removeAll( (Wire*)0l );
-	m_outputWireList.removeAll( (Wire*)0l );
-	
-	const WireList inputs = m_inputWireList;
-	const WireList outputs = m_outputWireList;
-		
+	m_inputWireList.removeAll(nullptr);
+	m_outputWireList.removeAll(nullptr);
+
+	const auto &inputs = m_inputWireList;
+	const auto &outputs = m_outputWireList;
+
 	m_current = 0.0;
-		
-	WireList::const_iterator end = inputs.end();
-	for ( WireList::const_iterator it = inputs.begin(); it != end; ++it )
-	{
-		if ( !(*it)->currentIsKnown() )
-			return false;
-			
-		m_current -= (*it)->current();
+
+	// If a pin has no outputs, then it cannot have a circuituous connection and thus
+	// cannot pass current
+	if (outputs.isEmpty() || inputs.isEmpty()) {
+		m_bCurrentIsKnown = false;
+		return false;
 	}
-		
-	end = outputs.end();
-	for ( WireList::const_iterator it = outputs.begin(); it != end; ++it )
-	{
-		if ( !(*it)->currentIsKnown() )
+
+	double current = 0.0;
+
+	for (auto &wire : inputs) {
+		if (Ptr::isNull(wire)) continue;
+		if (!wire->currentIsKnown()) {
+			m_bCurrentIsKnown = false;
 			return false;
-			
-		m_current += (*it)->current();
+		}
+
+		current -= wire->current();
 	}
-	
+
+	for (auto &wire : outputs) {
+		if (Ptr::isNull(wire)) continue;
+		if (!wire->currentIsKnown()) {
+			m_bCurrentIsKnown = false;
+			return false;
+		}
+
+		current += wire->current();
+	}
+
+	m_current = current;
+
 	m_bCurrentIsKnown = true;
 	return true;
 }
-

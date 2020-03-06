@@ -17,7 +17,7 @@
 @short Fixed voltage source
 @author David Saxton
 */
-class ECFixedVoltage : public Component
+class ECFixedVoltage final : public Component
 {
 public:
 	ECFixedVoltage( ICNDocument *icnDocument, bool newItem, const char *id = 0L );

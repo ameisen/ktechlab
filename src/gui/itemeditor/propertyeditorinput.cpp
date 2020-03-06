@@ -226,4 +226,4 @@ void PropertyEditorBool::setState( bool state )
 }
 //END class PropertyEditorBool
 
-#include "propertyeditorinput.moc"
+#include "moc_propertyeditorinput.cpp"

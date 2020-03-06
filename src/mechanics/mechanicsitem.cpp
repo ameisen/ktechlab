@@ -36,7 +36,7 @@ MechanicsItem::MechanicsItem( MechanicsDocument *mechanicsDocument, bool newItem
 {
 	p_mechanicsDocument = mechanicsDocument;
 	m_selectionMode = MechanicsItem::sm_move;
-	
+
 	createProperty( "mass", Variant::Type::Double );
 	property("mass")->setCaption( i18n("Mass") );
 	property("mass")->setUnit("g");
@@ -44,7 +44,7 @@ MechanicsItem::MechanicsItem( MechanicsDocument *mechanicsDocument, bool newItem
 	property("mass")->setMinValue(1e-3);
 	property("mass")->setMaxValue(1e12);
 	property("mass")->setAdvanced(true);
-	
+
 	createProperty( "moi", Variant::Type::Double );
 	property("moi")->setCaption( i18n("Moment of Inertia") );
 	property("moi")->setUnit("gm");
@@ -52,7 +52,7 @@ MechanicsItem::MechanicsItem( MechanicsDocument *mechanicsDocument, bool newItem
 	property("moi")->setMinValue(1e-3);
 	property("moi")->setMaxValue(1e12);
 	property("moi")->setAdvanced(true);
-	
+
 	setZ(ItemDocument::Z::Item);
 // 	setAnimated(true);
 	p_mechanicsDocument->registerItem(this);
@@ -68,7 +68,7 @@ void MechanicsItem::setSelectionMode( SelectionMode sm )
 {
 	if ( sm == m_selectionMode )
 		return;
-	
+
 	m_selectionMode = sm;
 }
 
@@ -77,11 +77,11 @@ void MechanicsItem::setSelected( bool yes )
 {
 	if ( yes == isSelected() )
 		return;
-	
+
 	if (!yes)
 		// Reset the selection mode
 		m_selectionMode = MechanicsItem::sm_resize;
-	
+
 	Item::setSelected(yes);
 }
 
@@ -100,7 +100,7 @@ PositionInfo MechanicsItem::absolutePosition() const
 	MechanicsItem *parentMechItem = dynamic_cast<MechanicsItem*>((Item*)(p_parentItem));
 	if (parentMechItem)
 		return parentMechItem->absolutePosition() + m_relativePosition;
-	
+
 	return m_relativePosition;
 }
 
@@ -109,19 +109,19 @@ void MechanicsItem::reparented( Item *oldItem, Item *newItem )
 {
 	MechanicsItem *oldMechItem = dynamic_cast<MechanicsItem*>(oldItem);
 	MechanicsItem *newMechItem = dynamic_cast<MechanicsItem*>(newItem);
-	
+
 	if (oldMechItem)
 	{
 		m_relativePosition = oldMechItem->absolutePosition() + m_relativePosition;
 		disconnect( oldMechItem, SIGNAL(moved()), this, SLOT(parentMoved()) );
 	}
-	
+
 	if (newMechItem)
 	{
 		m_relativePosition = m_relativePosition - newMechItem->absolutePosition();
 		connect( newMechItem, SIGNAL(moved()), this, SLOT(parentMoved()) );
 	}
-	
+
 	updateCanvasPoints();
 }
 
@@ -131,7 +131,7 @@ void MechanicsItem::childAdded( Item *child )
 	MechanicsItem *mechItem = dynamic_cast<MechanicsItem*>(child);
 	if (!mechItem)
 		return;
-	
+
 	connect( mechItem, SIGNAL(updateMechanicsInfoCombined()), this, SLOT(childMoved()) );
 	updateMechanicsInfoCombined();
 }
@@ -142,7 +142,7 @@ void MechanicsItem::childRemoved( Item *child )
 	MechanicsItem *mechItem = dynamic_cast<MechanicsItem*>(child);
 	if (!mechItem)
 		return;
-	
+
 	disconnect( mechItem, SIGNAL(updateMechanicsInfoCombined()), this, SLOT(childMoved()) );
 	updateMechanicsInfoCombined();
 }
@@ -160,19 +160,19 @@ void MechanicsItem::parentMoved()
 void MechanicsItem::updateCanvasPoints()
 {
 	const QRect ipbr = m_itemPoints.boundingRect();
-	
+
 	double scalex = double(m_sizeRect.width()) / double(ipbr.width());
 	double scaley = double(m_sizeRect.height()) / double(ipbr.height());
-	
+
 	PositionInfo abs = absolutePosition();
-	
+
 	QMatrix m;
 	m.rotate(abs.angle() * DPR);
 	m.translate( m_sizeRect.left(), m_sizeRect.top() );
 	m.scale( scalex, scaley );
 	m.translate( -int(ipbr.left()), -int(ipbr.top()) );
 	setPoints( m.map(m_itemPoints) );
-	
+
 	//QRect tempt = m.mapRect(ipbr); // 2017.10.01 - comment out unused variable
 }
 
@@ -197,33 +197,33 @@ void MechanicsItem::moveBy( double dx, double dy )
 void MechanicsItem::updateMechanicsInfoCombined()
 {
 	m_mechanicsInfoCombined = m_mechanicsInfo;
-	
+
 	double mass_x = 0.;
 	double mass_y = 0.;
-	
-	const ItemList::const_iterator end = m_children.end();
-	for ( ItemList::const_iterator it = m_children.begin(); it != end; ++it )
+
+	const QPtrList<Item>::const_iterator end = m_children.end();
+	for ( QPtrList<Item>::const_iterator it = m_children.begin(); it != end; ++it )
 	{
 		MechanicsItem *child = dynamic_cast<MechanicsItem*>((Item*)*it);
 		if (child)
 		{
 			CombinedMechanicsInfo *childInfo = child->mechanicsInfoCombined();
 			const PositionInfo relativeChildPosition = child->relativePosition();
-			
+
 			double mass = childInfo->mass;
 // 			double angle = relativeChildPosition.angle();
 			double dx = relativeChildPosition.x() /*+ cos(angle)*childInfo->m_x - sin(angle)*childInfo->m_y*/;
 			double dy = relativeChildPosition.y() /*+ sin(angle)*childInfo->m_x + cos(angle)*childInfo->m_y*/;
-			
+
 			m_mechanicsInfoCombined.mass += mass;
 			mass_x += mass * dx;
 			mass_y += mass * dy;
-			
+
 			double length_squared = dx*dx + dy*dy;
 			m_mechanicsInfoCombined.momentOfInertia += length_squared * childInfo->momentOfInertia;
 		}
 	}
-	
+
 	m_mechanicsInfoCombined.x = mass_x / m_mechanicsInfoCombined.mass;
 	m_mechanicsInfoCombined.y = mass_y / m_mechanicsInfoCombined.mass;
 }
@@ -290,12 +290,12 @@ QRect MechanicsItem::maxInnerRectangle( const QRect &outerRect ) const
 	const double X = normalizedOuterRect.width();
 	const double Y = normalizedOuterRect.height();
 	const double a = normalizeAngle(absolutePosition().angle());
-	
+
 	double left;
 	double top;
 	double width;
 	double height;
-	
+
 // 	if ( can change width/height ratio )
 	{
 		double x1 = X*std::cos(a) - Y*std::sin(a);
@@ -304,7 +304,7 @@ QRect MechanicsItem::maxInnerRectangle( const QRect &outerRect ) const
 		double y2 = X*std::sin(a);
 		double x3 = -Y*std::sin(a);
 		double y3 = Y*std::cos(a);
-		
+
 		double xbig;/* = std::max( std::abs(x2-x3), std::abs(x1) );*/
 		double ybig;/* = std::max( std::abs(y2-y3), std::abs(y1) );*/
 		if ( (a - floor(a/6.2832)*6.2832) < M_PI )
@@ -317,14 +317,14 @@ QRect MechanicsItem::maxInnerRectangle( const QRect &outerRect ) const
 			xbig = std::abs(x1);
 			ybig = std::abs(y3-y2);
 		}
-		
+
 		width = X*(X/xbig);
 		height = Y*(Y/ybig);
-		
+
 		top = -std::sin(a) * (LEFT + width*std::sin(a)) + std::cos(a)*TOP;
 		left = std::cos(a) * (LEFT + width*std::sin(a)) + std::sin(a)*TOP;
 	}
-	
+
 	return QRect( int(left), int(top), int(width), int(height) );
 }
 
@@ -356,13 +356,13 @@ const PositionInfo PositionInfo::operator+( const PositionInfo &info )
 {
 	// Copy the child to a new position
 	PositionInfo newInfo = info;
-	
+
 	// Translate the newInfo by our translation amount
 	newInfo.translate( x(), y() );
-	
+
 	// Rotate the child about us
 	newInfo.rotateAboutPoint( x(), y(), angle() );
-	
+
 	return newInfo;
 }
 
@@ -371,10 +371,10 @@ const PositionInfo PositionInfo::operator-( const PositionInfo &info )
 {
 
 	PositionInfo newInfo = *this;
-	
+
 	newInfo.translate( -info.x(), -info.y() );
 	newInfo.rotate( -info.angle() );
-	
+
 	return newInfo;
 }
 
@@ -382,10 +382,10 @@ const PositionInfo PositionInfo::operator-( const PositionInfo &info )
 void PositionInfo::rotateAboutPoint( double x, double y, double angle )
 {
 	m_angle += angle;
-	
+
 	double newx = x + (m_x-x)*std::cos(angle) - (m_y-y)*std::sin(angle);
 	double newy = y + (m_x-x)*std::sin(angle) + (m_y-y)*std::cos(angle);
-	
+
 	m_x = newx;
 	m_y = newy;
 }
@@ -419,4 +419,4 @@ CombinedMechanicsInfo::CombinedMechanicsInfo( const MechanicsInfo &info )
 }
 
 
-#include "mechanicsitem.moc"
+#include "moc_mechanicsitem.cpp"

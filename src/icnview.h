@@ -24,7 +24,7 @@ class ICNView : public ItemView
 	public:
 		ICNView( ICNDocument * icnDocument, ViewContainer *viewContainer, uint viewAreaId, const char * name = 0l );
 		~ICNView() override;
-		
+
 	protected slots:
 		void slotSetRoutingMode( QAction* action ); // 0 = auto, 1 = manual
 		void slotSetRoutingAuto();
@@ -36,8 +36,8 @@ class ICNView : public ItemView
 		KToolBarPopupAction * m_pRoutingModeToolbarPopup;
 		QAction * m_pManualRoutingAction;
 		QAction * m_pAutoRoutingAction;
-        QAction *m_actMenuRouteAutoRoute;
-        QAction *m_actMenuRouteManRoute;
+    QAction *m_actMenuRouteAutoRoute;
+    QAction *m_actMenuRouteManRoute;
 };
 
 #endif

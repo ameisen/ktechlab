@@ -25,65 +25,53 @@
 #include <ktabwidget.h>
 #include <kxmlguifactory.h>
 
-#include <qfile.h>
+#include <QFile>
 
 #include <cassert>
 
 #include <ktlconfig.h>
 
-DocManager * DocManager::m_pSelf = 0l;
+DocManager * DocManager::m_pSelf = nullptr;
 
-DocManager * DocManager::self()
-{
-	if ( !m_pSelf )
+DocManager * DocManager::self() {
+	if (!m_pSelf)
 		m_pSelf = new DocManager();
 
 	return m_pSelf;
 }
 
 
-DocManager::DocManager()
-	: QObject( KTechlab::self() )
-{
-	p_focusedView = 0l;
-	m_countCircuit = 0;
-	m_countFlowCode = 0;
-	m_countMechanics = 0;
-	m_countOther = 0;
-	p_connectedDocument = 0;
-	m_nextDocumentID = 1;
+DocManager::DocManager() : QObject( KTechlab::self() ) {
 	m_pIface = new DocManagerIface(this);
 }
 
 
-DocManager::~DocManager()
-{
+DocManager::~DocManager() {
     delete m_pIface;
 }
 
 
-bool DocManager::closeAll()
-{
-	while ( !m_documentList.isEmpty() )
-	{
+bool DocManager::closeAll() {
+	while ( !m_documentList.isEmpty() ) {
 		Document *document = m_documentList.first();
 		if ( document->fileClose() )
 		{
 			m_documentList.removeAll(document);
 			removeDocumentAssociations(document);
-		} else return false;
+		}
+		else
+			return false;
 	}
 	return true;
 }
 
 
-void DocManager::gotoTextLine( const KUrl &url, int line )
-{
+void DocManager::gotoTextLine( const KUrl &url, int line ) {
 	TextDocument * doc = dynamic_cast<TextDocument*>( openURL(url) );
-	TextView * tv = doc ? doc->textView() : 0l;
-	
-	if ( !tv ) return;
-	
+	if (!doc) return;
+	TextView * tv = doc->textView();
+	if (!tv) return;
+
 	tv->gotoLine(line);
 	tv->setFocus();
 }
@@ -91,19 +79,19 @@ void DocManager::gotoTextLine( const KUrl &url, int line )
 
 Document* DocManager::openURL( const KUrl &url, ViewArea *viewArea )
 {
-	if ( url.isEmpty() ) return 0;
-	
+	if ( url.isEmpty() ) return nullptr;
+
 	if ( url.isLocalFile() )
 	{
 		QFile file(url.path());
-		if ( file.open(QIODevice::ReadOnly) == false )
+		if ( !file.open(QIODevice::ReadOnly) )
 		{
-			KMessageBox::sorry( 0l, i18n( "Could not open '%1'", url.prettyUrl() ) );
-			return 0l;
+			KMessageBox::sorry( nullptr, i18n( "Could not open '%1'", url.prettyUrl() ) );
+			return nullptr;
 		}
 		file.close();
 	}
-	
+
 	// If the currently active view area is empty, and we were not given a view area
 	// to open into, then use the empty view area
 	if ( !viewArea )
@@ -112,11 +100,11 @@ Document* DocManager::openURL( const KUrl &url, ViewArea *viewArea )
 		if ( currentVC )
 		{
 			ViewArea * va = currentVC->viewArea( currentVC->activeViewArea() );
-			if ( !va->view() )
+			if ( va && !va->view() )
 				viewArea = va;
 		}
 	}
-	
+
 	// If the document is already open, and a specific view area hasn't been
 	// specified, then just return that document - otherwise, create a new
 	// view in the viewarea
@@ -124,41 +112,43 @@ Document* DocManager::openURL( const KUrl &url, ViewArea *viewArea )
 	if ( document ) {
 		if ( viewArea )
 			createNewView( document, viewArea );
-		else	giveDocumentFocus( document, viewArea );
+		else
+			giveDocumentFocus( document, viewArea );
 		return document;
 	}
-	
+
 	QString fileName = url.fileName();
 	QString extension = fileName.right( fileName.length() - fileName.lastIndexOf('.') );
-	
+
 	if ( extension == ".circuit" )
 		return openCircuitFile( url, viewArea );
 	else if ( extension == ".flowcode" )
 		return openFlowCodeFile( url, viewArea );
 	else if ( extension == ".mechanics" )
 		return openMechanicsFile( url, viewArea );
-	else	return openTextFile( url, viewArea );
+	else
+		return openTextFile( url, viewArea );
 }
 
 
 Document *DocManager::getFocusedDocument() const
 {
-	Document * doc = p_focusedView ? p_focusedView->document() : 0l;
-	return (doc && !doc->isDeleted()) ? doc : 0l;
+	Document * doc = p_focusedView ? p_focusedView->document() : nullptr;
+	return (doc && !doc->isDeleted()) ? doc : nullptr;
 }
 
 
 void DocManager::giveDocumentFocus( Document * toFocus, ViewArea * viewAreaForNew )
 {
 	if ( !toFocus ) return;
-	
+
 	if ( View * activeView = toFocus->activeView() ) {
 		//KTechlab::self()->tabWidget()->showPage( activeView->viewContainer() ); // 2018.12.01
         KTechlab::self()->tabWidget()->setCurrentIndex(
             KTechlab::self()->tabWidget()->indexOf(activeView->viewContainer())
         );
     }
-	
+
 	else if ( viewAreaForNew )
 		createNewView( toFocus, viewAreaForNew );
 }
@@ -214,16 +204,16 @@ Document *DocManager::findDocument( const KUrl &url ) const
 	// First, look in the associated documents
 	if ( m_associatedDocuments.contains(url) )
 		return m_associatedDocuments[url];
-	
+
 	// Not found, so look in the known documents
-	const DocumentList::const_iterator end = m_documentList.end();
-	for ( DocumentList::const_iterator it = m_documentList.begin(); it != end; ++it )
-	{
-		if ( (*it)->url() == url )
-			return *it;
+	for (auto &document : m_documentList) {
+		if (Ptr::isNull(document)) continue;
+		if (document->url() == url) {
+			return document;
+		}
 	}
-	
-	return 0l;
+
+	return nullptr;
 }
 
 
@@ -231,7 +221,7 @@ void DocManager::associateDocument( const KUrl &url, Document *document )
 {
 	if (!document)
 		return;
-	
+
 	m_associatedDocuments[url] = document;
 }
 
@@ -261,17 +251,17 @@ void DocManager::handleNewDocument( Document *document, ViewArea *viewArea )
 {
 	if ( !document || m_documentList.contains(document) )
 		return;
-	
+
 	m_documentList.append(document);
 	document->setDCOPID(m_nextDocumentID++);
-	
+
 	connect( document, SIGNAL(modifiedStateChanged()), KTechlab::self(), SLOT(slotDocModifiedChanged()) );
 	connect( document, SIGNAL(fileNameChanged(const KUrl&)), KTechlab::self(), SLOT(slotDocModifiedChanged()) );
 	connect( document, SIGNAL(fileNameChanged(const KUrl&)), KTechlab::self(), SLOT(addRecentFile(const KUrl&)) );
 	connect( document, SIGNAL(destroyed(QObject* )), this, SLOT(documentDestroyed(QObject* )) );
 	connect( document, SIGNAL(viewFocused(View* )), this, SLOT(slotViewFocused(View* )) );
 	connect( document, SIGNAL(viewUnfocused()), this, SLOT(slotViewUnfocused()) );
-	
+
 	createNewView( document, viewArea );
 }
 
@@ -279,20 +269,15 @@ void DocManager::handleNewDocument( Document *document, ViewArea *viewArea )
 View *DocManager::createNewView( Document *document, ViewArea *viewArea )
 {
 	if (!document)
-		return 0l;
-	
-	View *view = 0l;
-	
+		return nullptr;
+
 	if (viewArea)
-		view = document->createView( viewArea->viewContainer(), viewArea->id() );
-	
-	else
-	{
-		ViewContainer *viewContainer = new ViewContainer( document->caption() );
-		view = document->createView( viewContainer, 0 );
-		KTechlab::self()->addWindow(viewContainer);
-	}
-	
+		return document->createView( viewArea->viewContainer(), viewArea->id() );
+
+	ViewContainer *viewContainer = new ViewContainer( document->caption() );
+	auto *view = document->createView( viewContainer, 0 );
+	KTechlab::self()->addWindow(viewContainer);
+
 	return view;
 }
 
@@ -308,37 +293,37 @@ void DocManager::documentDestroyed( QObject *obj )
 
 void DocManager::slotViewFocused( View *view )
 {
-	ViewContainer * vc = static_cast<ViewContainer*>(KTechlab::self()->tabWidget()->currentWidget());
-	if (!vc)
-		view = 0l;
-	
 	if (!view)
 		return;
-	
+
+	ViewContainer * vc = static_cast<ViewContainer*>(KTechlab::self()->tabWidget()->currentWidget());
+	if (!vc)
+		return;
+
 	// This function can get called with a view that is not in the current view
 	// container (such as when the user right clicks and then the popup is
 	// destroyed - not too sure why, but this is the easiest way to fix it).
 	if ( view->viewContainer() != vc )
 		view = vc->activeView();
-	
+
 	if ( !view || (View*)p_focusedView == view )
 		return;
-	
+
 	if (p_focusedView)
 		slotViewUnfocused();
-	
+
 	p_focusedView = view;
-	
+
 	if ( TextView * textView = dynamic_cast<TextView*>((View*)p_focusedView) )
 		KTechlab::self()->factory()->addClient( textView->kateView() );
 	else
 		KTechlab::self()->factory()->addClient( p_focusedView );
-	
+
 	Document *document = view->document();
-	
+
 	connect( document, SIGNAL(undoRedoStateChanged()), KTechlab::self(), SLOT(slotDocUndoRedoChanged()) );
 	p_connectedDocument = document;
-		
+
 	if ( document->type() == Document::dt_circuit ||
 			   document->type() == Document::dt_flowcode ||
 			   document->type() == Document::dt_mechanics )
@@ -346,7 +331,7 @@ void DocManager::slotViewFocused( View *view )
 		ItemDocument *cvb = static_cast<ItemDocument*>(view->document());
 		ItemInterface::self()->slotItemDocumentChanged(cvb);
 	}
-	
+
 	KTechlab::self()->slotDocUndoRedoChanged();
 	KTechlab::self()->slotDocModifiedChanged();
 	KTechlab::self()->requestUpdateCaptions();
@@ -357,22 +342,22 @@ void DocManager::slotViewUnfocused()
 {
 	if ( !KTechlab::self() )
 		return;
-	
+
 	KTechlab::self()->removeGUIClients();
 	disableContextActions();
-	
+
 	if (!p_focusedView)
 		return;
-	
+
 	if (p_connectedDocument)
 	{
 		disconnect( p_connectedDocument, SIGNAL(undoRedoStateChanged()), KTechlab::self(), SLOT(slotDocUndoRedoChanged()) );
-		p_connectedDocument = 0l;
+		p_connectedDocument = nullptr;
 	}
-	
+
 	ItemInterface::self()->slotItemDocumentChanged(0l);
-	p_focusedView = 0l;
-	
+	p_focusedView = nullptr;
+
 // 	KTechlab::self()->setCaption( 0 );
 	KTechlab::self()->requestUpdateCaptions();
 }
@@ -382,7 +367,7 @@ void DocManager::disableContextActions()
 {
 	KTechlab * ktl = KTechlab::self();
 	if ( !ktl ) return;
-	
+
 	ktl->actionByName("file_save")->setEnabled(false);
 	ktl->actionByName("file_save_as")->setEnabled(false);
 	ktl->actionByName("file_close")->setEnabled(false);
@@ -438,14 +423,14 @@ MechanicsDocument *DocManager::createMechanicsDocument()
 CircuitDocument *DocManager::openCircuitFile( const KUrl &url, ViewArea *viewArea )
 {
 	CircuitDocument *document = new CircuitDocument( url.fileName().remove(url.directory()) );
-	
+
 	if ( !document->openURL(url) )
 	{
-		KMessageBox::sorry( 0l, i18n("Could not open Circuit file \"%1\"", url.prettyUrl()) );
+		KMessageBox::sorry( nullptr, i18n("Could not open Circuit file \"%1\"", url.prettyUrl()) );
 		document->deleteLater();
-		return 0l;
+		return nullptr;
 	}
-	
+
 	handleNewDocument( document, viewArea );
 	emit fileOpened(url);
 	return document;
@@ -455,14 +440,14 @@ CircuitDocument *DocManager::openCircuitFile( const KUrl &url, ViewArea *viewAre
 FlowCodeDocument *DocManager::openFlowCodeFile( const KUrl &url, ViewArea *viewArea )
 {
 	FlowCodeDocument *document = new FlowCodeDocument( url.fileName().remove(url.directory()) );
-	
+
 	if ( !document->openURL(url) )
 	{
-		KMessageBox::sorry( 0l, i18n("Could not open FlowCode file \"%1\"", url.prettyUrl()) );
+		KMessageBox::sorry( nullptr, i18n("Could not open FlowCode file \"%1\"", url.prettyUrl()) );
 		document->deleteLater();
-		return 0l;
+		return nullptr;
 	}
-	
+
 	handleNewDocument( document, viewArea );
 	emit fileOpened(url);
 	return document;
@@ -472,39 +457,39 @@ FlowCodeDocument *DocManager::openFlowCodeFile( const KUrl &url, ViewArea *viewA
 MechanicsDocument *DocManager::openMechanicsFile( const KUrl &url, ViewArea *viewArea )
 {
 	MechanicsDocument *document = new MechanicsDocument( url.fileName().remove(url.directory()) );
-	
+
 	if ( !document->openURL(url) )
 	{
-		KMessageBox::sorry( 0l, i18n("Could not open Mechanics file \"%1\"", url.prettyUrl()) );
+		KMessageBox::sorry( nullptr, i18n("Could not open Mechanics file \"%1\"", url.prettyUrl()) );
 		document->deleteLater();
-		return 0l;
+		return nullptr;
 	}
-	
+
 	handleNewDocument( document, viewArea );
 	emit fileOpened(url);
 	return document;
-	
+
 }
 
 
 TextDocument *DocManager::openTextFile( const KUrl &url, ViewArea *viewArea )
 {
 	TextDocument *document = TextDocument::constructTextDocument( url.fileName().remove(url.directory()) );
-	
+
 	if (!document)
-		return 0l;
-	
+		return nullptr;
+
 	if ( !document->openURL(url) )
 	{
-		KMessageBox::sorry( 0l, i18n("Could not open text file \"%1\"", url.prettyUrl()) );
+		KMessageBox::sorry( nullptr, i18n("Could not open text file \"%1\"", url.prettyUrl()) );
 		document->deleteLater();
-		return 0l;
+		return nullptr;
 	}
-	
+
 	handleNewDocument( document, viewArea );
 	emit fileOpened(url);
 	return document;
 }
 
 
-#include "docmanager.moc"
+#include "moc_docmanager.cpp"

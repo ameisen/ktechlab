@@ -365,5 +365,4 @@ void unregisterProbe( int id)
 }
 
 
-#include "oscilloscope.moc"
-
+#include "moc_oscilloscope.cpp"

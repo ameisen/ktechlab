@@ -19,12 +19,12 @@ class MOSFET;
 @short Simulates a MOSFET
 @author David Saxton
  */
-class ECMOSFET : public Component
+class ECMOSFET final : public Component
 {
 	public:
 		ECMOSFET( int MOSFET_type, ICNDocument *icnDocument, bool newItem, const char * id = 0L );
 		~ECMOSFET() override;
-	
+
 		static Item * constructNEM( ItemDocument * itemDocument, bool newItem, const char * id );
 		static Item * constructPEM( ItemDocument * itemDocument, bool newItem, const char * id );
 // 		static Item * constructNDM( ItemDocument * itemDocument, bool newItem, const char * id );

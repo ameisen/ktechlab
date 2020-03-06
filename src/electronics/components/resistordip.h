@@ -18,7 +18,7 @@ const int maxCount = 256;
 /**
 @author David Saxton
 */
-class ResistorDIP : public Component
+class ResistorDIP final : public Component
 {
 public:
 	ResistorDIP( ICNDocument *icnDocument, bool newItem, const char *id = 0L );

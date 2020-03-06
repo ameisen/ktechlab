@@ -19,7 +19,7 @@ class JFET;
 @short Simulates a JFET
 @author David Saxton
  */
-class ECJFET : public Component
+class ECJFET final : public Component
 {
 	public:
 		ECJFET( int JFET_type, ICNDocument *icnDocument, bool newItem, const char * id = 0L );

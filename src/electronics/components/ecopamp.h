@@ -17,12 +17,12 @@
 @short Operational Amplifier
 @author David Saxton
 */
-class ECOpAmp : public Component
+class ECOpAmp final : public Component
 {
 	public:
 		ECOpAmp( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~ECOpAmp() override;
-		
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
 

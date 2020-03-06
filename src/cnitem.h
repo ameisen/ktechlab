@@ -11,6 +11,8 @@
 #ifndef CNITEM_H
 #define CNITEM_H
 
+#include "pch.hpp"
+
 #include "item.h"
 #include "ciwidgetmgr.h"
 
@@ -44,7 +46,6 @@ public:
 
 typedef QMap<QString, QString> StringMap;
 typedef QMap<QString, NodeInfo> NodeInfoMap; // Internal id, node info
-typedef QList<QPointer<Connector> > ConnectorList;
 typedef QMap<QString, QPointer<Text> > TextMap;
 
 /**
@@ -61,7 +62,7 @@ Q_OBJECT
 public:
 	CNItem( ICNDocument *_icnView, bool newItem, const QString &id );
 	~CNItem() override;
-	
+
 	/**
 	 * Creates a node which is attached to the item. The node will be moved
 	 * about with the item, and destroyed along with the item. The position
@@ -81,7 +82,7 @@ public:
 	/**
 	 * Returns a list of connectors associated with the CNItem
 	 */
-	ConnectorList connectorList();
+	QPtrList<Connector> connectorList();
 	bool preResize( QRect sizeRect ) override;
 	bool mousePressEvent( const EventInfo &eventInfo ) override;
 	bool mouseReleaseEvent( const EventInfo &eventInfo ) override;
@@ -123,7 +124,7 @@ public:
 	void restoreFromItemData( const ItemData &itemData ) override;
 	virtual void updateNodeLevels();
 	void drawShape( QPainter &p ) override;
-	
+
 signals:
 	/**
 	 * Emitted when the angle or flipped'ness changes. Note that CNItem doesn't
@@ -182,4 +183,3 @@ protected:
 typedef QList<CNItem*> CNItemList;
 
 #endif
-

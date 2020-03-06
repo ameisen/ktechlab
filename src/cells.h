@@ -8,78 +8,80 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
 
-#ifndef CELLS_H
-#define CELLS_H
+#pragma once
 
+#include <limits>
 #include <cassert>
 #include <map>
 #include <qrect.h>
 #include "utils.h"
 
-class Point
+static constexpr const short startCellPos = -(1 << 14);
+
+struct Point
 {
-public:
-	Point();
-	
-	short x;
-	short y;
-	short prevX;
-	short prevY;
+	short x = startCellPos;
+	short y = startCellPos;
+	short prevX = startCellPos;
+	short prevY = startCellPos;
 };
 
 // Key = cell, data = previous cell, compare = score
-typedef std::multimap< unsigned short, Point > TempLabelMap;
+using TempLabelMap = std::multimap<unsigned short, Point>;
 
 /**
 @short Used for mapping out connections
 */
-const short startCellPos = -(1 << 14);
-class Cell
+struct Cell
 {
-	public:
-		Cell();
-		/**
-		 * Resets bestScore, prevX, prevY, addedToLabels, it, permanent for
-		 * each cell.
-		 */
-		void reset();
-	
-		/**
-		 * 'Penalty' of using the cell from CNItem.
-		 */
-		unsigned short CIpenalty;
-		/**
-		 * 'Penalty' of using the cell from Connector.
-		 */
-		unsigned short Cpenalty;
-		/**
-		 * Best (lowest) score so far, _the_ best if it is permanent.
-		 */
-		unsigned short bestScore;
-		/**
-		 * Which cell this came from, (startCellPos,startCellPos) if originating
-		 * cell.
-		 */
-		short prevX, prevY;
-		/**
-		 * Whether the score can be improved on.
-		 */
-		bool permanent;
-		/**
-		 * Whether the cell has already been added to the list of cells to
-		 * check.
-		 */
-		bool addedToLabels;
-		/**
-		 * Pointer to the point in the TempLabelMap.
-		 */
-		Point * point;
-		/**
-		 * Number of connectors through that point.
-		 */
-		unsigned short numCon;
-};
+	using score_t = unsigned short;
+	static constexpr const auto max_score = std::numeric_limits<score_t>::max();
 
+	/**
+	 * Resets bestScore, prevX, prevY, addedToLabels, it, permanent for
+	 * each cell.
+	 */
+	void reset() {
+		addedToLabels = Cell{}.addedToLabels;
+		permanent = Cell{}.permanent;
+		bestScore = Cell{}.bestScore;
+	}
+
+	/**
+	 * Pointer to the point in the TempLabelMap.
+	 */
+	Point *point = nullptr;
+	/**
+	 * 'Penalty' of using the cell from CNItem.
+	 */
+	score_t CIpenalty = 0;
+	/**
+	 * 'Penalty' of using the cell from Connector.
+	 */
+	score_t Cpenalty = 0;
+	/**
+	 * Best (lowest) score so far, _the_ best if it is permanent.
+	 */
+	score_t bestScore = max_score;
+	/**
+	 * Number of connectors through that point.
+	 */
+	unsigned short numCon = 0;
+	/**
+	 * Which cell this came from, (startCellPos,startCellPos) if originating
+	 * cell.
+	 */
+	short prevX, prevY;
+	/**
+	 * Whether the score can be improved on.
+	 */
+	bool permanent = false;
+	/**
+	 * Whether the cell has already been added to the list of cells to
+	 * check.
+	 */
+	bool addedToLabels = false;
+};
 
 /**
 @author David Saxton
@@ -87,21 +89,25 @@ class Cell
 class Cells
 {
 	public:
-		Cells( const QRect & canvasRect );
+		Cells( const QRect &canvasRect );
+		Cells(Cells &&);
 		~Cells();
 		/**
 		 * Resets bestScore, prevX, prevY, addedToLabels, it, permanent for each cell
 	 	*/
 		void reset();
-	
-		QRect cellsRect() const { return m_cellsRect; }
-		
+
+		const QRect & cellsRect() const { return m_cellsRect; }
+
 		/**
 		 * Returns the cell containing the given position on the canvas.
 		 */
 		Cell & cellContaining( int x, int y ) const
 		{
-			return cell( roundDown( x, 8 ), roundDown( y, 8 ) );
+			return cell(
+				roundDown( x, 8 ),
+				roundDown( y, 8 )
+			);
 		}
 		/**
 		 * @return if the given cell exists.
@@ -110,19 +116,23 @@ class Cells
 		{
 			if ( (i < m_cellsRect.left()) || (i >= m_cellsRect.right()) )
 				return false;
-			
+
 			if ( (j < m_cellsRect.top()) || (j >= m_cellsRect.bottom()) )
 				return false;
-			
+
 			return true;
 		}
-		/** 
+		/**
 		 * @return if there is a cell containg the given canvas point.
 		 */
 		bool haveCellContaing( int x, int y ) const
 		{
-			return haveCell( roundDown( x, 8 ), roundDown( y, 8 ) );
+			return haveCell(
+				roundDown( x, 8 ),
+				roundDown( y, 8 )
+			);
 		}
+
 		Cell & cell( int i, int j ) const
 		{
 			assert( i < m_cellsRect.right() );
@@ -131,19 +141,15 @@ class Cells
 			j -= m_cellsRect.top();
 			return m_cells[i][j];
 		}
-	
+
 	protected:
-		
-		void init( const QRect & canvasRect );
-	
+		void init(const QRect &canvasRect);
+
 		QRect m_cellsRect;
-	
-		Cell **m_cells;
-		
+		Cell **m_cells = nullptr;
+
 	private:
-		Cells( const Cells & );
-		Cells & operator= ( const Cells & );
+		Cells(const Cells &);
+		Cells & operator = (const Cells &) = delete;
+		Cells & operator = (Cells &&) = delete;
 };
-
-#endif
-

@@ -146,4 +146,4 @@ void ICNView::slotUpdateRoutingToggles( bool manualRouting )
 }
 
 
-#include "icnview.moc"
+#include "moc_icnview.cpp"

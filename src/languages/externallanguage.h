@@ -28,14 +28,19 @@ class ExternalLanguage : public Language
 {
 Q_OBJECT
 public:
-	ExternalLanguage( ProcessChain *processChain, const QString &name );
+	ExternalLanguage(
+		ProcessChain *processChain,
+		const QString &name,
+		const QString &successMessage = QString{},
+		const QString &failureMessage = QString{}
+	);
 	~ExternalLanguage() override;
-	
+
 protected slots:
 	void processStdout();
 	void processStderr();
 	void processExited( int, QProcess::ExitStatus );
-	
+
 protected:
 	/**
 	 * Call this to start the language process. ExternalLanguage will ensure
@@ -69,7 +74,7 @@ protected:
 	virtual void outputtedError( const QString &/*message*/ ) {};
 	/**
 	 * Called when the process exits (called before any signals are emitted,
-	 * etc). If you reinherit this function, you should return whether 
+	 * etc). If you reinherit this function, you should return whether
 	 * everything is OK.
 	 */
 	virtual bool processExited( bool successfully ) { return successfully; }
@@ -92,7 +97,7 @@ protected:
 	 * that contain spaces put into quotation marks.
 	 */
 	void displayProcessCommand();
-	
+
 	KProcess * m_languageProcess;
 };
 

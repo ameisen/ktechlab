@@ -17,12 +17,12 @@ Wire::Wire( Pin *startPin, Pin *endPin )
 {
 	assert(startPin);
 	assert(endPin);
-	
+
 	m_pStartPin = startPin;
 	m_pEndPin = endPin;
-	m_current = 0.;
+	m_current = 0.0;
 	m_bCurrentIsKnown = false;
-	
+
 	m_pStartPin->addOutputWire(this);
 	m_pEndPin->addInputWire(this);
 }
@@ -35,26 +35,26 @@ Wire::~Wire()
 
 bool Wire::calculateCurrent()
 {
-	if ( m_pStartPin->currentIsKnown() && m_pStartPin->numWires() < 2 ) {
+	if ( !m_pStartPin.isNull() && m_pStartPin->currentIsKnown() && m_pStartPin->numWires() < 2 ) {
 		m_current = m_pStartPin->current();
 		m_bCurrentIsKnown = true;
 		return true;
 	}
-	
-	if ( m_pEndPin->currentIsKnown() && m_pEndPin->numWires() < 2 ) {
+
+	if ( !m_pEndPin.isNull() && m_pEndPin->currentIsKnown() && m_pEndPin->numWires() < 2 ) {
 		m_current = -m_pEndPin->current();
 		m_bCurrentIsKnown = true;
 		return true;
 	}
-	
-	if ( m_pStartPin->currentIsKnown() )
+
+	if ( !m_pStartPin.isNull() && m_pStartPin->currentIsKnown() )
 	{
 		double i = m_pStartPin->current();
 		bool ok = true;
 
-		const WireList outlist = m_pStartPin->outputWireList();
-		WireList::const_iterator end = outlist.end();
-		for ( WireList::const_iterator it = outlist.begin(); it != end && ok; ++it )
+		const QPtrList<Wire> outlist = m_pStartPin->outputWireList();
+		QPtrList<Wire>::const_iterator end = outlist.end();
+		for ( QPtrList<Wire>::const_iterator it = outlist.begin(); it != end && ok; ++it )
 		{
 			if ( *it && (Wire*)*it != this )
 			{
@@ -64,9 +64,9 @@ bool Wire::calculateCurrent()
 			}
 		}
 
-		const WireList inlist = m_pStartPin->inputWireList();
+		const QPtrList<Wire> inlist = m_pStartPin->inputWireList();
 		end = inlist.end();
-		for ( WireList::const_iterator it = inlist.begin(); it != end && ok; ++it )
+		for ( QPtrList<Wire>::const_iterator it = inlist.begin(); it != end && ok; ++it )
 		{
 			if ( *it && (Wire*)*it != this )
 			{
@@ -75,41 +75,41 @@ bool Wire::calculateCurrent()
 				else	ok = false;
 			}
 		}
-		
+
 		if (ok) {
 			m_current = i;
 			m_bCurrentIsKnown = true;
 			return true;
 		}
 	}
-	
-	if ( m_pEndPin->currentIsKnown() )
+
+	if ( !m_pEndPin.isNull() && m_pEndPin->currentIsKnown() )
 	{
 		double i = -m_pEndPin->current();
 		bool ok = true;
-		const WireList outlist = m_pEndPin->outputWireList();
+		const QPtrList<Wire> outlist = m_pEndPin->outputWireList();
 
-		WireList::const_iterator end = outlist.end();
-		for ( WireList::const_iterator it = outlist.begin(); it != end && ok; ++it )
+		QPtrList<Wire>::const_iterator end = outlist.end();
+		for ( QPtrList<Wire>::const_iterator it = outlist.begin(); it != end && ok; ++it )
 		{
 			if ( *it && (Wire*)*it != this )
 			{
 				if ( (*it)->currentIsKnown() )
 					i += (*it)->current();
 				else ok = false;
-			}	
+			}
 		}
 
-		const WireList inlist = m_pEndPin->inputWireList();
+		const QPtrList<Wire> inlist = m_pEndPin->inputWireList();
 		end = inlist.end();
-		for ( WireList::const_iterator it = inlist.begin(); it != end && ok; ++it )
+		for ( QPtrList<Wire>::const_iterator it = inlist.begin(); it != end && ok; ++it )
 		{
 			if ( *it && (Wire*)*it != this )
 			{
 				if ( (*it)->currentIsKnown() )
 					i -= (*it)->current();
 				else ok = false;
-			}	
+			}
 		}
 
 		if (ok) {
@@ -120,16 +120,25 @@ bool Wire::calculateCurrent()
 	}
 
 	m_bCurrentIsKnown = false;
+	m_current = 0.0;
 	return false;
 }
 
 
 double Wire::voltage() const
 {
-	double temp;
-	if( (temp=m_pStartPin->voltage() - m_pEndPin->voltage()) ) {
-		qCritical() << "Wire voltage error: " << temp << endl;
+	if (m_pStartPin.isNull()) {
+		return 0.0;
 	}
+
+	/*
+	if (!m_pEndPin.isNull()) {
+		double temp;
+		if( (temp = (m_pStartPin->voltage() - m_pEndPin->voltage())) ) {
+			qCritical() << "Wire voltage error: " << temp << endl;
+		}
+	}
+	*/
 
 	return m_pStartPin->voltage();
 }
@@ -138,6 +147,6 @@ double Wire::voltage() const
 void Wire::setCurrentKnown( bool known )
 {
 	m_bCurrentIsKnown = known;
-	if (!known) m_current = 0.;
+	if (!known)
+		m_current = 0.0;
 }
-

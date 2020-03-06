@@ -60,19 +60,19 @@ void OutputMethodInfo::initialize( OutputMethodDlg * dlg )
 		m_outputFile = f.fileName();
 		m_bAddToProject = false;
 	}
-	
+
 	else
 	{
 		if ( dlg->m_widget->loadFileCheck->isChecked() )
 			m_method = Method::SaveAndLoad;
-		
+
 		else
 			m_method = Method::SaveAndForget;
-		
+
 		m_outputFile = dlg->m_widget->outputFileURL->url();
 		m_bAddToProject = dlg->m_widget->addToProjectCheck->isChecked();
 	}
-	
+
 	m_picID = dlg->m_widget->m_pMicroSelect->micro();
 }
 //END class OutputMethodInfo
@@ -93,9 +93,9 @@ OutputMethodDlg::OutputMethodDlg( const QString &caption, const KUrl & inputURL,
 	m_inputURL = inputURL;
 	m_bAccepted = false;
 	m_widget = new OutputMethodWidget(this);
-	
+
 	m_widget->addToProjectCheck->setEnabled( ProjectManager::self()->currentProject() );
-	
+
 	if (!showPICSelect)
 	{
 		m_widget->m_pMicroSelect->hide();
@@ -112,7 +112,7 @@ OutputMethodDlg::OutputMethodDlg( const QString &caption, const KUrl & inputURL,
     connect(m_widget->saveFileCheck, SIGNAL(toggled(bool)), m_widget->groupBoxSaveOptions, SLOT(setEnabled(bool)));
 
 	fileMetaInfo()->initializeFromMetaInfo( m_inputURL, this );
-	
+
 	setMainWidget(m_widget);
 }
 
@@ -134,19 +134,19 @@ void OutputMethodDlg::setFilter( const QString &filter )
 }
 
 
-void OutputMethodDlg::setMethod( OutputMethodInfo::Method::Type m )
+void OutputMethodDlg::setMethod( OutputMethodInfo::Method m )
 {
 	switch (m)
 	{
 		case OutputMethodInfo::Method::Direct:
 			m_widget->displayDirectCheck->setChecked(true);
 			break;
-			
+
 		case OutputMethodInfo::Method::SaveAndForget:
 			m_widget->saveFileCheck->setChecked(true);
 			m_widget->loadFileCheck->setChecked(false);
 			break;
-			
+
 		case OutputMethodInfo::Method::SaveAndLoad:
 			m_widget->saveFileCheck->setChecked(true);
 			m_widget->loadFileCheck->setChecked(true);
@@ -190,4 +190,4 @@ MicroSelectWidget * OutputMethodDlg::microSelect() const
 //END class OutputMethodDlg
 
 
-#include "outputmethoddlg.moc"
+#include "moc_outputmethoddlg.cpp"

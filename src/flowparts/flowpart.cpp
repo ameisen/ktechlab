@@ -441,7 +441,6 @@ FlowPart* FlowPart::endPart( QStringList ids, FlowPartList *previousParts )
 	const QStringList::iterator idsEnd = ids.end();
 	for ( QStringList::iterator it = ids.begin(); it != idsEnd; ++it )
 	{
-		int prevLevel = level();
 		FlowPartList validParts;
 		FlowPart *part = outputPart(*it);
 		while (part)
@@ -450,9 +449,7 @@ FlowPart* FlowPart::endPart( QStringList ids, FlowPartList *previousParts )
 			{
 				validParts.append(part);
 // 				if ( part->level() >= level() ) {
-				const int _l = part->level();
 				part = part->endPart( QStringList(), previousParts );
-				prevLevel = _l;
 // 				} else {
 // 					part = 0l;
 // 				}
@@ -971,6 +968,4 @@ void FlowPart::orientationPixmap( uint orientation, QPixmap & pm ) const
 	pm.setMask(mask);  // pm needs not to have active painters on it
 }
 
-#include "flowpart.moc"
-
-
+#include "moc_flowpart.cpp"

@@ -70,7 +70,7 @@ uint64_t LogicProbeData::findPos( uint64_t time) const
 
 	// binary search
 
-// TODO: test and debug this code. 
+// TODO: test and debug this code.
 	unsigned int top = pos;
 	pos >>=1;
 	unsigned int bottom = 0;
@@ -157,7 +157,7 @@ void FloatingProbeData::setUpperAbsValue( double upperAbsValue)
 {
 	if( m_upperAbsValue == upperAbsValue)
 		return;
-	
+
 	m_upperAbsValue = upperAbsValue;
 	emit displayAttributeChanged();
 }
@@ -166,10 +166,10 @@ void FloatingProbeData::setLowerAbsValue( double lowerAbsValue)
 {
 	if( m_lowerAbsValue == lowerAbsValue)
 		return;
-	
+
 	m_lowerAbsValue = lowerAbsValue;
 	emit displayAttributeChanged();
 }
 //END class FloatingProbeData
 
-#include "oscilloscopedata.moc"
+#include "moc_oscilloscopedata.cpp"

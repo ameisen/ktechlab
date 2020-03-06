@@ -7,8 +7,7 @@
  *   Software Foundation                                                   *
  ***************************************************************************/
 
-#ifndef KTL_CANVASITEMLIST_H_
-#define KTL_CANVASITEMLIST_H_
+#pragma once
 
 #include <qlist.h>
 
@@ -16,15 +15,11 @@
 
 class KtlQCanvasItem;
 
-typedef std::multimap< double, KtlQCanvasItem* > SortedCanvasItems;
+using SortedCanvasItems = std::multimap<double, KtlQCanvasItem *>;
 
-
-class KtlQCanvasItemList : public QList<KtlQCanvasItem*>
+class KtlQCanvasItemList : public QList<KtlQCanvasItem *>
 {
-    public:
-        void sort();
-        KtlQCanvasItemList operator+(const KtlQCanvasItemList &l) const;
+	public:
+	void sort();
+	KtlQCanvasItemList operator + (const KtlQCanvasItemList &l) const { return *this + l; }
 };
-
-
-#endif // KTL_CANVASITEMLIST_H_

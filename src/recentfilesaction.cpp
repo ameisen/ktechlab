@@ -91,7 +91,7 @@ void RecentFilesAction::loadEntries()
 	KConfigGroup grCfg = config->group( m_configGroupName );
 
     // read file list
-	for( unsigned int i = 1 ; i <= m_maxItems ; i++ )
+	for( int i = 1 ; i <= m_maxItems ; i++ )
 	{
 		key = QString( "File%1" ).arg( i );
 		value = grCfg.readEntry( key, "");
@@ -121,7 +121,7 @@ void RecentFilesAction::saveEntries()
 	KConfigGroup grCfg = config->group( m_configGroupName );
 
     // write file list
-	for( unsigned int i = 1 ; i <= lst.count() ; i++ )
+	for( int i = 1 ; i <= lst.count() ; i++ )
 	{
 		key = QString( "File%1" ).arg( i );
 		value = lst[ i - 1 ];
@@ -162,14 +162,14 @@ void RecentFilesAction::slotClicked()
     QAction::trigger();
 }
 
-void RecentFilesAction::slotActivated(const QString& text)
+void RecentFilesAction::slotActivated([[maybe_unused]] const QString& text)
 {
 	//KSelectAction::slotActivated(text); // TODO CORRECT?
     KSelectAction::activate( QAction::Trigger);
 }
 
 
-void RecentFilesAction::slotActivated(int id)
+void RecentFilesAction::slotActivated([[maybe_unused]] int id)
 {
 	//KSelectAction::slotActivated(id);
     KSelectAction::activate(QAction::Trigger); // TODO correct?
@@ -183,4 +183,4 @@ void RecentFilesAction::slotActivated()
 }
 
 
-#include "recentfilesaction.moc"
+#include "moc_recentfilesaction.cpp"

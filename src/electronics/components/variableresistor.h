@@ -19,17 +19,17 @@ class QSlider;
 @author William Hillerby
 */
 
-class VariableResistor : public Component
+class VariableResistor final : public Component
 {
 	public:
 		VariableResistor( ICNDocument* icnDocument, bool newItem, const QString& id = 0L );
 		~VariableResistor() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-		
+
 		void sliderValueChanged( const QString &id, int newValue ) override;
-		
+
 	private:
 		void dataChanged() override;
 		void drawShape( QPainter &p ) override;

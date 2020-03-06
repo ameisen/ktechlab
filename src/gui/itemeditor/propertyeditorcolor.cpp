@@ -31,7 +31,7 @@ PropertyEditorColor::PropertyEditorColor( QWidget * parent, Property * property,
 	m_pColorCombo->resize(width(), height());
 	m_pColorCombo->show();
 	setWidget(m_pColorCombo);
-	
+
 	connect( m_pColorCombo, SIGNAL(activated(const QColor&)), this, SLOT(valueChanged(const QColor&)) );
 	connect( property, SIGNAL(valueChanged( const QColor& )), m_pColorCombo, SLOT(setColor(const QColor &)) );
 }
@@ -60,5 +60,4 @@ bool PropertyEditorColor::eventFilter(QObject* watched, QEvent* e)
 }
 //END class PropertyEditorColor
 
-#include "propertyeditorcolor.moc"
-
+#include "moc_propertyeditorcolor.cpp"

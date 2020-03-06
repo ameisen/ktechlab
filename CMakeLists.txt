@@ -1,22 +1,13 @@
-set( KTECHLAB_DEVELOPER_BUILD "true" )
+set(KTECHLAB_DEVELOPER_BUILD "true")
 
-project( ktechlab )
-set( VERSION 0.50.0 )
+project(ktechlab)
+set(VERSION 0.60.0)
 
-cmake_minimum_required(VERSION 3.1)
-# cmake CXX_STANDARD needs min cmake 3.1
-# https://stackoverflow.com/questions/10984442/how-to-detect-c11-support-of-a-compiler-with-cmake/20165220#20165220
-#
-# KDE libs need min C++11 capabile compiler, so C++ can be requiested
-# https://community.kde.org/Frameworks/Policies#Frameworks_compiler_requirements_and_C.2B.2B11
-#
-set(CMAKE_CXX_STANDARD 11)
+cmake_minimum_required(VERSION 3.16)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_DEBUG_TARGET_PROPERTIES INCLUDE_DIRECTORIES)
-
-
-find_package(ECM 0.0.11 CONFIG REQUIRED)
+find_package(ECM 5.44.0 CONFIG REQUIRED)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
@@ -33,7 +24,7 @@ find_package(Qt5 CONFIG REQUIRED COMPONENTS
     DBus
     Widgets
     Test # TODO this should be optional
-    )
+)
 
 find_package(KF5TextEditor)
 
@@ -52,17 +43,8 @@ find_package(KF5 REQUIRED COMPONENTS
     Solid
     WidgetsAddons
     XmlGui
-    )
+)
 
-# find_package(Qt4 4.6.0 REQUIRED)
-# find_package(KDE4 REQUIRED)
-# include(KDE4Defaults)
-
-
-# Edit FindGPSim and replace
-#    include(MacroPushRequiredVars) -> include(CMakePushCheckState)
-#    macro_push_required_vars() -> cmake_push_check_state()
-#    macro_pop_required_vars() -> cmake_pop_check_state()
 find_package(GPSim REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
@@ -74,12 +56,9 @@ add_definitions(-fPIC)
 
 #set(CMAKE_VERBOSE_MAKEFILE ON)
 
-#add_definitions ( -DQT3_SUPPORT )
-#add_definitions ( -DQT3_SUPPORT_WARNINGS )
-
 if (KTECHLAB_DEVELOPER_BUILD)
 # for debugging with GCC 5
-    add_definitions( -fno-omit-frame-pointer )
+    add_definitions( -fno-omit-frame-pointer -Og )
     set(SANITIZE_FLAGS " -fsanitize=address -fno-omit-frame-pointer -fPIC") # address
     #set(SANITIZE_FLAGS " -fsanitize=undefined -fno-omit-frame-pointer ") # undefined
     #set(SANITIZE_FLAGS "") # disabled
@@ -93,15 +72,16 @@ if (KTECHLAB_DEVELOPER_BUILD)
 
     #add_definitions( -Wold-style-cast ) # warn on old style casts. as these could introduce bugs
 
+    add_definitions( -fno-inline )  # do not inline any method calls; this is useful for crash debugging
 endif (KTECHLAB_DEVELOPER_BUILD)
 
-add_definitions( -fno-inline )  # do not inline any method calls; this is useful for crash debugging
 add_definitions(
     ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}
-    ${GLIB2_DEFINITIONS} ${KDE4_DEFINITIONS})
+    ${GLIB2_DEFINITIONS}
+    ${KDE4_DEFINITIONS}
+)
 
 message("Qt5Core_EXECUTABLE_COMPILE_FLAGS=>>>${Qt5Core_EXECUTABLE_COMPILE_FLAGS}<<<" )
-
 
 # KDE disables STL compatibility by default; re-enabling it is supported
 # see http://kde.6490.n7.nabble.com/QT-NO-STL-in-KDE4-td1123882i20.html
@@ -126,14 +106,15 @@ include_directories(
     ${Qt5Core_INCLUDE_DIRS}
     ${Qt5Widgets_INCLUDE_DIRS}
     ${Qt5Test_INCLUDE_DIRS}
-    )
+)
 
 set( SRC_EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples/ )
 set( SRC_TESTS_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/ )
 
-CONFIGURE_FILE( ${CMAKE_SOURCE_DIR}/config.h.cmake
-	${CMAKE_BINARY_DIR}/config.h )
-
+CONFIGURE_FILE(
+    ${CMAKE_SOURCE_DIR}/config.h.cmake
+	${CMAKE_BINARY_DIR}/config.h
+)
 
 message(STATUS "include_dir begin")
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
@@ -141,14 +122,6 @@ foreach(dir ${dirs})
   message(STATUS "include_dir='${dir}'")
 endforeach()
 message(STATUS "include_dir end")
-
-# message(STATUS "variables begin")
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#     message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
-# message(STATUS "variables end")
 
 add_subdirectory( microbe )
 add_subdirectory( src )

@@ -20,53 +20,60 @@
 
 class KtlQPolygonalProcessor
 {
-public:
-	KtlQPolygonalProcessor(KtlQCanvas* c, const QPolygon& pa) :
-	canvas(c)
+	public:
+	KtlQPolygonalProcessor(KtlQCanvas *c, const QPolygon &pa) :
+		canvas(c)
 	{
-		QRect pixelbounds = pa.boundingRect();
+		auto pixelbounds = pa.boundingRect();
 		bounds.setLeft( canvas->toChunkScaling( pixelbounds.left() ) );
 		bounds.setRight( canvas->toChunkScaling( pixelbounds.right() ) );
 		bounds.setTop( canvas->toChunkScaling( pixelbounds.top() ) );
 		bounds.setBottom( canvas->toChunkScaling( pixelbounds.bottom() ) );
-		//bitmap = QImage(bounds.width(),bounds.height(),1,2,QImage::LittleEndian); // 2018.09.07 - convert to non-deprecated
-        bitmap = QImage(bounds.width(),bounds.height(), QImage::Format_MonoLSB);
-		pnt = 0;
+    bitmap = QImage(
+			bounds.width(),
+			bounds.height(),
+			QImage::Format_MonoLSB
+		);
 		bitmap.fill(0);
 	}
 
 	inline void add(int x, int y)
 	{
-		if ( pnt >= result.size() ) {
-			result.resize(pnt*2+10);
+		if (pnt >= result.size()) {
+			result.resize(pnt * 2 + 10);
 		}
-		result[pnt++] = QPoint(x+bounds.x(),y+bounds.y());
+
+		result[pnt++] = QPoint(
+			x + bounds.x(),
+			y + bounds.y()
+		);
 	}
 
 	inline void addBits(int x1, int x2, uchar newbits, int xo, int yo) {
-		for (int i=x1; i<=x2; i++)
-			if ( newbits & (1<<i) )
-				add(xo+i,yo);
+		for (int i = x1; i <= x2; i++)
+			if (newbits & (1<<i))
+				add(xo + i, yo);
 	}
 
-	void doSpans(int n, QPoint* pt, int* w)	{
-		for (int j=0; j<n; j++) {
-			int y =  canvas->toChunkScaling( pt[j].y() )-bounds.y();
-			uchar* l = bitmap.scanLine(y);
+	void doSpans(int n, QPoint *pt, int *w)	{
+		for (int j = 0; j < n; j++) {
+			int y =  canvas->toChunkScaling(pt[j].y()) - bounds.y();
+			uchar *l = bitmap.scanLine(y);
 			int x = pt[j].x();
-			int x1 = canvas->toChunkScaling( x )-bounds.x();
-			int x2 = canvas->toChunkScaling( x+w[j] ) - bounds.x();
-			int x1q = x1/8;
-			int x1r = x1%8;
-			int x2q = x2/8;
-			int x2r = x2%8;
-			if ( x1q == x2q ) {
+			int x1 = canvas->toChunkScaling(x) - bounds.x();
+			int x2 = canvas->toChunkScaling(x + w[j]) - bounds.x();
+			int x1q = x1 / 8;
+			int x1r = x1 % 8;
+			int x2q = x2 / 8;
+			int x2r = x2 % 8;
+			if (x1q == x2q) {
 				uchar newbits = (~l[x1q]) & (((2<<(x2r-x1r))-1)<<x1r);
-				if ( newbits ) {
+				if (newbits) {
 					addBits(x1r,x2r,newbits,x1q*8,y);
 					l[x1q] |= newbits;
 				}
-			} else {
+			}
+			else {
 				uchar newbits1 = (~l[x1q]) & (0xff<<x1r);
 				if ( newbits1 ) {
 					addBits(x1r,7,newbits1,x1q*8,y);
@@ -91,21 +98,20 @@ public:
 	QPolygon result;
 
 private:
-	int pnt;
-
-	KtlQCanvas* canvas;
-	QRect bounds;
 	QImage bitmap;
+	QRect bounds;
+	KtlQCanvas *canvas;
+	int pnt = 0;
 };
 
 
 class KtlQCanvasViewData
 {
 public:
-	KtlQCanvasViewData() : repaint_from_moving( false ) {}
+	KtlQCanvasViewData() {}
 	QMatrix xform;
 	QMatrix ixform;
-	bool repaint_from_moving;
+	bool repaint_from_moving = false;
 };
 
 
@@ -124,7 +130,7 @@ public:
 	const QRect& operator[](int i);
 
 private:
-	QRect* cluster;
+	QRect *cluster;
 	int count;
 	const int maxcl;
 };
@@ -133,10 +139,10 @@ private:
 class KtlQCanvasItemPtr
 {
 public:
-	KtlQCanvasItemPtr() : ptr(0) { }
-	KtlQCanvasItemPtr( KtlQCanvasItem* p ) : ptr(p) { }
+	KtlQCanvasItemPtr() { }
+	KtlQCanvasItemPtr( KtlQCanvasItem *p ) : ptr(p) { }
 
-	bool operator<=(const KtlQCanvasItemPtr& that) const
+	bool operator <= (const KtlQCanvasItemPtr &that) const
 	{
 		// Order same-z objects by identity.
 		if (that.ptr->z()==ptr->z())
@@ -144,7 +150,7 @@ public:
 		return that.ptr->z() <= ptr->z();
 	}
 
-	bool operator<(const KtlQCanvasItemPtr& that) const
+	bool operator < (const KtlQCanvasItemPtr &that) const
 	{
 		// Order same-z objects by identity.
 		if (that.ptr->z()==ptr->z())
@@ -152,7 +158,7 @@ public:
 		return that.ptr->z() < ptr->z();
 	}
 
-	bool operator>(const KtlQCanvasItemPtr& that) const
+	bool operator > (const KtlQCanvasItemPtr &that) const
 	{
 		// Order same-z objects by identity.
 		if (that.ptr->z()==ptr->z())
@@ -160,15 +166,15 @@ public:
 		return that.ptr->z() > ptr->z();
 	}
 
-	bool operator==(const KtlQCanvasItemPtr& that) const
+	bool operator == (const KtlQCanvasItemPtr &that) const
 	{
 		return that.ptr == ptr;
 	}
 
-	operator KtlQCanvasItem*() const { return ptr; }
+	operator KtlQCanvasItem * () const { return ptr; }
 
 private:
-	KtlQCanvasItem* ptr;
+	KtlQCanvasItem *ptr = nullptr;
 };
 
 
@@ -176,7 +182,7 @@ private:
 class KtlQCanvasChunk
 {
 public:
-	KtlQCanvasChunk() : changed(true) { }
+	KtlQCanvasChunk() { }
 	// Other code assumes lists are not deleted. Assignment is also
 	// done on ChunkRecs. So don't add that sort of thing here.
 
@@ -184,16 +190,16 @@ public:
 		list.sort();
 	}
 
-	const KtlQCanvasItemList* listPtr() const {
+	const KtlQCanvasItemList * listPtr() const {
 		return &list;
 	}
 
-	void add(KtlQCanvasItem* item) {
+	void add(KtlQCanvasItem *item) {
 		list.prepend(item);
 		changed = true;
 	}
 
-	void remove(KtlQCanvasItem* item) {
+	void remove(KtlQCanvasItem *item) {
 		list.removeAll(item);
 		changed = true;
 	}
@@ -207,29 +213,29 @@ public:
 	}
 
 	bool takeChange() {
-		bool y = changed;
+		const auto result = changed;
 		changed = false;
-		return y;
+		return result;
 	}
 
 private:
 	KtlQCanvasItemList list;
-	bool changed;
+	bool changed = true;
 };
 
 
 
 class KtlQCanvasPolygonScanner : public KtlQ3PolygonScanner
 {
-	KtlQPolygonalProcessor& processor;
+	KtlQPolygonalProcessor &processor;
 
 public:
-	KtlQCanvasPolygonScanner(KtlQPolygonalProcessor& p) :	processor(p)
+	KtlQCanvasPolygonScanner(KtlQPolygonalProcessor &p) :	processor(p)
 	{
 	}
-	void processSpans( int n, QPoint* point, int* width ) override
+	void processSpans( int n, QPoint *point, int *width ) override
 	{
-		processor.doSpans(n,point,width);
+		processor.doSpans(n, point, width);
 	}
 };
 
@@ -238,8 +244,7 @@ public:
 // Be careful adding to this - check all usages.
 class KtlQCanvasItemExtra
 {
-	KtlQCanvasItemExtra() /* : vx(0.0), vy(0.0) */ { }
-	//double vx,vy; // 2017.10.01 - commented unused members
+	KtlQCanvasItemExtra() { }
 	friend class KtlQCanvasItem;
 };
 

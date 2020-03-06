@@ -11,7 +11,7 @@
 #ifndef ELEMENTSET_H
 #define ELEMENTSET_H
 
-//#include <vector>
+#include "pch.hpp"
 
 #include <qlist.h>
 
@@ -23,10 +23,7 @@ class ElementSet;
 class LogicIn;
 class Matrix;
 class NonLinear;
-class QuickVector;  // not exactly sure how these types of declarations work. 
-
-typedef QList<Element*> ElementList;
-typedef QList<NonLinear*> NonLinearList;
+class QuickVector;  // not exactly sure how these types of declarations work.
 
 /**
 Steps in simulation of a set of elements:
@@ -98,7 +95,7 @@ public:
 	 * Returns the number of voltage sources in the circuit
 	 */
 	int cbranchCount() const { return m_cb; }
-	
+
 	void createMatrixMap();
 	/**
 	 * Displays the matrix equations Ax=b and J(dx)=-r
@@ -108,16 +105,16 @@ public:
 	 * Update the nodal voltages and branch currents from the x vector
 	 */
 	void updateInfo();
-	
+
 private:
-// calc engine stuff 
+// calc engine stuff
 	Matrix *p_A;
 	QuickVector *p_x;
 	QuickVector *p_b;
 // end calc engine stuff.
 
-	ElementList m_elementList;
-	NonLinearList m_cnonLinearList;
+	QList<Element *> m_elementList;
+	QList<NonLinear *> m_cnonLinearList;
 
 	uint m_cb;
 	CBranch **m_cbranches; // Pointer to an array of cbranches
@@ -133,4 +130,3 @@ private:
 };
 
 #endif
-

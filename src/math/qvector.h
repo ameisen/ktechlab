@@ -29,12 +29,12 @@
 
 class QuickVector {
 public :
-	 QuickVector(CUI m_in);
+	QuickVector(CUI m_in);
 	~QuickVector();
-	 QuickVector(const QuickVector *old); // ye olde copy constructor.
+	QuickVector(const QuickVector *old); // ye olde copy constructor.
 
-	double & operator[]( const int i) { changed = true; return values[i]; }
-	double operator[]( const int i) const { return values[i]; }
+	double & operator[](const int i) { changed = true; return values[i]; }
+	double operator[](const int i) const { return values[i]; }
 
 // accessors
 // we use accessors so that we can provide range checking.
@@ -72,9 +72,9 @@ public :
 private :
 // We don't have a default vector size so therefore we lock the default constructor.
 	QuickVector() {};
+	double *values = nullptr;
 	unsigned int m;
-	bool changed;
-	double *values;
+	bool changed = true;
 };
 
 #endif // QVECTOR_H__KTECHLAB_

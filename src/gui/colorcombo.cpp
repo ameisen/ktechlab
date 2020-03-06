@@ -25,7 +25,7 @@ ColorCombo::ColorCombo( ColorScheme colorScheme, QWidget *parent, const char *na
 {
     setObjectName( name );
 	m_colorScheme = colorScheme;
-	
+
 	customColor.setRgb( 255, 255, 255 );
 	internalColor.setRgb( 255, 255, 255 );
 
@@ -48,7 +48,7 @@ void ColorCombo::createPalettes()
 	if ( createdPalettes )
 		return;
 	createdPalettes = true;
-	
+
 	paletteSize[ QtStandard ] = 17;
 	palette[ QtStandard ] = new QColor[ paletteSize[ QtStandard ] ];
 
@@ -71,11 +71,11 @@ void ColorCombo::createPalettes()
 	palette[ QtStandard ][i++] = Qt::gray;
 	palette[ QtStandard ][i++] = Qt::darkGray;
 	palette[ QtStandard ][i++] = Qt::black;
-	
-	
+
+
 	paletteSize[ LED ] = 6;
 	palette[ LED ] = new QColor[ paletteSize[ LED ] ];
-	
+
 	i = 0;
 	palette[ LED ][i++] = "#f62a2a";
 	palette[ LED ][i++] = "#ff7733";
@@ -201,4 +201,4 @@ void ColorCombo::addColors()
 }
 
 
-#include "colorcombo.moc"
+#include "moc_colorcombo.cpp"

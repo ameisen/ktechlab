@@ -11,12 +11,16 @@
 #ifndef ITEM_H
 #define ITEM_H
 
+#include "pch.hpp"
+
 #include "variant.h"
 #include "itemdocument.h"
 
-//#include <canvas.h> // 2018.10.16 - not needed
 #include "canvasitems.h"
-#include <qpointer.h>
+#include <QPointer>
+
+#include <cmath>
+#include <type_traits>
 
 class Document;
 class EventInfo;
@@ -35,15 +39,27 @@ typedef Variant Property;
 typedef Item*(*createItemPtr)( ItemDocument *itemDocument, bool newItem, const char *id );
 typedef QPointer<Item> GuardedItem;
 typedef QMap<QString, Variant*> VariantDataMap;
-typedef QList<GuardedItem> ItemList;
 
 /**
 @author David Saxton
 @author Daniel Clarke
 */
-class Item : /* public QObject, */ public KtlQCanvasPolygon
-{
-Q_OBJECT
+class Item : public KtlQCanvasPolygon {
+	Q_OBJECT
+
+	template <typename T, bool round>
+	static constexpr T returnCoordinate(double value) {
+		if constexpr (std::is_integral_v<T>) {
+			if constexpr (round) {
+				return T(std::round(value));
+			}
+			else {
+				return T(value);
+			}
+		}
+		return T(value);
+	}
+
 public:
 	Item( ItemDocument *itemDocument, bool newItem, const QString &id );
 	~Item() override;
@@ -53,6 +69,43 @@ public:
 	 */
 	VariantDataMap *variantMap() { return &m_variantData; }
 
+	template <typename T = double, bool round = true>
+	T getX() const { returnCoordinate<T, round>(x()); }
+
+	template <typename T = double, bool round = true>
+	T getY() const { returnCoordinate<T, round>(y()); }
+
+	template <typename T = double, bool round = true>
+	T getZ() const { returnCoordinate<T, round>(z()); }
+
+	template <typename T = double, bool round = true>
+	Point2<T> getPosition2() const {
+		return {
+			getX<T, round>(),
+			getY<T, round>()
+		};
+	}
+
+	template <typename T = double, bool round = true>
+	Point3<T> getPosition() const {
+		return {
+			getX<T, round>(),
+			getY<T, round>(),
+			getZ<T, round>()
+		};
+	}
+
+	int getWidth() const { return width(); }
+	int getHeight() const { return height(); }
+
+	Point2<int> getSize() const {
+		return { width(), height() };
+	}
+
+	Point2<int> getOffset() const {
+		return { offsetX(), offsetY() };
+	}
+
 	double dataDouble( const QString & id ) const;
 	int dataInt( const QString & id ) const;
 	bool dataBool( const QString & id ) const;
@@ -60,7 +113,9 @@ public:
 	QColor dataColor( const QString & id ) const;
 
 	virtual Property * createProperty( const QString & id, Variant::Type::Value type );
+	Property & createPropertyRef( const QString & id, Variant::Type::Value type );
 	Property * property( const QString & id ) const;
+	Property & propertyRef( const QString & id ) const;
 	bool hasProperty( const QString & id ) const;
 
 	/**
@@ -150,7 +205,7 @@ public:
 	 * the children's children, and so on recursively, instead of just the
 	 * immediate children.
 	 */
-	ItemList children( bool includeGrandChildren = false ) const;
+	QPtrList<Item> children( bool includeGrandChildren = false ) const;
 	/**
 	 * Returns whether we have the given child as either a direct child, or as
 	 * either a direct or indirect child
@@ -286,7 +341,7 @@ protected:
 	QString m_name; ///< Name (e.g. "Resistor")
 	QString m_type;
 	GuardedItem p_parentItem; // If attached to a parent item
-	ItemList m_children;
+	QPtrList<Item> m_children;
 	QPointer<ItemDocument> p_itemDocument;
 	QPolygon m_itemPoints; // The unorientated and unsized item points
 	QTimer * m_pPropertyChangedTimer; ///< Single show timer for one a property changes

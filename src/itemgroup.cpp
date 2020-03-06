@@ -42,37 +42,37 @@ void ItemGroup::getViewPtrs()
 }
 
 
-ItemList ItemGroup::items( bool excludeParentedItems ) const
+QPtrList<Item> ItemGroup::items( bool excludeParentedItems ) const
 {
 	if (excludeParentedItems)
 		return m_itemList;
-	
-	ItemList items = m_itemList;
-	ItemList parents = m_itemList;
-	
-	uint oldSize = items.size();
+
+	QPtrList<Item> items = m_itemList;
+	QPtrList<Item> parents = m_itemList;
+
+	auto oldSize = items.size();
 	do
 	{
 		oldSize = items.size();
-		ItemList children;
-		
-		ItemList::iterator end = parents.end();
-		for ( ItemList::iterator it = parents.begin(); it != end; ++it )
+		QPtrList<Item> children;
+
+		QPtrList<Item>::iterator end = parents.end();
+		for ( QPtrList<Item>::iterator it = parents.begin(); it != end; ++it )
 			children += (*it)->children();
-		
+
 		end = children.end();
-		for ( ItemList::iterator it = children.begin(); it != end; ++it )
+		for ( QPtrList<Item>::iterator it = children.begin(); it != end; ++it )
 		{
 			if ( children.count(*it) > 1 )
 				*it = 0l;
 		}
 		children.removeAll((Item*)0l);
-		
+
 		items += children;
 		parents = children;
 	}
 	while ( oldSize != items.size() );
-	
+
 	return items;
 }
 
@@ -82,13 +82,13 @@ bool ItemGroup::itemsHaveSameDataValue( const QString &id ) const
 	if ( m_itemList.size() < 1 ) {
 		return true;
 	}
-	
+
 	if (!itemsAreSameType()) {
 		return false;
 	}
-	
-	ItemList::const_iterator it = m_itemList.begin();
-	const ItemList::const_iterator end = m_itemList.end();
+
+	QPtrList<Item>::const_iterator it = m_itemList.begin();
+	const QPtrList<Item>::const_iterator end = m_itemList.end();
 	QVariant firstData = (*it)->property(id)->value();
 	for ( ++it; it != end; ++it )
 	{
@@ -105,11 +105,11 @@ bool ItemGroup::itemsHaveSameData() const
 	if ( m_itemList.size() < 1 ) {
 		return true;
 	}
-	
+
 	if (!itemsAreSameType()) {
 		return false;
 	}
-	
+
 	VariantDataMap *variantMap = m_itemList.first()->variantMap();
 	const VariantDataMap::const_iterator vitEnd = variantMap->end();
 	for ( VariantDataMap::const_iterator vit = variantMap->begin(); vit != vitEnd; ++vit )
@@ -127,11 +127,11 @@ bool ItemGroup::itemsHaveDefaultData() const
 	if (!itemsHaveSameData()) {
 		return false;
 	}
-	
+
 	if ( m_itemList.size() < 1 ) {
 		return true;
 	}
-	
+
 	VariantDataMap *variantMap = (*m_itemList.begin())->variantMap();
 	const VariantDataMap::const_iterator vitEnd = variantMap->end();
 	for ( VariantDataMap::const_iterator vit = variantMap->begin(); vit != vitEnd; ++vit )
@@ -148,7 +148,7 @@ void ItemGroup::registerItem( Item *item )
 	if ( !item || m_itemList.contains(item) ) {
 		return;
 	}
-	
+
 	m_itemList += item;
 	updateAreSameStatus();
 }
@@ -165,17 +165,17 @@ void ItemGroup::unregisterItem( Item *item )
 void ItemGroup::updateAreSameStatus()
 {
 	b_itemsAreSameType = true;
-	
+
 	if ( m_itemList.size() < 2 ) {
 		return;
 	}
-	
+
 	QString activeId = (*m_itemList.begin())->id();
 	int discardIndex = activeId.lastIndexOf("__");
 	if ( discardIndex != -1 ) activeId.truncate(discardIndex);
-	
-	const ItemList::iterator end = m_itemList.end();
-	for ( ItemList::iterator it = ++m_itemList.begin(); it != end && b_itemsAreSameType; ++it )
+
+	const QPtrList<Item>::iterator end = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = ++m_itemList.begin(); it != end && b_itemsAreSameType; ++it )
 	{
 		if (*it)
 		{
@@ -195,18 +195,18 @@ void ItemGroup::slotAlignHorizontally()
 {
 	if ( m_itemList.size() < 2 )
 		return;
-	
+
 	double avg_y = 0.;
-	
-	const ItemList::iterator end = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+
+	const QPtrList<Item>::iterator end = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 		avg_y += (*it)->y();
-	
+
 	int new_y = int(avg_y/(8*m_itemList.size()))*8+4;
-	
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 		(*it)->move( (*it)->x(), new_y );
-	
+
 	p_icnDocument->requestStateSave();
 }
 
@@ -215,18 +215,18 @@ void ItemGroup::slotAlignVertically()
 {
 	if ( m_itemList.size() < 2 )
 		return;
-	
+
 	double avg_x = 0.;
-	
-	const ItemList::iterator end = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+
+	const QPtrList<Item>::iterator end = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 		avg_x += (*it)->x();
-	
+
 	int new_x = int(avg_x/(8*m_itemList.size()))*8+4;
-	
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 		(*it)->move( new_x, (*it)->y() );
-	
+
 	p_icnDocument->requestStateSave();
 }
 
@@ -235,18 +235,18 @@ void ItemGroup::slotDistributeHorizontally()
 {
 	if ( m_itemList.size() < 2 )
 		return;
-	
+
 	// We sort the items by their horizontal position so that we can calculate
 	// an average spacing
 	typedef std::multimap< double, Item * > DIMap;
-	
+
 	DIMap ranked;
-	const ItemList::iterator ilend = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != ilend; ++it )
+	const QPtrList<Item>::iterator ilend = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != ilend; ++it )
 		ranked.insert( std::make_pair( (*it)->x(), *it ) );
-	
+
 	double avg_spacing = 0;
-	
+
 	Item * previous = 0l;
 	const DIMap::iterator rankedEnd = ranked.end();
 	for ( DIMap::iterator it = ranked.begin(); it != rankedEnd; ++it )
@@ -259,9 +259,9 @@ void ItemGroup::slotDistributeHorizontally()
 		}
 		previous = item;
 	}
-	
+
 	avg_spacing /= (m_itemList.size()-1);
-	
+
 	DIMap::iterator it = ranked.begin();
 	// Position that we are up to
 	double at = it->second->x() + it->second->width() + it->second->offsetX();
@@ -272,7 +272,7 @@ void ItemGroup::slotDistributeHorizontally()
 		item->move( snapToCanvas(new_x), item->y() );
 		at = new_x + item->width() + item->offsetX();
 	}
-	
+
 	p_icnDocument->requestStateSave();
 }
 
@@ -281,18 +281,18 @@ void ItemGroup::slotDistributeVertically()
 {
 	if ( m_itemList.size() < 2 )
 		return;
-	
+
 	// We sort the items by their horizontal position so that we can calculate
 	// an average spacing
 	typedef std::multimap< double, Item * > DIMap;
-	
+
 	DIMap ranked;
-	const ItemList::iterator ilend = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != ilend; ++it )
+	const QPtrList<Item>::iterator ilend = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != ilend; ++it )
 		ranked.insert( std::make_pair( (*it)->y(), *it ) );
-	
+
 	double avg_spacing = 0;
-	
+
 	Item * previous = 0l;
 	const DIMap::iterator rankedEnd = ranked.end();
 	for ( DIMap::iterator it = ranked.begin(); it != rankedEnd; ++it )
@@ -305,9 +305,9 @@ void ItemGroup::slotDistributeVertically()
 		}
 		previous = item;
 	}
-	
+
 	avg_spacing /= (m_itemList.size()-1);
-	
+
 	DIMap::iterator it = ranked.begin();
 	// Position that we are up to
 	double at = it->second->y() + it->second->height() + it->second->offsetY();
@@ -318,8 +318,8 @@ void ItemGroup::slotDistributeVertically()
 		item->move( item->x(), snapToCanvas(new_y) );
 		at = new_y + item->height() + item->offsetY();
 	}
-	
+
 	p_icnDocument->requestStateSave();
 }
 
-#include "itemgroup.moc"
+#include "moc_itemgroup.cpp"

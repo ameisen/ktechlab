@@ -25,12 +25,12 @@ class LinkedList;
 @short Boolean clock input
 @author David Saxton
 */
-class ECClockInput : public Component
+class ECClockInput final : public Component
 {
 public:
 	ECClockInput( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECClockInput() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 
@@ -43,11 +43,11 @@ public:
     /** callback at linear steps; always active */
 	void stepNonLogic() override;
 	bool doesStepNonLogic() const override { return true; }
-	
+
 protected:
 	void drawShape( QPainter &p ) override;
 	void dataChanged() override;
-	
+
 	uint m_time;
     /** unit: simulator logic update tick == 1s / LOGIC_UPDATE_RATE */
 	uint m_high_time;

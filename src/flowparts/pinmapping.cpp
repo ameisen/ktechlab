@@ -418,4 +418,4 @@ void PIC_IC::initPackage( MicroInfo * microInfo )
 }
 //END class PIC_IC
 
-#include "pinmapping.moc"
+#include "moc_pinmapping.cpp"

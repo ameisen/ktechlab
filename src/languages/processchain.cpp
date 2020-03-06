@@ -50,14 +50,14 @@ ProcessChain::ProcessChain( ProcessOptions options, const char *name )
 	m_pMicrobe = 0l;
 	m_pPicProgrammer = 0l;
 	m_pSDCC = 0l;
-	m_processOptions = options;
-	
+	processOptions_ = options;
+
 	QString target;
-	if ( ProcessOptions::ProcessPath::to( options.processPath() ) == ProcessOptions::ProcessPath::Pic )
+	if ( ProcessOptions::to( options.processPath() ) == ProcessOptions::MediaType::Pic )
 		target = options.m_picID;
 	else
 		target = options.targetFile();
-	
+
 	LanguageManager::self()->logView()->addOutput( i18n("Building: %1", target ), LogView::ot_important );
 	QTimer::singleShot( 0, this, SLOT(compile()) );
 }
@@ -81,67 +81,67 @@ void ProcessChain::compile()
 {
 	// If the micro id in the options is empty, then attempt to get it from any
 	// open project (it might not be necessarily...but won't hurt if it isn't).
-	if ( m_processOptions.m_picID.isEmpty() )
+	if ( processOptions_.m_picID.isEmpty() )
 	{
 		if ( ProjectInfo * projectInfo = ProjectManager::self()->currentProject() )
 		{
-			ProjectItem * projectItem = projectInfo->findItem( m_processOptions.inputFiles().first() );
+			ProjectItem * projectItem = projectInfo->findItem( processOptions_.inputFiles().first() );
 			if (projectItem)
-				m_processOptions.m_picID = projectItem->microID();
+				processOptions_.m_picID = projectItem->microID();
 		}
 	}
 
-	switch ( m_processOptions.processPath() )
+	switch ( processOptions_.processPath() )
 	{
 #define DIRECT_PROCESS( path, processor ) \
-        case ProcessOptions::ProcessPath::path: \
+        case ProcessOptions::path: \
             { \
-                processor()->processInput(m_processOptions); break; \
+                processor()->processInput(processOptions_); break; \
             }
 #define INDIRECT_PROCESS( path, processor, extension ) \
-        case ProcessOptions::ProcessPath::path: \
+        case ProcessOptions::path: \
             { \
                 KTemporaryFile f; \
                 f.setSuffix( extension ); \
                 f.open(); \
                 f.close(); \
-                m_processOptions.setIntermediaryOutput( f.fileName() ); \
-                processor()->processInput(m_processOptions); \
+                processOptions_.setIntermediaryOutput( f.fileName() ); \
+                processor()->processInput(processOptions_); \
                 break; \
             }
 
-		INDIRECT_PROCESS(	AssemblyAbsolute_PIC,			gpasm,		".hex" )
-		DIRECT_PROCESS(		AssemblyAbsolute_Program,		gpasm )
-		INDIRECT_PROCESS(	AssemblyRelocatable_Library,	gpasm,		".o" )
-		DIRECT_PROCESS(		AssemblyRelocatable_Object,		gpasm )
-		INDIRECT_PROCESS(	AssemblyRelocatable_PIC,		gpasm,		".o" )
-		INDIRECT_PROCESS(	AssemblyRelocatable_Program,	gpasm,		".o" )
-		DIRECT_PROCESS(		C_AssemblyRelocatable,			sdcc )
-		INDIRECT_PROCESS(	C_Library,						sdcc,		".asm" )
-		INDIRECT_PROCESS(	C_Object,						sdcc,		".asm" )
-		INDIRECT_PROCESS(	C_PIC,							sdcc,		".asm" )
-		INDIRECT_PROCESS(	C_Program,						sdcc,		".asm" )
-		INDIRECT_PROCESS(	FlowCode_AssemblyAbsolute,		flowCode,	".microbe" )
-		DIRECT_PROCESS(		FlowCode_Microbe,				flowCode )
-		INDIRECT_PROCESS(	FlowCode_PIC,					flowCode,	".microbe" )
-		INDIRECT_PROCESS(	FlowCode_Program,				flowCode,	".microbe" )
-		DIRECT_PROCESS(		Microbe_AssemblyAbsolute,		microbe )
-		INDIRECT_PROCESS(	Microbe_PIC,					microbe,	".asm" )
-		INDIRECT_PROCESS(	Microbe_Program,				microbe,	".asm" )
-		DIRECT_PROCESS(		Object_Disassembly,				gpdasm )
-		DIRECT_PROCESS(		Object_Library,					gplib )
-		INDIRECT_PROCESS(	Object_PIC,						gplink,		".lib" )
-		DIRECT_PROCESS(		Object_Program,					gplink )
-		DIRECT_PROCESS(		PIC_AssemblyAbsolute,			picProgrammer )
-		DIRECT_PROCESS(		Program_Disassembly,			gpdasm )
-		DIRECT_PROCESS(		Program_PIC,					picProgrammer )
+		INDIRECT_PROCESS(	Path::AssemblyAbsolute_PIC,			gpasm,		".hex" )
+		DIRECT_PROCESS(		Path::AssemblyAbsolute_Program,		gpasm )
+		INDIRECT_PROCESS(	Path::AssemblyRelocatable_Library,	gpasm,		".o" )
+		DIRECT_PROCESS(		Path::AssemblyRelocatable_Object,		gpasm )
+		INDIRECT_PROCESS(	Path::AssemblyRelocatable_PIC,		gpasm,		".o" )
+		INDIRECT_PROCESS(	Path::AssemblyRelocatable_Program,	gpasm,		".o" )
+		DIRECT_PROCESS(		Path::C_AssemblyRelocatable,			sdcc )
+		INDIRECT_PROCESS(	Path::C_Library,						sdcc,		".asm" )
+		INDIRECT_PROCESS(	Path::C_Object,						sdcc,		".asm" )
+		INDIRECT_PROCESS(	Path::C_PIC,							sdcc,		".asm" )
+		INDIRECT_PROCESS(	Path::C_Program,						sdcc,		".asm" )
+		INDIRECT_PROCESS(	Path::FlowCode_AssemblyAbsolute,		flowCode,	".microbe" )
+		DIRECT_PROCESS(		Path::FlowCode_Microbe,				flowCode )
+		INDIRECT_PROCESS(	Path::FlowCode_PIC,					flowCode,	".microbe" )
+		INDIRECT_PROCESS(	Path::FlowCode_Program,				flowCode,	".microbe" )
+		DIRECT_PROCESS(		Path::Microbe_AssemblyAbsolute,		microbe )
+		INDIRECT_PROCESS(	Path::Microbe_PIC,					microbe,	".asm" )
+		INDIRECT_PROCESS(	Path::Microbe_Program,				microbe,	".asm" )
+		DIRECT_PROCESS(		Path::Object_Disassembly,				gpdasm )
+		DIRECT_PROCESS(		Path::Object_Library,					gplib )
+		INDIRECT_PROCESS(	Path::Object_PIC,						gplink,		".lib" )
+		DIRECT_PROCESS(		Path::Object_Program,					gplink )
+		DIRECT_PROCESS(		Path::PIC_AssemblyAbsolute,			picProgrammer )
+		DIRECT_PROCESS(		Path::Program_Disassembly,			gpdasm )
+		DIRECT_PROCESS(		Path::Program_PIC,					picProgrammer )
 #undef DIRECT_PROCESS
 #undef INDIRECT_PROCESS
-			
-		case ProcessOptions::ProcessPath::Invalid:
+
+		case ProcessOptions::Path::Invalid:
 			qWarning() << Q_FUNC_INFO << "Process path is invalid" << endl;
-			
-		case ProcessOptions::ProcessPath::None:
+
+		case ProcessOptions::Path::None:
 			qWarning() << Q_FUNC_INFO << "Nothing to do" << endl;
 			break;
 	}
@@ -151,12 +151,12 @@ void ProcessChain::compile()
 void ProcessChain::slotFinishedCompile(Language *language)
 {
 	ProcessOptions options = language->processOptions();
-	
+
 	if ( options.b_addToProject && ProjectManager::self()->currentProject() )
 		ProjectManager::self()->currentProject()->addFile( KUrl(options.targetFile()) );
-	
-	ProcessOptions::ProcessPath::MediaType typeTo = ProcessOptions::ProcessPath::to( m_processOptions.processPath() );
-	
+
+	ProcessOptions::MediaType typeTo = ProcessOptions::to( processOptions_.processPath() );
+
 	TextDocument * editor = 0l;
 	if ( KTLConfig::reuseSameViewForOutput() )
 	{
@@ -164,17 +164,17 @@ void ProcessChain::slotFinishedCompile(Language *language)
 		if ( editor && (!editor->url().isEmpty() || editor->isModified()) )
 			editor = 0l;
 	}
-	
+
 	switch (typeTo)
 	{
-		case ProcessOptions::ProcessPath::AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable:
-		case ProcessOptions::ProcessPath::C:
-		case ProcessOptions::ProcessPath::Disassembly:
-		case ProcessOptions::ProcessPath::Library:
-		case ProcessOptions::ProcessPath::Microbe:
-		case ProcessOptions::ProcessPath::Object:
-		case ProcessOptions::ProcessPath::Program:
+		case ProcessOptions::MediaType::AssemblyAbsolute:
+		case ProcessOptions::MediaType::AssemblyRelocatable:
+		case ProcessOptions::MediaType::Disassembly:
+		case ProcessOptions::MediaType::Library:
+		case ProcessOptions::MediaType::Microbe:
+		case ProcessOptions::MediaType::Object:
+		case ProcessOptions::MediaType::Program:
+		case ProcessOptions::MediaType::C:
 		{
 			switch ( options.method() )
 			{
@@ -182,10 +182,10 @@ void ProcessChain::slotFinishedCompile(Language *language)
 				{
 					if ( !editor )
 						editor = DocManager::self()->createTextDocument();
-					
+
 					if ( !editor )
 						break;
-				
+
 					QString text;
 					QFile f( options.targetFile() );
 					if ( !f.open( QIODevice::ReadOnly ) )
@@ -194,75 +194,75 @@ void ProcessChain::slotFinishedCompile(Language *language)
 						editor = 0l;
 						break;
 					}
-				
+
 					QTextStream stream(&f);
-				
+
 					while ( !stream.atEnd() )
 						text += stream.readLine()+'\n';
-				
+
 					f.close();
-	
+
 					editor->setText( text, true );
 					break;
 				}
-			
+
 				case ProcessOptions::Method::Load:
 				{
 					editor = dynamic_cast<TextDocument*>( DocManager::self()->openURL(options.targetFile()) );
 					break;
 				}
-			
+
 				case ProcessOptions::Method::Forget:
 					break;
 			}
 		}
-			
-		case ProcessOptions::ProcessPath::FlowCode:
-		case ProcessOptions::ProcessPath::Pic:
-		case ProcessOptions::ProcessPath::Unknown:
+
+		case ProcessOptions::MediaType::FlowCode:
+		case ProcessOptions::MediaType::Pic:
+		case ProcessOptions::MediaType::Unknown:
 			break;
 	}
-	
-	
+
+
 	if (editor)
 	{
 		switch (typeTo)
 		{
-			case ProcessOptions::ProcessPath::AssemblyAbsolute:
-			case ProcessOptions::ProcessPath::AssemblyRelocatable:
+			case ProcessOptions::MediaType::AssemblyAbsolute:
 			{
 				if ( KTLConfig::autoFormatMBOutput() )
 					editor->formatAssembly();
 				editor->slotInitLanguage( TextDocument::ct_asm );
 				break;
 			}
-		
-			case ProcessOptions::ProcessPath::C:
+
+			case ProcessOptions::MediaType::AssemblyRelocatable:
+			case ProcessOptions::MediaType::C:
 				editor->slotInitLanguage( TextDocument::ct_c );
 				break;
-			
-			case ProcessOptions::ProcessPath::Disassembly:
+
+			case ProcessOptions::MediaType::Disassembly:
 				break;
-			
-			case ProcessOptions::ProcessPath::Library:
-			case ProcessOptions::ProcessPath::Object:
-			case ProcessOptions::ProcessPath::Program:
+
+			case ProcessOptions::MediaType::Library:
+			case ProcessOptions::MediaType::Object:
+			case ProcessOptions::MediaType::Program:
 				editor->slotInitLanguage( TextDocument::ct_hex );
 				break;
-			
-			case ProcessOptions::ProcessPath::Microbe:
+
+			case ProcessOptions::MediaType::Microbe:
 				editor->slotInitLanguage( TextDocument::ct_microbe );
 				break;
-			
-			case ProcessOptions::ProcessPath::FlowCode:
-			case ProcessOptions::ProcessPath::Pic:
-			case ProcessOptions::ProcessPath::Unknown:
+
+			case ProcessOptions::MediaType::FlowCode:
+			case ProcessOptions::MediaType::Pic:
+			case ProcessOptions::MediaType::Unknown:
 				break;
 		}
-		
+
 		DocManager::self()->giveDocumentFocus( editor );
 	}
-	
+
 	options.setTextOutputtedTo( editor );
 
 	emit successful(options);
@@ -299,7 +299,7 @@ ProcessListChain::ProcessListChain( ProcessOptionsList pol, const char * name )
 {
     setObjectName( name );
 	m_processOptionsList = pol;
-	
+
 	// Start us off...
 	slotProcessChainSuccessful();
 }
@@ -312,13 +312,13 @@ void ProcessListChain::slotProcessChainSuccessful()
 		emit successful();
 		return;
 	}
-	
+
 	ProcessOptionsList::iterator it = m_processOptionsList.begin();
 	ProcessOptions po = *it;
 	m_processOptionsList.erase(it);
-	
+
 	ProcessChain * pc = LanguageManager::self()->compile(po);
-	
+
 	connect( pc, SIGNAL(successful()), this, SLOT(slotProcessChainSuccessful()) );
 	connect( pc, SIGNAL(failed()), this, SLOT(slotProcessChainFailed()) );
 }
@@ -331,4 +331,4 @@ void ProcessListChain::slotProcessChainFailed()
 //END class ProcessListChain
 
 
-#include "processchain.moc"
+#include "moc_processchain.cpp"

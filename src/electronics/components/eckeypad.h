@@ -17,15 +17,15 @@
 @short 4x3 PTM Keypad
 @author David Saxton
 */
-class ECKeyPad : public Component
+class ECKeyPad final : public Component
 {
 	public:
 		ECKeyPad( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~ECKeyPad() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-	
+
 		void buttonStateChanged( const QString &id, bool state ) override;
 
 	protected:

@@ -441,4 +441,4 @@ bool SettingsDlg::isDefault()
 }
 
 
-#include "settingsdlg.moc"
+#include "moc_settingsdlg.cpp"

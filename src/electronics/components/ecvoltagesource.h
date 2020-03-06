@@ -18,12 +18,12 @@
 Simple electrical cell that simulates a PD and internal resistance
 @author David Saxton
 */
-class ECCell : public Component
+class ECCell final : public Component
 {
 public:
 	ECCell( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECCell() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 

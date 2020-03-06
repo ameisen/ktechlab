@@ -1,30 +1,4 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke                              *
- *   daniel.jc@gmail.com                                                   *
- *									   *
- *   24-04-2007                                                            *
- *   Modified to add pic 16f877,16f627 and 16f628 			   *
- *   by george john george@space-kerala.org 				   *
- *   supported by SPACE www.space-kerala.org				   *
- *                                                                          *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
-#ifndef PIC14_H
-#define PIC14_H
+#pragma once
 
 #include "expression.h"
 #include "microbe.h"
@@ -60,7 +34,7 @@ class PortPin
 		 * Returns the pin (-1 == invalid PortPin).
 		 */
 		int pin() const { return m_pin; }
-		
+
 	protected:
 		QString m_port;
 		int m_pin;
@@ -101,10 +75,10 @@ class PIC14
 			Delay_200mS	= 3,
 			Delay_50S	= 4
 		};
-		
+
 		/*PIC14::*/PIC14( Microbe * master, Type type );
 		~PIC14();
-		
+
 		/**
 		 * Tries to convert the string to a PIC type, returning unknown if
 		 * unsuccessful.
@@ -128,15 +102,15 @@ class PIC14
 		 * Returns the address that the General Purpose Registers starts at.
 		 */
 		uchar gprStart() const;
-		
+
 		void setParser(Parser *parser) { m_parser = parser; }
 		void setCode( Code * code ) { m_pCode = code; }
 		void mergeCode( Code * code );
-	
+
 		void setConditionalCode( Code * ifCode, Code * elseCode );
 		Code * ifCode();
 		Code * elseCode();
-	
+
 		Code * m_ifCode;
 		Code * m_elseCode;
 
@@ -158,7 +132,7 @@ class PIC14
 ///modified new function isValidRegister is added ******************
 
 		bool isValidRegister( const QString & interruptName ) const;
-//		bool isValidRegisterBit( const QString & interruptName ) const; 
+//		bool isValidRegisterBit( const QString & interruptName ) const;
 //TODO GIE=high
 //******************************modification ends***********************************
 		void Sgoto(const QString &label);
@@ -167,17 +141,17 @@ class PIC14
 		void Ssubroutine(const QString &procName, Code * compiledProcCode);
 		void Sinterrupt(const QString & procName, Code * compiledProcCode);
 		void Scall(const QString &name);
-	
+
 		void Ssetlh( const PortPin & portPin, bool high);
-	
+
 		void add( QString val1, QString val2, LocationType val1Type, LocationType val2Type );
 		void subtract( const QString & val1, const QString & val2, LocationType val1Type, LocationType val2Type );
 		void mul( QString val1, QString val2, LocationType val1Type, LocationType val2Type);
 		void div( const QString & val1, const QString & val2, LocationType val1Type, LocationType val2Type);
-	
+
 		void assignNum(const QString & val);
 		void assignVar(const QString & val);
-	
+
 		void saveToReg(const QString &dest);
 		/**
 		 * Move the contents of the working register to the register with the given
@@ -199,21 +173,21 @@ class PIC14
 
 ///*****modified the function **************
 
-		//commented for new function since it is not working 
+		//commented for new function since it is not working
 //		void bitwise( Expression::Operation op, const QString &val1, const QString &val2, bool val1IsNum, bool val2IsNum );
-		//code for AND OR XOR opertions 
+		//code for AND OR XOR opertions
 		void bitwise( Expression::Operation op,const QString & val1, const QString & val2, LocationType val1Type, LocationType val2Type);
 
 //*******************modification end  ---Result --- new code is working well**************
-	
+
 		void Swhile( Code * whileCode, const QString &expression);
 		void Srepeat( Code * repeatCode, const QString &expression);
 		void Sif( Code * ifCode, Code * elseCode, const QString &expression);
 		void Sfor( Code * forCode, Code * initCode, const QString &expression, const QString &variable, const QString &step, bool stepPositive);
-	
+
 		void Spin( const PortPin & portPin, bool NOT);
 		void addCommonFunctions( DelaySubroutine delay );
-	
+
 		//BEGIN "Special Functionality" functions
 		/**
 		 * Delay the program execution, for the given period of length_us (unit:
@@ -233,41 +207,39 @@ class PIC14
 		 */
 		void Skeypad( const Variable & pinMap );
 		//END "Special Functionality" functions
-	
+
 		void SincVar( const QString &var );
 		void SdecVar( const QString &var );
 		void SrotlVar( const QString &var );
 		void SrotrVar( const QString &var );
-	
+
 		void Stristate( const QString &port );
-	
+
 		void Sasm(const QString &raw);
 
-	
+
 	protected:
 		void multiply();
 		void divide();
-	
+
 		/** @see Microbe::m_picType */
 		Type m_type;
-	
+
 		Parser * m_parser;
 		Microbe * mb;
 		Code * m_pCode;
-	
+
 		void ifInitCode( const QString &val1, const QString &val2, LocationType val1Type, LocationType val2Type );
-	
+
 		/**
 		 * The function makes sure that val1 always contains a working register
 		 * variable, if one has been passed, this is done by swapping val1 and val2 when
 		 * neccessary
 		 */
 		void rearrangeOpArguments( QString * val1, QString * val2, LocationType * val1Type, LocationType * val2Type);
-	
+
 		/**
 		 * @param flag True means give flag bit, false means give enable bit instead
 		 */
 		int interruptNameToBit(const QString &name, bool flag);
 };
-
-#endif

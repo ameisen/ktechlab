@@ -21,12 +21,14 @@
 #include <qregexp.h>
 #include <qtextstream.h>
 
-Gpdasm::Gpdasm( ProcessChain *processChain )
- : ExternalLanguage( processChain, "Gpdasm" )
-{
-	m_successfulMessage = i18n("*** Disassembly successful ***");
-	m_failedMessage = i18n("*** Disassembly failed ***");
-}
+Gpdasm::Gpdasm(ProcessChain *processChain) :
+	ExternalLanguage(
+		processChain,
+		"Gpdasm",
+		"*** Disassembly successful ***",
+		"*** Disassembly failed ***"
+	)
+{}
 
 
 Gpdasm::~Gpdasm()
@@ -34,18 +36,18 @@ Gpdasm::~Gpdasm()
 }
 
 
-void Gpdasm::processInput( ProcessOptions options )
+void Gpdasm::processInput(const ProcessOptions &options)
 {
 	resetLanguageProcess();
 	m_asmOutput = "";
-	m_processOptions = options;;
-	
+	processOptions_ = options;;
+
 	*m_languageProcess << ("gpdasm");
-	
+
 	*m_languageProcess << ("--processor");
  	*m_languageProcess << ( options.m_picID );
 	*m_languageProcess << ( options.inputFiles().first() );
-	
+
 	if ( !start() )
 	{
 		KMessageBox::sorry( LanguageManager::self()->logView(), i18n("Disassembly failed. Please check you have gputils installed.") );
@@ -66,10 +68,10 @@ bool Gpdasm::processExited( bool successfully )
 	if (!successfully)
 		return false;
 
-	QFile file(m_processOptions.intermediaryOutput());
+	QFile file(processOptions_.intermediaryOutput());
 	if ( file.open(QIODevice::WriteOnly) == false )
 		return false;
-	
+
 	QTextStream stream(&file);
 	stream << m_asmOutput;
 	file.close();
@@ -93,12 +95,12 @@ MessageInfo Gpdasm::extractMessageInfo( const QString &text )
 {
 	if ( text.length()<5 || !text.startsWith("/") )
 		return MessageInfo();
-	
+
 	const int index = text.indexOf( ".asm", 0, Qt::CaseInsensitive )+4;
 	if ( index == -1+4 )
 		return MessageInfo();
 	const QString fileName = text.left(index);
-	
+
 	// Extra line number
 	const QString message = text.right(text.length()-index);
 	const int linePos = message.indexOf( QRegExp(":[\\d]+") );
@@ -114,47 +116,23 @@ MessageInfo Gpdasm::extractMessageInfo( const QString &text )
 			if (!ok) line = -1;
 		}
 	}
-	
+
 	return MessageInfo( fileName, line );
 }
 
 
 
-ProcessOptions::ProcessPath::Path Gpdasm::outputPath( ProcessOptions::ProcessPath::Path inputPath ) const
+ProcessOptions::Path Gpdasm::outputPath( ProcessOptions::Path inputPath ) const
 {
 	switch (inputPath)
 	{
-		case ProcessOptions::ProcessPath::Object_Disassembly:
-		case ProcessOptions::ProcessPath::Program_Disassembly:
-			return ProcessOptions::ProcessPath::None;
-			
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_PIC:
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_Program:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Library:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Object:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_PIC:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Program:
-		case ProcessOptions::ProcessPath::C_AssemblyRelocatable:
-		case ProcessOptions::ProcessPath::C_Library:
-		case ProcessOptions::ProcessPath::C_Object:
-		case ProcessOptions::ProcessPath::C_PIC:
-		case ProcessOptions::ProcessPath::C_Program:
-		case ProcessOptions::ProcessPath::FlowCode_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::FlowCode_Microbe:
-		case ProcessOptions::ProcessPath::FlowCode_PIC:
-		case ProcessOptions::ProcessPath::FlowCode_Program:
-		case ProcessOptions::ProcessPath::Microbe_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Microbe_PIC:
-		case ProcessOptions::ProcessPath::Microbe_Program:
-		case ProcessOptions::ProcessPath::Object_Library:
-		case ProcessOptions::ProcessPath::Object_PIC:
-		case ProcessOptions::ProcessPath::Object_Program:
-		case ProcessOptions::ProcessPath::PIC_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Program_PIC:
-		case ProcessOptions::ProcessPath::Invalid:
-		case ProcessOptions::ProcessPath::None:
-			return ProcessOptions::ProcessPath::Invalid;
+		case ProcessOptions::Path::Object_Disassembly:
+		case ProcessOptions::Path::Program_Disassembly:
+			return ProcessOptions::Path::None;
+
+		default:
+			return ProcessOptions::Path::Invalid;
 	}
-	
-	return ProcessOptions::ProcessPath::Invalid;
+
+	return ProcessOptions::Path::Invalid;
 }

@@ -27,9 +27,9 @@ MechanicsDocument::MechanicsDocument( const QString &caption, const char *name )
 	m_pDocumentIface = new MechanicsDocumentIface(this);
 	m_fileExtensionInfo = QString("*.mechanics|%1 (*.mechanics)\n*|%2").arg( i18n("Mechanics") ).arg( i18n("All Files") );
 	m_canvas->retune(128);
-	
+
 	m_selectList = new MechanicsGroup(this);
-	
+
 	m_cmManager->addManipulatorInfo( CMSelect::manipulatorInfo() );
 	m_cmManager->addManipulatorInfo( CMDraw::manipulatorInfo() );
 	m_cmManager->addManipulatorInfo( CMRightClick::manipulatorInfo() );
@@ -44,7 +44,7 @@ MechanicsDocument::MechanicsDocument( const QString &caption, const char *name )
 MechanicsDocument::~MechanicsDocument()
 {
 	m_bDeleted = true;
-	
+
 	// Remove all items from the canvas
 	selectAll();
 	deleteSelection();
@@ -83,22 +83,22 @@ Item* MechanicsDocument::addItem( const QString &id, const QPoint &p, bool newIt
 {
 	if ( !isValidItem(id) )
 		return 0l;
-	
+
 	Item *item = itemLibrary()->createItem( id, this, newItem );
 	if (!item)
 		return 0L;
-	
+
 	QRect rect = item->boundingRect();
-	
+
 	int dx = (int)(p.x())-rect.width()/2;
 	int dy = (int)(p.y())-rect.height()/2;
-	
+
 	if ( dx < 16 || dx > (m_canvas->width()) ) dx = 16;
 	if ( dy < 16 || dy > (m_canvas->height()) ) dy = 16;
-	
+
 	item->move( dx, dy );
 	item->show();
-	
+
 	registerItem(item);
 // 	setModified(true);
 	requestStateSave();
@@ -111,18 +111,18 @@ void MechanicsDocument::deleteSelection()
 	// End whatever editing mode we are in, as we don't want to start editing
 	// something that is about to no longer exist...
 	m_cmManager->cancelCurrentManipulation();
-	
+
 	if ( m_selectList->isEmpty() )
 		return;
-	
+
 	// We nee to tell the selete items to remove themselves, and then
 	// pass the items that have add themselves to the delete list to the
 	// CommandAddItems command
-	
+
 	m_selectList->deleteAllItems();
 	flushDeleteList();
 	setModified(true);
-	
+
 	// We need to emit this so that property widgets etc...
 	// can clear themselves.
 	emit selectionChanged();
@@ -142,12 +142,12 @@ void MechanicsDocument::appendDeleteList( KtlQCanvasItem *qcanvasItem )
 	if ( !mechItem || m_itemDeleteList.contains(mechItem) ) {
 		return;
 	}
-	
+
 	m_itemDeleteList.append(mechItem);
 	m_itemList.remove( mechItem->id() );
-	
+
 	disconnect( mechItem, SIGNAL(selectionChanged()), this, SIGNAL(selectionChanged()) );
-	
+
 	mechItem->removeItem();
 }
 
@@ -155,16 +155,16 @@ void MechanicsDocument::appendDeleteList( KtlQCanvasItem *qcanvasItem )
 void MechanicsDocument::flushDeleteList()
 {
 	// Remove duplicate items in the delete list
-	ItemList::iterator end = m_itemDeleteList.end();
-	for ( ItemList::iterator it = m_itemDeleteList.begin(); it != end; ++it )
+	QPtrList<Item>::iterator end = m_itemDeleteList.end();
+	for ( QPtrList<Item>::iterator it = m_itemDeleteList.begin(); it != end; ++it )
 	{
 		if ( *it && m_itemDeleteList.count(*it) > 1 )
 			*it = 0l;
 	}
 	m_itemDeleteList.removeAll(QPointer<Item>(0l));
-	
+
 	end = m_itemDeleteList.end();
-	for ( ItemList::iterator it = m_itemDeleteList.begin(); it != end; ++it )
+	for ( QPtrList<Item>::iterator it = m_itemDeleteList.begin(); it != end; ++it )
 	{
 		m_itemList.remove( (*it)->id() );
 		(*it)->setCanvas(0l);
@@ -193,4 +193,4 @@ void MechanicsDocument::copy()
 {
 }
 
-#include "mechanicsdocument.moc"
+#include "moc_mechanicsdocument.cpp"

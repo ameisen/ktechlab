@@ -17,6 +17,7 @@
 #include <klocalizedstring.h>
 
 #include <cmath>
+#include <algorithm>
 
 Item* Multiplexer::construct( ItemDocument *itemDocument, bool newItem, const char *id )
 {
@@ -32,27 +33,26 @@ LibraryItem* Multiplexer::libraryItem()
 		"ic1.png",
 		LibraryItem::lit_component,
 		Multiplexer::construct
-			);
+	);
 }
 
-Multiplexer::Multiplexer( ICNDocument *icnDocument, bool newItem, const char *id )
-	: Component( icnDocument, newItem, id ? id : "multiplexer" )
+Multiplexer::Multiplexer( ICNDocument *icnDocument, bool newItem, const char *id ) :
+	Component( icnDocument, newItem, id ? id : "multiplexer" ),
+	m_output(nullptr)
 {
 	m_name = i18n("Multiplexer");
-	
-	m_output = 0l;
-	
-	createProperty( "addressSize", Variant::Type::Int );
-	property("addressSize")->setCaption( i18n("Address Size") );
-	property("addressSize")->setMinValue(1);
-	property("addressSize")->setMaxValue(8);
-	property("addressSize")->setValue(1);
-	
+
+	auto *addressSize = createProperty( "addressSize", Variant::Type::Int );
+	addressSize->setCaption( i18n("Address Size") );
+	addressSize->setMinValue(1);
+	addressSize->setMaxValue(8);
+	addressSize->setValue(1);
+
 	// For backwards compatibility
-	createProperty( "numInput", Variant::Type::Int );
-	property("numInput")->setMinValue(-1);
-	property("numInput")->setValue(-1);
-	property("numInput")->setHidden(true);
+	auto *numInput = createProperty( "numInput", Variant::Type::Int );
+	numInput->setMinValue(-1);
+	numInput->setValue(-1);
+	numInput->setHidden(true);
 }
 
 Multiplexer::~Multiplexer()
@@ -62,98 +62,112 @@ Multiplexer::~Multiplexer()
 
 void Multiplexer::dataChanged()
 {
-	if ( hasProperty("numInput") && dataInt("numInput") != -1 )
-	{
-		int addressSize = int( std::ceil( std::log( (double)dataInt("numInput") ) / std::log(2.0) ) );
-		property("numInput")->setValue(-1);
-		
-		if ( addressSize < 1 )
-			addressSize = 1;
-		else if ( addressSize > 8 )
-			addressSize = 8;
-		
-		// This function will get called again when we set the value of numInput
-		property("addressSize")->setValue(addressSize);
-		return;
-	}
-	
-	if ( hasProperty("numInput") )
-	{
+	Variant * const numInput = hasProperty("numInput") ? property("numInput") : nullptr;
+	if (numInput) {
+		const int numInputInt = numInput->value().toInt();
+		if ( numInputInt != -1 )
+		{
+			const int addressSize = std::clamp(
+				int(std::ceil( std::log( double(numInputInt) ) / std::log(2.0))),
+				1,
+				8
+			);
+			numInput->setValue(-1);
+
+			// This function will get called again when we set the value of numInput
+			property("addressSize")->setValue(addressSize);
+			return;
+		}
+
 		m_variantData["numInput"]->deleteLater();
 		m_variantData.remove("numInput");
 	}
-	
-	initPins( unsigned(dataInt("addressSize")) );
+
+	initPins( dataInt("addressSize") );
 }
 
 
-void Multiplexer::inStateChanged( bool /*state*/ )
+void Multiplexer::inStateChanged( [[maybe_unused]] bool state )
 {
-	unsigned long long pos = 0;
-	for ( unsigned i = 0; i < m_aLogic.size(); ++i )
+	using position_t = llong;
+	constexpr int max_bits = sizeof(position_t) * 8;
+	position_t pos = 0;
+	auto size = m_aLogic.size();
+	if (size > max_bits) {
+		//qWarning() << Q_FUNC_INFO << " m_aLogic.size() is greater than max bits = " << size << endl;
+		size = max_bits;
+	}
+	for ( int i = 0; i < size; ++i )
 	{
 		if ( m_aLogic[i]->isHigh() )
-			pos += 1 << i;
+			pos |= 1 << i;
 	}
 	m_output->setHigh( m_xLogic[pos]->isHigh() );
 }
 
-
-void Multiplexer::initPins( unsigned newAddressSize )
+// TODO : This function is just all sorts of broken.
+void Multiplexer::initPins( int newAddressSize )
 {
-	unsigned oldAddressSize = m_aLogic.size();
-	unsigned long long oldXLogicCount = m_xLogic.size();
-	unsigned long long newXLogicCount = 1 << newAddressSize;
-	
+	using count_t = llong;
+	constexpr int max_bits = (sizeof(count_t) * CHAR_BIT) - 1;
+
+	int oldAddressSize = m_aLogic.size();
+
+	if (oldAddressSize > max_bits) {
+		//qWarning() << Q_FUNC_INFO << " oldAddressSize is greater than max bits = " << size << endl;
+		oldAddressSize = max_bits;
+	}
+
+	count_t oldXLogicCount = m_xLogic.size();
+	count_t newXLogicCount = count_t(1) << newAddressSize;
+
 	if ( newXLogicCount == oldXLogicCount )
 		return;
-	
+
 	QStringList pins;
-	
-	const int length = newAddressSize + newXLogicCount;
-	
-	for ( unsigned i=0; i<newAddressSize; ++i )
+
+	const llong length = newAddressSize + newXLogicCount;
+
+	for ( llong i=0; i<newAddressSize; ++i )
 		pins += "A"+QString::number(i);
-	for ( unsigned i=0; i<newXLogicCount; ++i )
+	for ( llong i=0; i<newXLogicCount; ++i )
 		pins += "X"+QString::number(i);
-	for ( int i=0; i<(length-(length%2))/2; ++i )
+	for ( llong i=0; i<(length-(length%2))/2; ++i )
 		pins += "";
 	pins += "X";
-	for ( int i=0; i<((length+(length%2))/2)-1; ++i )
+	for ( llong i=0; i<((length+(length%2))/2)-1; ++i )
 		pins += "";
-	
+
 	initDIPSymbol( pins, 64 );
 	initDIP(pins);
-	
-	ECNode *node;
-	
+
 	if (!m_output)
 	{
-		node =  ecNodeWithID("X");
+		ECNode *node =  ecNodeWithID("X");
 		m_output = createLogicOut( node, false );
 	}
-	
+
 	if ( newXLogicCount > oldXLogicCount )
 	{
 		m_xLogic.resize(newXLogicCount);
-		for ( unsigned i=oldXLogicCount; i<newXLogicCount; ++i )
+		for ( llong i=oldXLogicCount; i<newXLogicCount; ++i )
 		{
-			node = ecNodeWithID("X"+QString::number(i));
+			ECNode *node = ecNodeWithID("X"+QString::number(i));
 			m_xLogic.insert( i, createLogicIn(node) );
 			m_xLogic[i]->setCallback( this, (CallbackPtr)(&Multiplexer::inStateChanged) );
 		}
-		
+
 		m_aLogic.resize(newAddressSize);
-		for ( unsigned i=oldAddressSize; i<newAddressSize; ++i )
+		for ( llong i=oldAddressSize; i<newAddressSize; ++i )
 		{
-			node = ecNodeWithID("A"+QString::number(i));
+			ECNode *node = ecNodeWithID("A"+QString::number(i));
 			m_aLogic.insert( i, createLogicIn(node) );
 			m_aLogic[i]->setCallback( this, (CallbackPtr)(&Multiplexer::inStateChanged) );
 		}
 	}
 	else
 	{
-		for ( unsigned i = newXLogicCount; i < oldXLogicCount; ++i )
+		for ( llong i = newXLogicCount; i < oldXLogicCount; ++i )
 		{
 			QString id = "X"+QString::number(i);
 			removeDisplayText(id);
@@ -161,8 +175,8 @@ void Multiplexer::initPins( unsigned newAddressSize )
 			removeNode(id);
 		}
 		m_xLogic.resize(newXLogicCount);
-		
-		for ( unsigned i = newAddressSize; i < oldAddressSize; ++i )
+
+		for ( llong i = newAddressSize; i < oldAddressSize; ++i )
 		{
 			QString id = "A"+QString::number(i);
 			removeDisplayText(id);
@@ -172,4 +186,3 @@ void Multiplexer::initPins( unsigned newAddressSize )
 		m_aLogic.resize(newAddressSize);
 	}
 }
-

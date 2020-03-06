@@ -21,12 +21,12 @@ class ECNode;
 Simple capacitor
 @author David Saxton
 */
-class Capacitor : public Component
+class Capacitor final : public Component
 {
 public:
 	Capacitor( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~Capacitor() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 

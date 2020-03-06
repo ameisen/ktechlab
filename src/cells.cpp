@@ -13,7 +13,7 @@
 
 
 //BEGIN class Cells
-Cells::Cells( const QRect & canvasRect )
+Cells::Cells(const QRect &canvasRect)
 {
 	init( canvasRect );
 }
@@ -21,41 +21,60 @@ Cells::Cells( const QRect & canvasRect )
 
 Cells::~Cells()
 {
-	unsigned w = unsigned(m_cellsRect.width());
-	for ( uint i=0; i<w; i++ )
-		delete [] m_cells[i];
-	delete [] m_cells;
-}
-
-
-Cells::Cells( const Cells & c )
-{
-	init( QRect( c.cellsRect().topLeft() * 8, c.cellsRect().size() * 8 ) );
-	
-	unsigned w = unsigned(m_cellsRect.width());
-	unsigned h = unsigned(m_cellsRect.height());
-	
-	for ( uint i=0; i<w; i++ )
-	{
-		for ( uint j=0; j<h; j++ )
-		{
-			m_cells[i][j] = c.cell( i, j );
-		}
+	auto count = m_cellsRect.width();
+	if (m_cells) {
+		for (decltype(count) i = 0; i < count; ++i)
+			delete [] m_cells[i];
+		delete [] m_cells;
 	}
 }
 
 
+Cells::Cells(const Cells &c)
+{
+	init( QRect( c.cellsRect().topLeft() * 8, c.cellsRect().size() * 8 ) );
+
+	if (!m_cells) return;
+
+	auto w = m_cellsRect.width();
+	auto h = m_cellsRect.height();
+
+	for (decltype(w) i = 0; i < w; i++)
+	{
+		for (decltype(h) j = 0; j < h; j++)
+		{
+			if (m_cells[i]) {
+				m_cells[i][j] = c.cell(i, j);
+			}
+		}
+	}
+}
+
+Cells::Cells(Cells &&c) :
+	m_cellsRect(c.m_cellsRect),
+	m_cells(c.m_cells)
+{
+	c.m_cellsRect = {};
+	c.m_cells = nullptr;
+}
+
 void Cells::init( const QRect & canvasRect )
 {
-	m_cellsRect = QRect( roundDown( canvasRect.topLeft(), 8 ), canvasRect.size()/8 );
-	m_cellsRect = m_cellsRect.normalized();
-	
-	unsigned w = unsigned(m_cellsRect.width());
-	unsigned h = unsigned(m_cellsRect.height());
-	
-	typedef Cell* cellptr;
+	if (m_cells) {
+		auto count = m_cellsRect.width();
+		for (decltype(count) i = 0; i < count; ++i)
+			delete [] m_cells[i];
+		delete [] m_cells;
+	}
+
+	m_cellsRect = QRect( roundDown( canvasRect.topLeft(), 8 ), canvasRect.size()/8 ).normalized();
+
+	auto w = m_cellsRect.width();
+	auto h = m_cellsRect.height();
+
+	using cellptr = Cell *;
 	m_cells = new cellptr[w];
-	for ( uint i=0; i<w; ++i )
+	for (decltype(w) i = 0; i < w; ++i)
 	{
 		m_cells[i] = new Cell[h];
 	}
@@ -64,46 +83,15 @@ void Cells::init( const QRect & canvasRect )
 
 void Cells::reset()
 {
-	unsigned w = unsigned(m_cellsRect.width());
-	unsigned h = unsigned(m_cellsRect.height());
-	
-	for ( uint i=0; i<w; i++ )
+	if (!m_cells) return;
+
+	auto w = m_cellsRect.width();
+	auto h = m_cellsRect.height();
+
+	for (decltype(w) i = 0; i < w; i++)
 	{
-		for ( uint j=0; j<h; j++ )
+		for (decltype(h) j = 0; j < h; j++)
 			m_cells[i][j].reset();
 	}
 }
 //END class Cells
-
-
-
-//BEGIN class Point
-Point::Point()
-{
-	x = y = prevX = prevY = startCellPos;
-}
-//END class Point
-
-
-
-//BEGIN class Cell
-Cell::Cell()
-{
-	addedToLabels = false;
-	permanent = false;
-	CIpenalty = 0;
-	numCon = 0;
-	Cpenalty = 0;
-	bestScore = 0xffff; // Nice large value
-}
-
-
-void Cell::reset()
-{
-	addedToLabels = false;
-	permanent = false;
-	bestScore = 0xffff; // Nice large value
-}
-//END class Cell
-
-

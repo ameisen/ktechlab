@@ -1,112 +1,177 @@
-/***************************************************************************
- *   Copyright (C) 2003-2005 by David Saxton                               *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
+#include "pch.hpp"
 
 #include "ktechlab.h"
 #include "diagnosticstyle.h"
 #include "logtofilemsghandler.h"
 
-//#include <dcopclient.h>
-#include <kconfig.h>
+#include <KConfig>
 #include <config.h>
 
 #include <KAboutData>
 #include <KLocalizedString>
 
-
 #include <QApplication>
 #include <QCommandLineParser>
 
-static const char description[] =
-    I18N_NOOP("An IDE for microcontrollers and electronics");
+namespace Application {
+	static constexpr const cstring Name = "ktechlab";
+	static constexpr const cstring Version = VERSION;
+	static constexpr const cstring Description = "An IDE for microcontrollers and electronics";
+	static constexpr const cstring OtherInfo = "";
+	static constexpr const cstring DisplayName = "KTechLab";
+	static constexpr const KAboutLicense::LicenseKey License = KAboutLicense::GPL_V2;
+	static constexpr const cstring Copyright = "© 2003-2020, The KTechLab developers";
+	static constexpr const cstring URI = "https://userbase.kde.org/KTechlab";
+	static constexpr const cstring EMail = "ktechlab-devel@kde.org";
+}
 
-// static KCmdLineOptions options[] =
-// {
-//     { "+[URL]", I18N_NOOP( "Document to open." ), 0 },
-//     KCmdLineLastOption
-// };
+namespace {
+	struct Credit final {
+		const char * const name;
+		const char * const task = nullptr;
+		const char * const email = nullptr;
+		const char * const uri = nullptr;
+		const char * const ocs = nullptr;
 
+		template <typename T>
+		void add(KAboutData &about, const T &addFunctor) const {
+			(about.*addFunctor)(
+				localize(name),
+				localize(task),
+				email ? email : QString{},
+				uri ? uri : QString{},
+				ocs ? ocs : QString{}
+			);
+		}
 
-int main(int argc, char **argv)
-{
-    LogToFileMsgHandler logFileHandler;
-    QApplication app(argc, argv);
-    KLocalizedString::setApplicationDomain("ktechlab");
+		void addAuthor(KAboutData &about) const {
+			add(about, &KAboutData::addAuthor);
+		}
 
-    KAboutData about("ktechlab", i18n("KTechLab"), VERSION, i18n(description),
-                     KAboutLicense::GPL_V2,
-                     i18n("(C) 2003-2017, The KTechLab developers"),
-                     "", "https://userbase.kde.org/KTechlab", "ktechlab-devel@kde.org" );
-	about.addAuthor( i18n("Alan Grimes"),
-                     i18n("Developer, Simulation"),
-                     "" );
-	about.addAuthor( i18n("Zoltan Padrah"),
-                     i18n("Developer") ,
-                     "zoltan_padrah@users.sourceforge.net");
-    about.addAuthor( i18n("Julian Bäume"),
-                     i18n("Developer, KDE4 Port, GUI"),
-                     "julian@svg4all.de" );
-    about.addAuthor( i18n("Juan De Vincenzo"),
-                     i18n("KDE4 Port"),
-                     "");
-    about.addCredit( i18n("Lawrence Shafer"),
-                     i18n("Website, wiki and forum"),
-                     "");
-	about.addCredit( i18n("Jason Lucas"),
-                     i18n("Keeping up the project during lack of developers"),
-                     "" );
-	about.addCredit( i18n("David Saxton"),
-                     i18n("Former developer, project founder, former maintainer"),
-                     "david@bluehaze.org" );
-	about.addCredit( i18n("Daniel Clarke"),
-                     i18n("Former developer"),
-                     "daniel.jc@gmail.com" );
-	about.addCredit( i18n("Couriousous"),
-                     i18n("JK flip-flop, asynchronous preset/reset in the D flip-flop"),
-                     "" );
-	about.addCredit( i18n("John Myers"),
-                     i18n("Rotary Switch"),
-                     "" );
-	about.addCredit( i18n("Ali Akcaagac"),
-                     i18n("Glib friendliness"),
-                     "" );
-	about.addCredit( i18n("David Leggett"),
-                     i18n("Former website hosting and feedback during early development"),
-                     "" );
-    KAboutData::setApplicationData(about);
+		void addCredit(KAboutData &about) const {
+			add(about, &KAboutData::addCredit);
+		}
+	};
 
-    // https://techbase.kde.org/Development/Tutorials/KCmdLineArgs
-    QCommandLineParser parser;
-    parser.addHelpOption();
-    parser.addVersionOption();
-    // 2019.10.03 - note: to add options to set icon and caption of the
-    //              application's window? currently this is not implemented
-    //              but it had references in the .destop file
-    parser.addPositionalArgument(QStringLiteral("[URL]"), i18n("Document to open."));
+	static constexpr const Credit authors[] = {
+		{
+			"Alan Grimes",
+			"Developer, Simulation"
+		},
+		{
+			"Zoltan Padrah",
+			"Developer",
+			"zoltan_padrah@users.sourceforge.net",
+			"https://github.com/zoltanp"
+		},
+		{
+			"Julian Bäume",
+			"Developer, KDE4 Port, GUI",
+			"julian@svg4all.de"
+		},
+		{
+			"Juan De Vincenzo",
+			"KDE4 Port"
+		},
+		{
+			"Michael Kuklinski",
+			"C++ Modernization, Refactoring, Crash Resolution",
+			nullptr,
+			"https://github.com/ameisen"
+		}
+	};
 
-    about.setupCommandLine(&parser);
-    parser.process(app);
+	static constexpr const Credit credits[] = {
+		{
+			"Lawrence Shafer",
+			"Website, wiki and forum"
+		},
+		{
+			"Jason Lucas",
+			"Keeping up the project during lack of developers"
+		},
+		{
+			"David Saxton",
+			"Former developer, project founder, former maintainer",
+			"david@bluehaze.org"
+		},
+		{
+			"Daniel Clarke",
+			"Former developer",
+			"daniel.jc@gmail.com"
+		},
+		{
+			"'Couriousous'",
+			"JK flip-flop, asynchronous preset/reset in the D flip-flop"
+		},
+		{
+			"John Myers",
+			"Rotary Switch"
+		},
+		{
+			"Ali Akcaagac",
+			"Glib friendliness",
+		},
+		{
+			"David Leggett",
+			"Former website hosting and feedback during early development",
+		}
+	};
+}
 
-    if (true) {  // TODO add a command line option for debugging the program's visual look
-        //app.setStyle(new DiagnosticStyle());
-    }
+int main(int argc, char **argv) {
+	LogToFileMsgHandler logFileHandler;
+	QApplication app{argc, argv};
+	KLocalizedString::setApplicationDomain(Application::Name);
 
-    // register ourselves as a dcop client
-	//app.dcopClient()->registerAs(app.name(), false);
+	KAboutData::setApplicationData([](){
+		auto about = KAboutData{
+			Application::Name,
+			localize(Application::DisplayName),
+			Application::Version,
+			localize(Application::Description),
+			Application::License,
+			localize(Application::Copyright),
+			localize(Application::OtherInfo),
+			Application::URI,
+			Application::EMail
+		};
 
-	KTechlab *ktechlab = new KTechlab();
+		for (const auto &author : authors) {
+			author.addAuthor(about);
+		}
 
-    // 2019.10.03 - note: possibly add support for multiple URLs to be opened from
-    //              command line?
-    if (parser.positionalArguments().count() > 0) {
-		ktechlab->load( parser.positionalArguments().at(0) );
-    }
+		for (const auto &credit : credits) {
+			credit.addCredit(about);
+		}
+
+		return about;
+	}());
+
+	auto * const ktechlab = new KTechlab;
+
+	{
+		// https://techbase.kde.org/Development/Tutorials/KCmdLineArgs
+		QCommandLineParser parser;
+		parser.addHelpOption();
+		parser.addVersionOption();
+		// 2019.10.03 - note: to add options to set icon and caption of the
+		//              application's window? currently this is not implemented
+		//              but it had references in the .destop file
+		parser.addPositionalArgument(
+			QStringLiteral("[URL]"),
+			localize("Document to open.")
+		);
+
+		KAboutData::applicationData().setupCommandLine(&parser);
+		parser.process(app);
+
+		// 2019.10.03 - note: possibly add support for multiple URLs to be opened from
+		//              command line?
+		if (!parser.positionalArguments().isEmpty()) {
+			ktechlab->load(parser.positionalArguments().first());
+		}
+	}
 
 	ktechlab->show();
 	return app.exec();

@@ -8,14 +8,15 @@
  *   (at your option) any later version.                                   *
  ***************************************************************************/
 
-#ifndef DOCUMENT_H
-#define DOCUMENT_H
+#pragma once
+
+#include "pch.hpp"
 
 #include "view.h"
 
-#include <kurl.h>
+#include <KUrl>
 
-#include <qpointer.h>
+#include <QPointer>
 
 class DCOPObject;
 class Document;
@@ -24,7 +25,7 @@ class KTechlab;
 class View;
 class ViewContainer;
 
-typedef QList<QPointer<View> > ViewList;
+using ViewList = QList<QPointer<View>>;
 
 /**
 @author David Saxton
@@ -42,7 +43,7 @@ public:
 		dt_text,
 		dt_pinMapEditor
 	};
-	Document( const QString &caption, const char *name = 0 );
+	Document( const QString &caption, const char *name = nullptr );
 	~Document() override;
 	/**
 	 * If the user has created a new document from the new file dialog, and
@@ -54,7 +55,7 @@ public:
 	/**
 	 * Caption of document, e.g. "Untitled 2"
 	 */
-	QString caption() const { return m_caption; }
+	const QString & caption() const { return m_caption; }
 	/**
 	 * Set the caption of the document, to be displayed in the tab bar when
 	 * active
@@ -78,7 +79,7 @@ public:
 	 * Returns the active view, which is the last view to be used to edit in
 	 */
 	View *activeView() const { return m_pActiveView; }
-	ViewList viewList() const { return m_viewList; }
+	const ViewList & viewList() const { return m_viewList; }
 	/**
 	 * Returns the type of document.
 	 * @see Document::DocumentType
@@ -87,17 +88,17 @@ public:
 	/**
 	 * Returns the number of open views.
 	 */
-	uint numberOfViews() const { return m_viewList.size(); }
+	int numberOfViews() const { return m_viewList.size(); }
 	/**
 	 * Create a view that will display the document data. In all reimplemented
 	 * functions, you must call handleNewView after creating the view, so that
 	 * the appropriate slots, pointers, etc can all be initialised.
 	 */
-	virtual View *createView( ViewContainer *viewContainer, uint viewAreaId, const char *name = 0l ) = 0;
+	virtual View *createView( ViewContainer *viewContainer, uint viewAreaId, const char *name = nullptr ) = 0;
 	/**
 	 * Returns the url of the file that the Document refers to
 	 */
-	const KUrl& url() const { return m_url; }
+	const KUrl & url() const { return m_url; }
 	/**
 	 * Prompts the user for a url, with the given types for the filter.
 	 * If user accepts, returns true, and set the url to the new url.
@@ -187,17 +188,17 @@ protected slots:
 	 * Called when the user changes the configuration.
 	 */
 	virtual void slotUpdateConfiguration() {};
-	
+
 #define protected public
 signals:
 	/**
 	 * Emitted when an operation has been performed that
-	 * has caused the stack of available undo/redo operations to 
+	 * has caused the stack of available undo/redo operations to
 	 * have changed
 	 */
 	void undoRedoStateChanged();
 #undef protected
-	
+
 signals:
 	/**
 	 * Emitted when the Document goes from modified to unmodified,
@@ -209,41 +210,39 @@ signals:
 	 * is changed.
 	 */
 	void fileNameChanged( const KUrl &url );
-	
+
 	void viewFocused( View *view );
 	void viewUnfocused();
-	
+
 private slots:
 	void slotViewDestroyed( QObject *obj );
 	void slotViewFocused( View *view );
-	
+
 protected:
 	/**
 	 * You must call this function after creating a new view
 	 */
 	virtual void handleNewView( View *view );
-	
-	bool		  b_modified;
 
-// TODO: refactor this out. 
+	bool		  b_modified = false;
+
+// TODO: refactor this out.
 	DocumentType	  m_type;
 // XXXX
 
 	ViewList	  m_viewList;
-	DocumentIface    *m_pDocumentIface;
+	DocumentIface *m_pDocumentIface = nullptr;
 
 	// Set to true by the document et subclasses destructors, used to avoid
 	// doing stuff that might lead to crash when being deleted.
-	bool m_bDeleted; 
-	
+	bool 				m_bDeleted = false;
+
 private:
 
-	KUrl		  m_url;
-	QPointer<View> m_pActiveView;
+	KUrl		  	m_url;
+	QPointer<View> m_pActiveView = nullptr;
 	QString		  m_caption;
-	bool		  m_bAddToProjectOnSave;
-	unsigned 	  m_dcopID;
-	unsigned 	  m_nextViewID;
+	unsigned 	  m_dcopID = 0;
+	unsigned 	  m_nextViewID = 0;
+	bool		  	m_bAddToProjectOnSave = false;
 };
-
-#endif

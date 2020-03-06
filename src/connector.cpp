@@ -126,19 +126,28 @@ int getSlope(float x1, float y1, float x2, float y2) {
 
 
 void Connector::updateDrawList() {
-	if (!startNode() || !endNode() || !canvas()) return;
+	if (
+		!p_icnDocument ||
+		!m_conRouter ||
+		!m_conRouter->cellPointList() ||
+		m_conRouter->cellPointList()->isEmpty() ||
+		!startNode() ||
+		!endNode() ||
+		!canvas()
+	) return;
 
-	QPointList drawLineList;
+	Cells *cells = p_icnDocument->cells();
+	if (!cells) return;
 
-	int prevX = (*m_conRouter->cellPointList()->begin()).x();
-	int prevY = (*m_conRouter->cellPointList()->begin()).y();
+	const auto &cellPoint = m_conRouter->cellPointList()->first();
+	int prevX = cellPoint.x();
+	int prevY = cellPoint.y();
 
 	int prevX_canvas = toCanvas(prevX);
 	int prevY_canvas = toCanvas(prevY);
 
-	Cells *cells = p_icnDocument->cells();
-
 	bool bumpNow = false;
+	QList<QPoint> drawLineList;
 	for (QPoint p: *m_conRouter->cellPointList()) {
 		const int x = p.x();
 		const int y = p.y();
@@ -196,19 +205,19 @@ void Connector::updateDrawList() {
 
 	if (drawLineList.size() < 3) return;
 
-	const QPointList::iterator dllEnd = drawLineList.end();
+	const auto dllEnd = drawLineList.end();
 
-	QPointList::iterator previous = drawLineList.begin();
-	QPointList::iterator current = previous;
+	auto previous = drawLineList.begin();
+	auto current = previous;
 	current++;
-	QPointList::const_iterator next = current;
+	auto next = current;
 	next++;
 
 	int invalid = -(1 << 30);
 
 	while (previous != dllEnd && current != dllEnd && next != dllEnd) {
 		const int slope1 = getSlope((*previous).x(), (*previous).y(), (*current).x(), (*current).y());
-		const int slope2  = getSlope((*current).x(), (*current).y(), (*next).x(), (*next).y());
+		const int slope2 = getSlope((*current).x(), (*current).y(), (*next).x(), (*next).y());
 
 		if (slope1 == slope2 || slope1 == 0 || slope2 == 0) {
 			*current = QPoint(invalid, invalid);
@@ -246,7 +255,7 @@ void Connector::updateDrawList() {
 
 	m_connectorLineList.clear();
 
-	if (drawLineList.size() > 1) {
+	if (!drawLineList.isEmpty()) {
 		QPoint prev = drawLineList.first();
 		int pixelOffset = 0;
 
@@ -316,7 +325,7 @@ void Connector::updateConnectorPoints(bool add) {
 }
 
 
-void Connector::setRoutePoints(QPointList pointList, bool setManual, bool checkEndPoints) {
+void Connector::setRoutePoints(QList<QPoint> pointList, bool setManual, bool checkEndPoints) {
 	if (!canvas())	return;
 
 	updateConnectorPoints(false);
@@ -344,7 +353,7 @@ void Connector::setRoutePoints(QPointList pointList, bool setManual, bool checkE
 }
 
 
-bool Connector::pointsAreReverse(const QPointList &pointList) const {
+bool Connector::pointsAreReverse(const QList<QPoint> &pointList) const {
 	if (!startNode() || !endNode()) {
 		qWarning() << Q_FUNC_INFO << "Cannot determine orientation as no start and end nodes" << endl;
 		return false;
@@ -456,8 +465,8 @@ void Connector::setVisible(bool yes) {
 	updateConnectorLines();
 }
 
-Wire *Connector::wire(unsigned num) const {
-    return (num < m_wires.size()) ? m_wires[num] : 0;
+Wire *Connector::wire(int num) const {
+    return (num < m_wires.size()) ? m_wires[num] : nullptr;
 }
 
 void Connector::setSelected(bool yes) {
@@ -482,7 +491,6 @@ void Connector::updateConnectorLines(bool forceRedraw) {
 
 	QPen pen(color, (numWires() > 1) ? 2 : 1);
 
-	bool animateWires = KTLConfig::animateWires();
 	for (KtlQCanvasPolygonalItem *item: m_connectorLineList) {
 		bool changed = (item->z() != z)
 			    || (item->pen() != pen)
@@ -501,12 +509,12 @@ void Connector::updateConnectorLines(bool forceRedraw) {
 }
 
 
-QList<QPointList> Connector::splitConnectorPoints(const QPoint & pos) const {
+QList<QList<QPoint>> Connector::splitConnectorPoints(const QPoint & pos) const {
 	return m_conRouter->splitPoints(pos);
 }
 
 
-QPointList Connector::connectorPoints(bool reverse) const {
+QList<QPoint> Connector::connectorPoints(bool reverse) const {
 	bool doReverse = (reverse != pointsAreReverse(m_conRouter->pointList(false)));
 	return m_conRouter->pointList(doReverse);
 }
@@ -629,5 +637,4 @@ void ConnectorLine::drawShape(QPainter & p) {
 }
 //END class ConnectorLine
 
-#include "connector.moc"
-
+#include "moc_connector.cpp"

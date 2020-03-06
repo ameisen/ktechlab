@@ -36,10 +36,10 @@ CNItem::CNItem( ICNDocument *icnDocument, bool newItem, const QString &id )
 
 	setZ( ICNDocument::Z::Item );
 	setSelected(false);
-	
+
 	m_brushCol = QColor( 0xf7, 0xf7, 0xff );
 	m_selectedCol = QColor( 101, 134, 192 );
-	
+
 	setBrush(m_brushCol);
 	setPen( QPen( Qt::black ) );
 }
@@ -54,7 +54,7 @@ CNItem::~CNItem()
 		delete (Text*)it.value();
 	}
 	m_textMap.clear();
-	
+
 	updateConnectorPoints(false);
 }
 
@@ -64,7 +64,7 @@ bool CNItem::preResize( QRect sizeRect )
 	if ( (std::abs(sizeRect.width()) < minimumSize().width()) ||
 		 (std::abs(sizeRect.height()) < minimumSize().height()) )
 		return false;
-	
+
 	updateConnectorPoints(false);
 	return true;
 }
@@ -83,9 +83,9 @@ void CNItem::setVisible( bool yes )
 		Item::setVisible(false);
 		return;
 	}
-	
+
 	Item::setVisible(yes);
-	
+
 	const TextMap::iterator textMapEnd = m_textMap.end();
 	for ( TextMap::iterator it = m_textMap.begin(); it != textMapEnd; ++it )
 	{
@@ -97,9 +97,9 @@ void CNItem::setVisible( bool yes )
 	{
 		it.value().node->setVisible(yes);
 	}
-	
+
 	CNItem::setDrawWidgets(yes);
-	
+
 	if (!yes)
 		updateConnectorPoints(false);
 }
@@ -115,16 +115,16 @@ void CNItem::reparented( Item *oldParent, Item *newParent )
 void CNItem::updateNodeLevels()
 {
 	int l = level();
-	
+
 	// Tell our nodes about our level
 	const NodeInfoMap::iterator nodeMapEnd = m_nodeMap.end();
 	for ( NodeInfoMap::iterator it = m_nodeMap.begin(); it != nodeMapEnd; ++it )
 	{
 		it.value().node->setLevel(l);
 	}
-	
-	const ItemList::iterator end = m_children.end();
-	for ( ItemList::iterator it = m_children.begin(); it != end; ++it )
+
+	const QPtrList<Item>::iterator end = m_children.end();
+	for ( QPtrList<Item>::iterator it = m_children.begin(); it != end; ++it )
 	{
 		if ( CNItem *cnItem = dynamic_cast<CNItem*>((Item*)*it) )
 			cnItem->updateNodeLevels();
@@ -132,9 +132,9 @@ void CNItem::updateNodeLevels()
 }
 
 
-ConnectorList CNItem::connectorList()
+QPtrList<Connector> CNItem::connectorList()
 {
-	ConnectorList list;
+	QPtrList<Connector> list;
 
 	const NodeInfoMap::iterator nodeMapEnd = m_nodeMap.end();
 	for ( NodeInfoMap::iterator it = m_nodeMap.begin(); it != nodeMapEnd; ++it )
@@ -142,9 +142,9 @@ ConnectorList CNItem::connectorList()
 		Node *node = p_icnDocument->nodeWithID(it.value().id);
 		if (node)
 		{
-			ConnectorList nodeList = node->getAllConnectors();
-			ConnectorList::iterator end = nodeList.end();
-			for ( ConnectorList::iterator it = nodeList.begin(); it != end; ++it )
+			QPtrList<Connector> nodeList = node->getAllConnectors();
+			QPtrList<Connector>::iterator end = nodeList.end();
+			for ( QPtrList<Connector>::iterator it = nodeList.begin(); it != end; ++it )
 			{
 				if ( *it && !list.contains(*it) )
 				{
@@ -154,7 +154,7 @@ ConnectorList CNItem::connectorList()
 
 		}
 	}
-	
+
 	return list;
 }
 
@@ -163,11 +163,11 @@ void CNItem::removeItem()
 {
 	if (b_deleted)
 		return;
-	
+
 	const TextMap::iterator textMapEnd = m_textMap.end();
 	for ( TextMap::iterator it = m_textMap.begin(); it != textMapEnd; ++it )
 		it.value()->setCanvas(0l);
-	
+
 	Item::removeItem();
 	updateConnectorPoints(false);
 }
@@ -176,9 +176,9 @@ void CNItem::removeItem()
 void CNItem::restoreFromItemData( const ItemData &itemData )
 {
 	Item::restoreFromItemData(itemData);
-	
+
 	updateConnectorPoints(false);
-	
+
 	{
 		const BoolMap::const_iterator end = itemData.buttonMap.end();
 		for ( BoolMap::const_iterator it = itemData.buttonMap.begin(); it != end; ++it )
@@ -203,18 +203,18 @@ void CNItem::restoreFromItemData( const ItemData &itemData )
 ItemData CNItem::itemData() const
 {
 	ItemData itemData = Item::itemData();
-	
+
 	const WidgetMap::const_iterator end = m_widgetMap.end();
 	for ( WidgetMap::const_iterator it = m_widgetMap.begin(); it != end; ++it )
 	{
 		if ( Slider *slider = dynamic_cast<Slider*>(*it) )
 			itemData.sliderMap[slider->id()] = slider->value();
-		
+
 		else if ( Button *button = dynamic_cast<Button*>(*it) )
 			itemData.buttonMap[button->id()] = button->state();
-		
+
 	}
-	
+
 	return itemData;
 }
 
@@ -224,10 +224,10 @@ Node* CNItem::createNode( double _x, double _y, int orientation, const QString &
 	orientation %= 360;
 	if ( orientation < 0 )
 		orientation += 360;
-	
+
 	Node *node = NULL;
 
-	// TODO get rid of this switch statement... 
+	// TODO get rid of this switch statement...
 	switch(type) {
 		case Node::ec_pin:
 			node = new PinNode(p_icnDocument, orientation, QPoint( 0, 0) );
@@ -245,23 +245,23 @@ Node* CNItem::createNode( double _x, double _y, int orientation, const QString &
 			node = new OutputFlowNode( p_icnDocument, orientation, QPoint( 0, 0) );
 			break;
 	}
-			
+
 	node->setLevel( level() );
-	
+
 	node->setParentItem(this);
 	node->setChildId(name);
-	
+
 	NodeInfo info;
 	info.id = node->id();
 	info.node = node;
 	info.x = _x;
 	info.y = _y;
 	info.orientation = orientation;
-	
+
 	m_nodeMap[name] = info;
-	
+
 	updateAttachedPositioning();
-	
+
 	return node;
 }
 
@@ -283,7 +283,7 @@ Node *CNItem::getClosestNode( const QPoint &pos )
 	// Work through the nodes, finding the one closest to the (x, y) position
 	Node *shortestNode = 0L;
 	double shortestDistance = 1e10; // Nice large distance :-)
-	
+
 	const NodeInfoMap::iterator end = m_nodeMap.end();
 	for ( NodeInfoMap::iterator it = m_nodeMap.begin(); it != end; ++it )
 	{
@@ -293,7 +293,7 @@ Node *CNItem::getClosestNode( const QPoint &pos )
 			// Calculate the distance
 			// Yeah, it's actually the distance squared; but it's all relative, so doesn't matter
 			double distance = std::pow(node->x()-pos.x(),2) + std::pow(node->y()-pos.y(),2);
-			
+
 			if ( distance < shortestDistance )
 			{
 				shortestDistance = distance;
@@ -301,7 +301,7 @@ Node *CNItem::getClosestNode( const QPoint &pos )
 			}
 		}
 	}
-	
+
 	return shortestNode;
 }
 
@@ -310,7 +310,7 @@ void CNItem::updateAttachedPositioning()
 {
 	if (b_deleted)
 		return;
-	
+
 	// Actually, we don't do anything anymore...
 }
 
@@ -318,17 +318,17 @@ void CNItem::updateAttachedPositioning()
 void CNItem::updateZ( int baseZ )
 {
 	Item::updateZ(baseZ);
-	
+
 	double _z = z();
-	
+
 	const NodeInfoMap::iterator nodeMapEnd = m_nodeMap.end();
 	for ( NodeInfoMap::iterator it = m_nodeMap.begin(); it != nodeMapEnd; ++it )
 		it.value().node->setZ( _z + 0.5 );
-	
+
 	const WidgetMap::iterator widgetMapEnd = m_widgetMap.end();
 	for ( WidgetMap::iterator it = m_widgetMap.begin(); it != widgetMapEnd; ++it )
 		it.value()->setZ( _z + 0.5 );
-	
+
 	const TextMap::iterator textMapEnd = m_textMap.end();
 	for ( TextMap::iterator it = m_textMap.begin(); it != textMapEnd; ++it )
 		it.value()->setZ( _z + 0.5 );
@@ -340,7 +340,7 @@ void CNItem::moveBy( double dx, double dy )
 	if ( dx == 0 && dy == 0 ) return;
 	updateConnectorPoints(false);
 	Item::moveBy( dx, dy );
-	
+
 	setWidgetsPos( QPoint( int(x()), int(y()) ) );
 }
 
@@ -420,11 +420,11 @@ void CNItem::drawShape( QPainter &p )
 {
 	if (!isVisible())
 		return;
-	
+
 // 	initPainter(p);
 	if ( isSelected() )
 		p.setPen(m_selectedCol);
-	
+
 	p.drawPolygon(areaPoints());
 	p.drawPolyline(areaPoints());
 // 	deinitPainter(p);
@@ -451,29 +451,29 @@ void CNItem::updateConnectorPoints( bool add )
 	Cells *cells = p_icnDocument->cells();
 	if (!cells)
 		return;
-	
+
 	// Get translation matrix
 	// Hackish...
 	QMatrix m;
 	if ( Component *c = dynamic_cast<Component*>(this) )
 		m = c->transMatrix( c->angleDegrees(), c->flipped(), int(x()), int(y()), false );
-	
+
 	// Convention used here: _UM = unmapped by both matrix and cell reference, _M = mapped
 
 	const QPoint start_UM = QPoint( int(x()+offsetX())-8, int(y()+offsetY())-8 );
 	const QPoint end_UM = start_UM + QPoint( width()+2*8, height()+2*8 );
-	
+
 	const QPoint start_M = roundDown( m.map(start_UM), 8 );
 	const QPoint end_M = roundDown( m.map(end_UM), 8 );
-	
-	
+
+
 	int sx_M = start_M.x();
 	int ex_M = end_M.x();
-	
+
 	int sy_M = start_M.y();
 	int ey_M = end_M.y();
-	
-	
+
+
 	// Normalise start and end points
 	if ( sx_M > ex_M )
 	{
@@ -487,12 +487,12 @@ void CNItem::updateConnectorPoints( bool add )
 		sy_M = ey_M;
 		ey_M = temp;
 	}
-	
+
 	ex_M++;
 	ey_M++;
-	
+
 	const int mult = add ? 1 : -1;
-	
+
 	for ( int x = sx_M; x < ex_M; x++ )
 	{
 		for ( int y = sy_M; y < ey_M; y++ )
@@ -503,7 +503,7 @@ void CNItem::updateConnectorPoints( bool add )
 				{
 					cells->cell( x, y ).CIpenalty += mult*ICNDocument::hs_item;
 				}
-				else 
+				else
 				{
 //					(*cells)[x][y].CIpenalty += mult*ICNDocument::hs_item/2;
 					cells->cell( x, y ).CIpenalty += mult*ICNDocument::hs_connector*5;
@@ -511,7 +511,7 @@ void CNItem::updateConnectorPoints( bool add )
 			}
 		}
 	}
-	
+
 #if 0
 	// And subtract the positions of the node on the border
 	NodeInfoMap::iterator end = m_nodeMap.end();
@@ -524,7 +524,7 @@ void CNItem::updateConnectorPoints( bool add )
 		}
 	}
 #endif
-	
+
 	const TextMap::iterator textMapEnd = m_textMap.end();
 	for ( TextMap::iterator it = m_textMap.begin(); it != textMapEnd; ++it )
 	{
@@ -548,12 +548,12 @@ Text* CNItem::addDisplayText( const QString &id, const QRect & pos, const QStrin
 		delete it.value();
 		m_textMap.erase(it);
 	}
-	
+
 	text = new Text( "", this, pos, canvas(), flags );
 	text->setZ( z()+(internal?0.1:-0.1) );
-	
+
 	m_textMap[id] = text;
-	
+
 	// Calculate the correct size
 	setDisplayText( id, display );
 	text->show();
@@ -611,4 +611,4 @@ NodeInfo::NodeInfo()
 }
 
 
-#include "cnitem.moc"
+#include "moc_cnitem.cpp"

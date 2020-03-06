@@ -23,22 +23,17 @@ class OutputMethodWidget;
 class OutputMethodInfo
 {
 	public:
-		class Method
-		{
-			public:
-				enum Type
-				{
-					Direct,
-					SaveAndForget,
-					SaveAndLoad
-				};
+		enum class Method {
+			Direct,
+			SaveAndForget,
+			SaveAndLoad
 		};
 
 		OutputMethodInfo();
 		void initialize( OutputMethodDlg * dlg );
 
-		Method::Type method() const { return m_method; }
-		void setMethod( Method::Type method ) { m_method = method; }
+		Method method() const { return m_method; }
+		void setMethod( Method method ) { m_method = method; }
 
 		bool addToProject() const { return m_bAddToProject; }
 		void setAddToProject( bool add ) { m_bAddToProject = add; }
@@ -50,7 +45,7 @@ class OutputMethodInfo
 		void setOutputFile( const KUrl & outputFile ) { m_outputFile = outputFile; }
 
 	protected:
-		Method::Type m_method;
+		Method m_method;
 		bool m_bAddToProject;
 		QString m_picID;
 		KUrl m_outputFile;
@@ -73,7 +68,7 @@ class OutputMethodDlg : public KDialog
 
 		void setOutputExtension( const QString & outputExtension );
 		void setFilter( const QString  &filter );
-		void setMethod( OutputMethodInfo::Method::Type m );
+		void setMethod( OutputMethodInfo::Method m );
 		void setOutputFile( const KUrl & out );
 		void setPicID( const QString & id );
 

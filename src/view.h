@@ -157,7 +157,7 @@ protected:
 	uint m_viewAreaId;
 	ViewStatusBar * m_statusBar;
 	QVBoxLayout * m_layout;
-	ViewIface * m_pViewIface;
+	ViewIface * m_pViewIface = nullptr;
 	unsigned m_dcopID;
 	QWidget * m_pFocusWidget;
 };

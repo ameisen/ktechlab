@@ -39,15 +39,15 @@ Demultiplexer::Demultiplexer( ICNDocument *icnDocument, bool newItem, const char
 	: Component( icnDocument, newItem, id ? id : "demultiplexer" )
 {
 	m_name = i18n("Demultiplexer");
-	
+
 	m_input = 0l;
-	
+
 	createProperty( "addressSize", Variant::Type::Int );
 	property("addressSize")->setCaption( i18n("Address Size") );
 	property("addressSize")->setMinValue(1);
 	property("addressSize")->setMaxValue(8);
 	property("addressSize")->setValue(1);
-	
+
 	// For backwards compatibility
 	createProperty( "numInput", Variant::Type::Int );
 	property("numInput")->setMinValue(-1);
@@ -66,84 +66,85 @@ void Demultiplexer::dataChanged()
 	{
 		int addressSize = int( std::ceil( std::log( (double)dataInt("numInput") ) / std::log(2.0) ) );
 		property("numInput")->setValue(-1);
-		
+
 		if ( addressSize < 1 )
 			addressSize = 1;
 		else if ( addressSize > 8 )
 			addressSize = 8;
-		
+
 		// This function will get called again when we set the value of numInput
 		property("addressSize")->setValue(addressSize);
 		return;
 	}
-	
+
 	if ( hasProperty("numInput") )
 	{
 		m_variantData["numInput"]->deleteLater();
 		m_variantData.remove("numInput");
 	}
-	
-	initPins( unsigned(dataInt("addressSize")) );
+
+	initPins( dataInt("addressSize") );
 }
 
 
 void Demultiplexer::inStateChanged( bool /*state*/ )
 {
-	unsigned long long pos = 0;
-	for ( unsigned i = 0; i < m_aLogic.size(); ++i )
+	llong pos = 0;
+	for ( int i = 0; i < m_aLogic.size(); ++i )
 	{
 		if ( m_aLogic[i]->isHigh() )
-			pos += 1 << i;
+			pos |= 1 << i;
 	}
-	for ( unsigned i = 0; i < m_xLogic.size(); ++i )
+	// TODO : I don't think that this is right, checking against the value instead of ANDing...
+	for ( int i = 0; i < m_xLogic.size(); ++i )
 		m_xLogic[i]->setHigh( (pos == i) && m_input->isHigh() );
 }
 
 
-void Demultiplexer::initPins( unsigned newAddressSize )
+void Demultiplexer::initPins( int newAddressSize )
 {
-	unsigned oldAddressSize = m_aLogic.size();
-	unsigned long long oldXLogicCount = m_xLogic.size();
-	unsigned long long newXLogicCount = 1 << newAddressSize;
-	
+	int oldAddressSize = m_aLogic.size();
+	llong oldXLogicCount = m_xLogic.size();
+	llong newXLogicCount = 1 << newAddressSize;
+
 	if ( newXLogicCount == oldXLogicCount )
 		return;
-	
+
 	QStringList pins;
-	
-	for ( unsigned i=0; i<newAddressSize; ++i )
+
+	for ( int i=0; i<newAddressSize; ++i )
 		pins += "A"+QString::number(i);
-	for ( unsigned i=newAddressSize; i<(newXLogicCount+(newXLogicCount%2))/2; ++i )
+	for ( int i=newAddressSize; i<(newXLogicCount+(newXLogicCount%2))/2; ++i )
 		pins += "";
 	pins += "X";
-	for ( unsigned i=(newXLogicCount+(newXLogicCount%2))/2+1; i<newXLogicCount; ++i )
+	for ( int i=(newXLogicCount+(newXLogicCount%2))/2+1; i<newXLogicCount; ++i )
 		pins += "";
 	for ( int i=newXLogicCount-1; i>=0; --i )
 		pins += "X"+QString::number(i);
-	
+
 	initDIPSymbol( pins, 64 );
 	initDIP(pins);
-	
+
 	ECNode *node;
-	
+
 	if (!m_input)
 	{
 		node =  ecNodeWithID("X");
 		m_input = createLogicIn(node);
 		m_input->setCallback( this, (CallbackPtr)(&Demultiplexer::inStateChanged) );
 	}
-	
+
 	if ( newXLogicCount > oldXLogicCount )
 	{
 		m_xLogic.resize(newXLogicCount);
-		for ( unsigned i = oldXLogicCount; i < newXLogicCount; ++i )
+		for ( llong i = oldXLogicCount; i < newXLogicCount; ++i )
 		{
 			node = ecNodeWithID("X"+QString::number(i));
 			m_xLogic.insert( i, createLogicOut(node,false) );
 		}
-		
+
 		m_aLogic.resize(newAddressSize);
-		for ( unsigned i = oldAddressSize; i < newAddressSize; ++i )
+		for ( int i = oldAddressSize; i < newAddressSize; ++i )
 		{
 			node = ecNodeWithID("A"+QString::number(i));
 			m_aLogic.insert( i, createLogicIn(node) );
@@ -152,7 +153,7 @@ void Demultiplexer::initPins( unsigned newAddressSize )
 	}
 	else
 	{
-		for ( unsigned i = newXLogicCount; i < oldXLogicCount; ++i )
+		for ( llong i = newXLogicCount; i < oldXLogicCount; ++i )
 		{
 			QString id = "X"+QString::number(i);
 			removeDisplayText(id);
@@ -160,8 +161,8 @@ void Demultiplexer::initPins( unsigned newAddressSize )
 			removeNode(id);
 		}
 		m_xLogic.resize(newXLogicCount);
-		
-		for ( unsigned i = newAddressSize; i < oldAddressSize; ++i )
+
+		for ( int i = newAddressSize; i < oldAddressSize; ++i )
 		{
 			QString id = "A"+QString::number(i);
 			removeDisplayText(id);
@@ -171,4 +172,3 @@ void Demultiplexer::initPins( unsigned newAddressSize )
 		m_aLogic.resize(newAddressSize);
 	}
 }
-

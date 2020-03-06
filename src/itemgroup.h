@@ -11,6 +11,8 @@
 #ifndef ITEMGROUP_H
 #define ITEMGROUP_H
 
+#include "pch.hpp"
+
 #include <qpointer.h>
 
 class Item;
@@ -20,8 +22,6 @@ class DoubleSpinBox;
 class ItemGroup;
 class MechanicsDocument;
 class Variant;
-
-typedef QList<QPointer<Item> > ItemList;
 
 class KtlQCanvasItem;
 class KtlQCanvasItemList;
@@ -37,7 +37,7 @@ Q_OBJECT
 public:
 	ItemGroup( ItemDocument *view, const char *name = 0 );
 	~ItemGroup() override;
-	
+
 	/**
 	 * Returns a pointer to the "active" CNItem - i.e. the last CNItem
 	 * to be added to the CNItemGroup. This will always return a pointer to
@@ -59,12 +59,12 @@ public:
 	 * @param excludeParented whether to return items whose (grand-) parents are
 	 * already in the list.
 	 */
-	ItemList items( bool excludeParented = true ) const;
+	QPtrList<Item> items( bool excludeParented = true ) const;
 	/**
 	 * Sets the selected state of all items in the group
 	 */
 	virtual void setSelected( bool sel ) = 0;
-	
+
 	/**
 	 * Returns true iff either there are no items, or itemsAreSameType and the
 	 * value of each data (excluding hidden data) for each item is the same
@@ -87,7 +87,7 @@ public:
 	 * items in the group, then this will return true
 	 */
 	bool itemsAreSameType() const { return b_itemsAreSameType; }
-	
+
 public slots:
 	/**
 	 * Align the selected items horizontally so that their positions have the
@@ -109,11 +109,11 @@ public slots:
 	 * spacing in the vertical direction.
 	 */
 	void slotDistributeVertically();
-	
+
 signals:
 	void itemAdded( Item *item );
 	void itemRemoved( Item *item );
-	
+
 protected:
 	/**
 	 * Subclasses must call this to register the item with the data interface
@@ -124,15 +124,15 @@ protected:
 	 */
 	void unregisterItem( Item *item );
 	void updateAreSameStatus();
-	
-	ItemList m_itemList;
+
+	QPtrList<Item> m_itemList;
 	bool b_itemsAreSameType;
 	ItemDocument * p_view;
-	
+
 	ICNDocument *p_icnDocument;
 	MechanicsDocument *p_mechanicsDocument;
 	Item *m_activeItem;
-	
+
 private slots:
 	void getViewPtrs();
 };

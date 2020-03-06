@@ -7,7 +7,7 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  ***************************************************************************/
- 
+
 #include <vector>
 #include "diode.h"
 #include "elementset.h"
@@ -59,10 +59,10 @@ double Diode::current() const
 {
 	if (!b_status)
 		return 0.0;
-	
-	double I;
+
+	double I = 0.0;
 	calcIg( p_cnode[0]->v - p_cnode[1]->v, & I, 0 );
-	
+
 	return I;
 }
 
@@ -71,7 +71,7 @@ void Diode::updateCurrents()
 {
 	if (!b_status)
 		return;
-	
+
 	m_cnodeI[1] = current();
 	m_cnodeI[0] = -m_cnodeI[1];
 }
@@ -81,17 +81,17 @@ void Diode::update_dc()
 {
 	if (!b_status)
 		return;
-	
+
 	calc_eq();
-	
+
 	A_g( 0, 0 ) += g_new - g_old;
 	A_g( 1, 1 ) += g_new - g_old;
 	A_g( 0, 1 ) -= g_new - g_old;
 	A_g( 1, 0 ) -= g_new - g_old;
-	
+
 	b_i( 0 ) -= I_new - I_old;
 	b_i( 1 ) += I_new - I_old;
-	
+
 	g_old = g_new;
 	I_old = I_new;
 }
@@ -109,9 +109,9 @@ void Diode::calc_eq()
 	double N = m_diodeSettings.N;
 	double V_B = m_diodeSettings.V_B;
 // 	double R = m_diodeSettings.R;
-	
+
 	double v = p_cnode[0]->v - p_cnode[1]->v;
-	
+
 	// adjust voltage to help convergence
 	if ( V_B != 0 && v < MIN( 0, -V_B + 10 * N ) )
 	{
@@ -121,12 +121,12 @@ void Diode::calc_eq()
 	}
 	else
 		v = diodeVoltage( v, V_prev, N, V_lim );
-	
+
 	V_prev = v;
-	
+
 	double I_D;
 	calcIg( v, & I_D, & g_new );
-	
+
 	I_new = I_D - (v * g_new);
 }
 
@@ -137,9 +137,9 @@ void Diode::calcIg( double V, double * I_D, double * g ) const
 	double N = m_diodeSettings.N;
 	double V_B = m_diodeSettings.V_B;
 // 	double R = m_diodeSettings.R;
-	
+
 	double g_tiny = (V < - 10 * V_T * N && V_B != 0) ? I_S : 0;
-	
+
 	if ( V >= (-3 * N * V_T) )
 	{
 		if ( g )
@@ -180,4 +180,3 @@ void Diode::updateLim()
 	V_lim = diodeLimitedVoltage( I_S, N );
 }
 //END class Diode
-

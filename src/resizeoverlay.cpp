@@ -69,7 +69,7 @@ ResizeHandle *ResizeOverlay::createResizeHandle( int id, ResizeHandle::DrawType 
 	ResizeHandleMap::iterator it = m_resizeHandleMap.find(id);
 	if ( it != m_resizeHandleMap.end() )
 		return it.value();
-	
+
 	ResizeHandle *newResizeHandle = new ResizeHandle( this, id, drawType, xsnap, ysnap );
 	m_resizeHandleMap[id] = newResizeHandle;
 	connect( newResizeHandle, SIGNAL(rhMovedBy(int, double, double )), this, SLOT(slotResizeHandleMoved(int, double, double )) );
@@ -82,7 +82,7 @@ void ResizeOverlay::removeResizeHandle( int id )
 	ResizeHandleMap::iterator it = m_resizeHandleMap.find(id);
 	if ( it == m_resizeHandleMap.end() )
 		return;
-	
+
 	ResizeHandle *rh = it.value();
 	disconnect( rh, SIGNAL(rhMovedBy(int, double, double )), this, SLOT(slotResizeHandleMoved(int, double, double )) );
 	delete rh;
@@ -146,7 +146,7 @@ MechanicsItemOverlay::MechanicsItemOverlay( MechanicsItem *parent )
 	p_mechanicsItem = parent;
 	connect( parent, SIGNAL(moved()), this, SLOT(slotUpdateResizeHandles()) );
 	connect( parent, SIGNAL(resized()), this, SLOT(slotUpdateResizeHandles()) );
-	
+
 	m_tl = createResizeHandle( ResizeHandle::rhp_topLeft, ResizeHandle::dt_resize_backwardsDiagonal );
 	m_tm = createResizeHandle( ResizeHandle::rhp_topMiddle, ResizeHandle::dt_resize_vertical );
 	m_tr = createResizeHandle( ResizeHandle::rhp_topRight, ResizeHandle::dt_resize_forwardsDiagonal );
@@ -156,7 +156,7 @@ MechanicsItemOverlay::MechanicsItemOverlay( MechanicsItem *parent )
 	m_bl = createResizeHandle( ResizeHandle::rhp_bottomLeft, ResizeHandle::dt_resize_forwardsDiagonal );
 	m_ml = createResizeHandle( ResizeHandle::rhp_middleLeft, ResizeHandle::dt_resize_horizontal );
 	m_mm = createResizeHandle( ResizeHandle::rhp_center, ResizeHandle::dt_point_crosshair );
-	
+
 	slotUpdateResizeHandles();
 }
 
@@ -168,7 +168,7 @@ void MechanicsItemOverlay::slotUpdateResizeHandles()
 {
 	const PositionInfo absPos = p_mechanicsItem->absolutePosition();
 	const QRect sizeRect = p_mechanicsItem->sizeRect();
-	
+
 	QPolygon pa(9);
 	pa[0] = sizeRect.topLeft();
 	pa[2] = sizeRect.topRight();
@@ -179,12 +179,12 @@ void MechanicsItemOverlay::slotUpdateResizeHandles()
 	pa[5] = (pa[4]+pa[6])/2;
 	pa[7] = (pa[6]+pa[0])/2;
 	pa[8] = QPoint(0,0);
-	
+
 	QMatrix m;
 	m.rotate(absPos.angle() * DPR);
-	
+
 	pa = m.map(pa);
-	
+
 	m_tl->move( absPos.x()+pa[0].x(), absPos.y()+pa[0].y() );
 	m_tm->move( absPos.x()+pa[1].x(), absPos.y()+pa[1].y() );
 	m_tr->move( absPos.x()+pa[2].x(), absPos.y()+pa[2].y() );
@@ -201,7 +201,7 @@ void MechanicsItemOverlay::slotResizeHandleMoved( int id, double dx, double dy )
 	Q_UNUSED(id);
 	Q_UNUSED(dx);
 	Q_UNUSED(dy);
-	
+
 	switch (id)
 	{
 		case ResizeHandle::rhp_topLeft:
@@ -237,7 +237,7 @@ RectangularOverlay::RectangularOverlay( Item *parent, int xsnap, int ysnap )
 {
 	connect( parent, SIGNAL(resized()), this, SLOT(slotUpdateResizeHandles()) );
 	connect( parent, SIGNAL(movedBy(double, double )), this, SLOT(slotMoveAllResizeHandles(double, double )) );
-	
+
 	m_tl = createResizeHandle( ResizeHandle::rhp_topLeft,		ResizeHandle::dt_resize_backwardsDiagonal,	xsnap, ysnap );
 	m_tm = createResizeHandle( ResizeHandle::rhp_topMiddle,		ResizeHandle::dt_resize_vertical,			xsnap, ysnap );
 	m_tr = createResizeHandle( ResizeHandle::rhp_topRight,		ResizeHandle::dt_resize_forwardsDiagonal,	xsnap, ysnap );
@@ -246,12 +246,12 @@ RectangularOverlay::RectangularOverlay( Item *parent, int xsnap, int ysnap )
 	m_bm = createResizeHandle( ResizeHandle::rhp_bottomMiddle,	ResizeHandle::dt_resize_vertical,			xsnap, ysnap );
 	m_bl = createResizeHandle( ResizeHandle::rhp_bottomLeft,	ResizeHandle::dt_resize_forwardsDiagonal,	xsnap, ysnap );
 	m_ml = createResizeHandle( ResizeHandle::rhp_middleLeft,	ResizeHandle::dt_resize_horizontal,			xsnap, ysnap );
-	
+
 	syncX( m_tl, m_ml, m_bl );
 	syncX( m_tr, m_mr, m_br );
 	syncY( m_tl, m_tm, m_tr );
 	syncY( m_bl, m_bm, m_br );
-	
+
 	slotUpdateResizeHandles();
 }
 
@@ -277,13 +277,13 @@ void RectangularOverlay::removeBotMiddle()
 void RectangularOverlay::slotUpdateResizeHandles()
 {
 	const QRect sizeRect = p_item->sizeRect();
-	
+
 	int x1 = sizeRect.left() + int(p_item->x());
 	int x2 = x1 + sizeRect.width();
-	
+
 	int y1 = sizeRect.top() + int(p_item->y());
 	int y2 = y1 + sizeRect.height();
-	
+
 	m_tl->move( x1, y1 );
 	if (m_tm)
 		m_tm->move( (x1+x2)/2, y1 );
@@ -320,12 +320,12 @@ void RectangularOverlay::slotResizeHandleMoved( int id, double dx, double dy )
 	Q_UNUSED(id);
 	Q_UNUSED(dx);
 	Q_UNUSED(dy);
-	
+
 	bool ok;
 	QRect sizeRect = getSizeRect(&ok);
 	if (!ok)
 		return;
-	
+
 	p_item->setSize(sizeRect);
 	slotUpdateResizeHandles();
 }
@@ -340,18 +340,18 @@ QRect RectangularOverlay::getSizeRect( bool *ok, bool *widthOk, bool *heightOk  
 		widthOk = &t2;
 	if (!heightOk)
 		heightOk = &t3;
-	
+
 	int width = int(m_br->x() - m_tl->x());
 	int height = int(m_br->y() - m_tl->y());
-	
+
 	QRect sizeRect( int(m_tl->x() - p_item->x()),
 					int(m_tl->y() - p_item->y()),
 					width, height );
-	
+
 	*widthOk = sizeRect.width() >= p_item->minimumSize().width();
 	*heightOk = sizeRect.height() >= p_item->minimumSize().height();
 	*ok = *widthOk && *heightOk;
-	
+
 	return sizeRect;
 }
 //END class RectangularOverlay
@@ -364,10 +364,10 @@ LineOverlay::LineOverlay( Item * parent )
 {
 	connect( parent, SIGNAL(resized()), this, SLOT(slotUpdateResizeHandles()) );
 	connect( parent, SIGNAL(movedBy(double, double )), this, SLOT(slotMoveAllResizeHandles(double, double )) );
-	
+
 	m_pStart =	createResizeHandle( ResizeHandle::rhp_start,	ResizeHandle::dt_point_rect );
 	m_pEnd = 	createResizeHandle( ResizeHandle::rhp_end,		ResizeHandle::dt_point_rect );
-	
+
 	slotUpdateResizeHandles();
 }
 
@@ -386,7 +386,7 @@ void LineOverlay::slotUpdateResizeHandles()
 {
 	int _x = int(p_item->x() + p_item->offsetX());
 	int _y = int(p_item->y() + p_item->offsetY());
-	
+
 	m_pStart->move( _x, _y );
 	m_pEnd->move( _x+p_item->width(), _y+p_item->height() );
 }
@@ -397,7 +397,7 @@ void LineOverlay::slotResizeHandleMoved( int id, double dx, double dy )
 	Q_UNUSED(id);
 	Q_UNUSED(dx);
 	Q_UNUSED(dy);
-	
+
 	p_item->setSize( int(m_pStart->x()-p_item->x()), int(m_pStart->y()-p_item->y()),
 					 int(m_pEnd->x()-m_pStart->x()), int(m_pEnd->y()-m_pStart->y()) );
 }
@@ -428,7 +428,7 @@ void ResizeHandle::setHover( bool hover )
 {
 	if ( b_hover == hover )
 		return;
-	
+
 	b_hover = hover;
 	canvas()->setChanged( QRect( int(x())-8, int(y())-8, 15, 15 ) );
 }
@@ -447,17 +447,17 @@ void ResizeHandle::moveRH( double _x, double _y )
 	double dy = int((_y-4)/m_ysnap)*m_ysnap+4 - y();
 	if ( (dx == 0) && (dy == 0) )
 		return;
-	
+
 	//BEGIN Move and check
 	moveBy( dx, dy );
 	if ( dx != 0 )
 		emit rhMovedByX(dx);
 	if ( dy != 0 )
 		emit rhMovedByY(dy);
-	
+
 	bool xOk = p_resizeOverlay->isValidXPos(this);
 	bool yOk = p_resizeOverlay->isValidYPos(this);
-	
+
 	if (!xOk)
 	{
 		moveBy( -dx, 0 );
@@ -470,11 +470,11 @@ void ResizeHandle::moveRH( double _x, double _y )
 		emit rhMovedByY(-dy);
 		dy = 0;
 	}
-	
+
 	if ( !xOk && !yOk )
 		return;
 	//END Move and check
-	
+
 	emit rhMovedBy( id(), dx, dy );
 }
 
@@ -510,7 +510,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		" .......     ",
 		"             "};
 	static QPixmap pixmap_forwardsDiagonal_hover(resize_forwardsDiagonal_hover_xpm);
-	
+
 	const char * resize_forwardsDiagonal_nohover_xpm[] = {
 		"13 13 2 1",
 		" 	c None",
@@ -550,8 +550,8 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		"     ....... ",
 		"             "};
 	static QPixmap pixmap_backwardsDiagonal_hover(resize_backwardsDiagonal_hover_xpm);
- 
-	const char * resize_backwardsDiagonal_nohover_xpm[] = {  
+
+	const char * resize_backwardsDiagonal_nohover_xpm[] = {
 		"13 13 2 1",
 		" 	c None",
 		".	c #000000",
@@ -568,7 +568,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		"      ...... ",
 		"     ....... ",
 		"             "};
-	static QPixmap pixmap_backwardsDiagonal_nohover(resize_backwardsDiagonal_nohover_xpm);                    
+	static QPixmap pixmap_backwardsDiagonal_nohover(resize_backwardsDiagonal_nohover_xpm);
 
 
 	const char * resize_vertical_hover_xpm[] = {
@@ -590,7 +590,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		"     ...     ",
 		"      .      "};
 	static QPixmap pixmap_vertical_hover(resize_vertical_hover_xpm);
-	
+
 	const char * resize_vertical_nohover_xpm[] = {
 		"13 13 2 1",
 		" 	c None",
@@ -609,8 +609,8 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		"     ...     ",
 		"      .      "};
 	static QPixmap pixmap_vertical_nohover(resize_vertical_nohover_xpm);
-	
-	
+
+
 	const char * resize_horizontal_hover_xpm[] = {
 		"13 13 3 1",
 		" 	c None",
@@ -649,7 +649,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		"             ",
 		"             "};
 	static QPixmap pixmap_horizontal_nohover(resize_horizontal_nohover_xpm);
-	
+
 	const char * point_rect_hover_xpm[] = {
 		"13 13 3 1",
 		" 	c None",
@@ -669,7 +669,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		"             ",
 		"             "};
 	static QPixmap pixmap_point_rect_hover(point_rect_hover_xpm);
-	
+
 	const char * point_rect_nohover_xpm[] = {
 		"13 13 3 1",
 		" 	c None",
@@ -689,7 +689,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 		"             ",
 		"             "};
 	static QPixmap pixmap_point_rect_nohover(point_rect_nohover_xpm);
-		
+
 	if (hover)
 	{
 		switch(drawType)
@@ -704,7 +704,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 				return pixmap_horizontal_hover;
 			case ResizeHandle::dt_point_rect:
 				return pixmap_point_rect_hover;
-				
+
 			case ResizeHandle::dt_point_crosshair:
 			case ResizeHandle::dt_rotate_topLeft:
 			case ResizeHandle::dt_rotate_topRight:
@@ -727,7 +727,7 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 				return pixmap_horizontal_nohover;
 			case ResizeHandle::dt_point_rect:
 				return pixmap_point_rect_nohover;
-				
+
 			case ResizeHandle::dt_point_crosshair:
 			case ResizeHandle::dt_rotate_topLeft:
 			case ResizeHandle::dt_rotate_topRight:
@@ -736,10 +736,10 @@ const QPixmap& ResizeHandle::handlePixmap( DrawType drawType, bool hover )
 				qWarning() << Q_FUNC_INFO << "ResizeHandle of type " << drawType << " does not have an image." << endl;
 		}
 	}
-	
+
 	static QPixmap blank;
 	return blank;
 }
 //END class ResizeHandle
 
-#include "resizeoverlay.moc"
+#include "moc_resizeoverlay.cpp"

@@ -7,3 +7,4 @@
 *inst*
 *.log
 !build*.sh
+.vscode

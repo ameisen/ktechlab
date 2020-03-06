@@ -26,8 +26,8 @@
 #include <qdebug.h>
 #include <qmimedata.h>
 
-CircuitView::CircuitView( CircuitDocument * circuitDocument, ViewContainer *viewContainer, uint viewAreaId, const char *name )
-	: ICNView( circuitDocument, viewContainer, viewAreaId, name ),
+CircuitView::CircuitView( CircuitDocument *circuitDocument, ViewContainer *viewContainer, uint viewAreaId, const char *name ) :
+    ICNView(circuitDocument, viewContainer, viewAreaId, name),
 	p_circuitDocument(circuitDocument)
 {
 	KActionCollection * ac = actionCollection();
@@ -153,21 +153,23 @@ void CircuitView::slotUpdateRunningStatus( bool isRunning )
 
 void CircuitView::dragEnterEvent( QDragEnterEvent * e )
 {
-    const QMimeData* mimeData = e->mimeData();
+    if (!e) return;
+
+    const QMimeData *mimeData = e->mimeData();
     qDebug() << Q_FUNC_INFO << mimeData->formats();
 
 	ICNView::dragEnterEvent(e);
 	if ( e->isAccepted() )
 		return;
-	
-	//bool acceptable = e->provides("ktechlab/component") || e->provides("ktechlab/subcircuit");
-    bool acceptable = e->mimeData()->hasFormat("ktechlab/component")
-            || e->mimeData()->hasFormat("ktechlab/subcircuit");
-	if ( !acceptable )
-		return;
+
+	if (
+        !e->mimeData()->hasFormat("ktechlab/component") &&
+        !e->mimeData()->hasFormat("ktechlab/subcircuit")
+    )
+	    return;
 
 	e->setAccepted( true );
 	createDragItem( e );
 }
 
-#include "circuitview.moc"
+#include "moc_circuitview.cpp"

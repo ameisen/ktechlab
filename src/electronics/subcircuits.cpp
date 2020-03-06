@@ -189,6 +189,4 @@ void Subcircuits::slotItemRemoved( const QString &id )
 }
 
 
-#include "subcircuits.moc"
-
-
+#include "moc_subcircuits.cpp"

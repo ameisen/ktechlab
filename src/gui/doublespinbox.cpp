@@ -65,7 +65,7 @@ DoubleSpinBox::DoubleSpinBox( double lower, double upper, double minAbs, double 
     setMaximum( upper );
 	m_minAbsValue = minAbs;
 // 	m_queuedSuffix = QString::null;
-	
+
 	init();
 	setValue( value );
 }
@@ -83,7 +83,7 @@ DoubleSpinBox::DoubleSpinBox( QWidget * parent )
     setMaximum( 1e9 );
 	m_minAbsValue = 1e-9;
 // 	m_queuedSuffix = QString::null;
-	
+
 	init();
 	setValue( 0 );
 }
@@ -92,11 +92,11 @@ DoubleSpinBox::DoubleSpinBox( QWidget * parent )
 void DoubleSpinBox::init()
 {
 	lineEdit()->setAlignment( Qt::AlignRight );
-	
+
 // 	connect( this, SIGNAL(valueChanged(double)), this, SLOT(checkIfChanged()) );
 // 	QSpinBox::setMinValue( -(1<<30) );
 // 	QSpinBox::setMaxValue( +(1<<30) );
-	
+
 	// setValidator( 0 ); // apparently in Qt4 there is no validator
 }
 
@@ -459,10 +459,10 @@ double DoubleSpinBox::roundToOneSF( double value )
 {
 	if ( value == 0.0 )
 		return 0.0;
-	
+
 	value *= 1.000001;
 	double tens = pow( 10.0, floor(log10( abs(value) )) );
-	
+
 	return int ( value / tens ) * tens;
 }
 
@@ -518,5 +518,4 @@ double DoubleSpinBox::roundToOneSF( double value )
 // 	setValue( value );
 // }
 
-#include "doublespinbox.moc"
-
+#include "moc_doublespinbox.cpp"

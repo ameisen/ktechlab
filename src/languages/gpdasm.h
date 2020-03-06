@@ -22,10 +22,10 @@ class Gpdasm : public ExternalLanguage
 public:
 	Gpdasm( ProcessChain *processChain );
 	~Gpdasm() override;
-	
-	void processInput( ProcessOptions options ) override;
+
+	void processInput(const ProcessOptions &options) override;
 	MessageInfo extractMessageInfo( const QString &text ) override;
-	ProcessOptions::ProcessPath::Path outputPath( ProcessOptions::ProcessPath::Path inputPath ) const override;
+	ProcessOptions::Path outputPath( ProcessOptions::Path inputPath ) const override;
 
 protected:
 	void outputtedMessage( const QString &message ) override;

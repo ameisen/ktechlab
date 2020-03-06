@@ -24,11 +24,14 @@
 #include <qfile.h>
 #include <qtextstream.h>
 
-FlowCode::FlowCode( ProcessChain *processChain )
-	: Language( processChain, i18n("FlowCode") )
+FlowCode::FlowCode(ProcessChain *processChain) :
+	Language(
+		processChain,
+		i18n("FlowCode"),
+		"*** Microbe generation successful ***",
+		"*** Microbe generation failed ***"
+	)
 {
-	m_successfulMessage = i18n("*** Microbe generation successful ***");
-	m_failedMessage = i18n("*** Microbe generation failed ***");
 	p_startPart = 0l;
 }
 
@@ -37,50 +40,50 @@ FlowCode::~FlowCode()
 }
 
 
-void FlowCode::processInput( ProcessOptions options )
+void FlowCode::processInput(const ProcessOptions &options)
 {
-	m_processOptions = options;
-	
-	if ( !options.p_flowCodeDocument )
+	processOptions_ = options;
+
+	if ( !processOptions_.p_flowCodeDocument )
 	{
-		options.p_flowCodeDocument = new FlowCodeDocument( QString::null, 0l );
-		options.p_flowCodeDocument->openURL( options.inputFiles().first() );
-		
-		connect( this, SIGNAL(processSucceeded( Language *)), options.p_flowCodeDocument, SLOT(deleteLater()) );
-		connect( this, SIGNAL(processFailed( Language *)), options.p_flowCodeDocument, SLOT(deleteLater()) );
+		processOptions_.p_flowCodeDocument = new FlowCodeDocument( QString::null, 0l );
+		processOptions_.p_flowCodeDocument->openURL( options.inputFiles().first() );
+
+		connect( this, SIGNAL(processSucceeded( Language *)), processOptions_.p_flowCodeDocument, SLOT(deleteLater()) );
+		connect( this, SIGNAL(processFailed( Language *)), processOptions_.p_flowCodeDocument, SLOT(deleteLater()) );
 	}
 
-	if ( !options.p_flowCodeDocument->microSettings() )
+	if ( !processOptions_.p_flowCodeDocument->microSettings() )
 	{
-		finish(false);
+		finish(Result::Failure);
 		return;
 	}
 
-	QFile file(options.intermediaryOutput());
+	QFile file(processOptions_.intermediaryOutput());
 	if ( file.open(QIODevice::WriteOnly | QIODevice::ReadOnly) == false )
 	{
-		finish(false);
+		finish(Result::Failure);
 		return;
 	}
 	file.close();
-	
+
 	if ( file.open(QIODevice::WriteOnly) == false )
 	{
-		finish(false);
+		finish(Result::Failure);
 		return;
 	}
 
-	const QString code = generateMicrobe( options.p_flowCodeDocument->itemList(), options.p_flowCodeDocument->microSettings() );
+	const QString code = generateMicrobe( processOptions_.p_flowCodeDocument->itemList(), processOptions_.p_flowCodeDocument->microSettings() );
 	if (code.isEmpty())
 	{
-		finish(false);
+		finish(Result::Failure);
 		return;
 	}
 
 	QTextStream stream(&file);
 	stream << code;
 	file.close();
-	finish(true);
+	finish(Result::Success);
 }
 
 
@@ -105,10 +108,10 @@ void FlowCode::addCodeBranch( FlowPart * flowPart )
 {
 	if (!flowPart)
 		return;
-	
+
 	if ( !isValidBranch(flowPart) )
 		return;
-	
+
 	if ( m_addedParts.contains(flowPart) )
 	{
 		const QString labelName = genLabel(flowPart->id());
@@ -121,11 +124,11 @@ void FlowCode::addCodeBranch( FlowPart * flowPart )
 		m_addedParts.append(flowPart);
 		int prevLevel = m_curLevel;
 		m_curLevel = flowPart->level();
-		
+
 		const QString labelName = genLabel(flowPart->id());
 		addCode(labelName+':');
 		m_labels.append(labelName);
-		
+
 		flowPart->generateMicrobe(this);
 		m_curLevel = prevLevel;
 	}
@@ -144,7 +147,7 @@ void FlowCode::addStopPart( FlowPart *part )
 void FlowCode::removeStopPart( FlowPart *part )
 {
 	if (!part) return;
-	
+
 	// We only want to remove one instance of the FlowPart, in case it has been
 	// used as a StopPart for more than one FlowPart
 	//FlowPartList::iterator it = m_stopParts.find(part);  // 2018.12.01
@@ -155,20 +158,20 @@ void FlowCode::removeStopPart( FlowPart *part )
     }
 }
 
-QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *settings )
+QString FlowCode::generateMicrobe( const QPtrList<Item> &itemList, MicroSettings *settings )
 {
 	bool foundStart = false;
-	const ItemList::const_iterator end = itemList.end();
-	for ( ItemList::const_iterator it = itemList.begin(); it != end; ++it )
+	const QPtrList<Item>::const_iterator end = itemList.end();
+	for ( QPtrList<Item>::const_iterator it = itemList.begin(); it != end; ++it )
 	{
 		if (!*it)
 			continue;
-		
+
 		FlowPart * startPart = dynamic_cast<FlowPart*>((Item*)*it);
-		
+
 		if (!startPart)
 			continue;
-		
+
 		// Check to see if we have any floating connections
 		const NodeInfoMap nodeMap = startPart->nodeMap();
 		NodeInfoMap::const_iterator nodeMapEnd = nodeMap.end();
@@ -178,13 +181,13 @@ QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *sett
 				// FIXME dynamic_cast used
 			if(  !node || ( dynamic_cast<OutputFlowNode*>(node) == 0) )
 				continue;
-			
+
 			if ( !startPart->outputPart( nodeMapIt.key() ) )
 				outputWarning( i18n("Warning: Floating connection for %1", startPart->id() ) );
 		}
-		
+
 		FlowContainer * fc = dynamic_cast<FlowContainer*>((Item*)*it);
-		
+
 		if ( (*it)->id().startsWith("START") && startPart )
 		{
 			foundStart = true;
@@ -195,34 +198,34 @@ QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *sett
 			addSubroutine(fc);
 		}
 	}
-	
+
 	if (!foundStart)
 	{
 		outputError( i18n("KTechlab was unable to find the \"Start\" part.\nThis must be included as the starting point for your program.") );
 		return 0;
 	}
-	
+
 	m_addedParts.clear();
 	m_stopParts.clear();
 	m_gotos.clear();
 	m_labels.clear();
 	m_code = QString::null;
-	
+
 	// PIC type
 	{
 		const QString codeString = settings->microInfo()->id() + "\n";
 		addCode(codeString);
 	}
-	
+
 	// Initial variables
 	{
 		QStringList vars = settings->variableNames();
-		
+
 		// If "inited" is true at the end, we comment at the insertion point
 		bool inited = false;
 		const QString codeString = "// Initial variable values:\n";
 		addCode(codeString);
-		
+
 		const QStringList::iterator end = vars.end();
 		for ( QStringList::iterator it = vars.begin(); it != end; ++it )
 		{
@@ -239,7 +242,7 @@ QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *sett
 			addCode("\n");
 		}
 	}
-	
+
 	// Initial pin maps
 	{
 		const PinMappingMap pinMappings = settings->pinMappings();
@@ -247,40 +250,40 @@ QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *sett
 		for ( PinMappingMap::const_iterator it = pinMappings.begin(); it != end; ++it )
 		{
 			QString type;
-			
+
 			switch ( it.value().type() )
 			{
 				case PinMapping::Keypad_4x3:
 				case PinMapping::Keypad_4x4:
 					type = "keypad";
 					break;
-					
+
 				case PinMapping::SevenSegment:
 					type = "sevenseg";
 					break;
-					
+
 				case PinMapping::Invalid:
 					break;
 			}
-			
+
 			if ( type.isEmpty() )
 				continue;
-			
+
 			addCode( QString("%1 %2 %3").arg( type ).arg( it.key() ).arg( it.value().pins().join(" ") ) );
 		}
 	}
-	
+
 	// Initial port settings
 	{
 		QStringList portNames = settings->microInfo()->package()->portNames();
 		const QStringList::iterator end = portNames.end();
-		
+
 		// TRIS registers (remember that this is set to ..11111 on all resets)
 		for ( QStringList::iterator it = portNames.begin(); it != end; ++it )
 		{
 			const int portType = settings->portType(*it);
 			const int pinCount = settings->microInfo()->package()->pinCount( 0, *it );
-			
+
 			// We don't need to reset it if portType == 2^(pinCount-1)
 			if ( portType != (1<<pinCount)-1 )
 			{
@@ -289,7 +292,7 @@ QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *sett
 				addCode( name+" = "+QString::number(portType) );
 			}
 		}
-		
+
 		// PORT registers
 		for ( QStringList::iterator it = portNames.begin(); it != end; ++it )
 		{
@@ -297,12 +300,12 @@ QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *sett
 			addCode( (*it)+" = "+QString::number(portState) );
 		}
 	}
-	
-	
+
+
 	m_curLevel = p_startPart->level();
 	addCodeBranch(p_startPart);
 	addCode("end");
-	
+
 	{
 		const FlowPartList::iterator end = m_subroutines.end();
 		for ( FlowPartList::iterator it = m_subroutines.begin(); it != end; ++it )
@@ -315,7 +318,7 @@ QString FlowCode::generateMicrobe( const ItemList &itemList, MicroSettings *sett
 			}
 		}
 	}
-	
+
 	tidyCode();
 	return m_code;
 }
@@ -328,8 +331,8 @@ void FlowCode::tidyCode()
 	{
 		if ( !m_gotos.contains(*it) ) m_code.remove(*it+':');
 	}
-	
-	
+
+
 	// And now on to handling indentation :-)
 
 	if ( !m_code.endsWith("\n") ) m_code.append("\n");
@@ -341,7 +344,7 @@ void FlowCode::tidyCode()
 	bool asmKeyword = false;
 	int asmEmbedLevel = -1;
 	int level = 0;
-	
+
 	int pos=-1;
 	const int length = m_code.length();
 	while ( ++pos<length )
@@ -367,7 +370,7 @@ void FlowCode::tidyCode()
 					asmEmbedAllowed = true;
 				}
 				break;
-			} 
+			}
 			case '/':
 			{
 				newCode += '/';
@@ -399,10 +402,10 @@ void FlowCode::tidyCode()
 					asmEmbed = true;
 					asmEmbedLevel = level;
 				}
-				
+
 				if ( !comment ) level++;
 				newCode += '{';
-				
+
 				asmEmbedAllowed = false;
 				asmKeyword = false;
 				break;
@@ -410,15 +413,15 @@ void FlowCode::tidyCode()
 			case '}':
 			{
 				if ( !comment ) level--;
-				
-				if (asmEmbed && asmEmbedLevel == level) 
+
+				if (asmEmbed && asmEmbedLevel == level)
 				{
 					asmEmbed = false;
 					newCode += "\n";
 					for ( int i=0; i<level; i++ ) newCode += '\t';
 				}
 				newCode += '}';
-				
+
 				asmEmbedAllowed = true;
 				asmKeyword = false;
 				break;
@@ -456,48 +459,25 @@ void FlowCode::addSubroutine( FlowPart *part )
 }
 
 
-ProcessOptions::ProcessPath::Path FlowCode::outputPath( ProcessOptions::ProcessPath::Path inputPath ) const
+ProcessOptions::Path FlowCode::outputPath( ProcessOptions::Path inputPath ) const
 {
 	switch (inputPath)
 	{
-		case ProcessOptions::ProcessPath::FlowCode_AssemblyAbsolute:
-			return ProcessOptions::ProcessPath::Microbe_AssemblyAbsolute;
-			
-		case ProcessOptions::ProcessPath::FlowCode_Microbe:
-			return ProcessOptions::ProcessPath::None;
-			
-		case ProcessOptions::ProcessPath::FlowCode_PIC:
-			return ProcessOptions::ProcessPath::Microbe_PIC;
-			
-		case ProcessOptions::ProcessPath::FlowCode_Program:
-			return ProcessOptions::ProcessPath::Microbe_Program;
-			
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_PIC:
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_Program:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Library:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Object:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_PIC:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Program:
-		case ProcessOptions::ProcessPath::C_AssemblyRelocatable:
-		case ProcessOptions::ProcessPath::C_Library:
-		case ProcessOptions::ProcessPath::C_Object:
-		case ProcessOptions::ProcessPath::C_PIC:
-		case ProcessOptions::ProcessPath::C_Program:
-		case ProcessOptions::ProcessPath::Microbe_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Microbe_PIC:
-		case ProcessOptions::ProcessPath::Microbe_Program:
-		case ProcessOptions::ProcessPath::Object_Disassembly:
-		case ProcessOptions::ProcessPath::Object_Library:
-		case ProcessOptions::ProcessPath::Object_PIC:
-		case ProcessOptions::ProcessPath::Object_Program:
-		case ProcessOptions::ProcessPath::PIC_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Program_Disassembly:
-		case ProcessOptions::ProcessPath::Program_PIC:
-		case ProcessOptions::ProcessPath::Invalid:
-		case ProcessOptions::ProcessPath::None:
-			return ProcessOptions::ProcessPath::Invalid;
-	}
-	
-	return ProcessOptions::ProcessPath::Invalid;
-}
+		case ProcessOptions::Path::FlowCode_AssemblyAbsolute:
+			return ProcessOptions::Path::Microbe_AssemblyAbsolute;
 
+		case ProcessOptions::Path::FlowCode_Microbe:
+			return ProcessOptions::Path::None;
+
+		case ProcessOptions::Path::FlowCode_PIC:
+			return ProcessOptions::Path::Microbe_PIC;
+
+		case ProcessOptions::Path::FlowCode_Program:
+			return ProcessOptions::Path::Microbe_Program;
+
+		default:
+			return ProcessOptions::Path::Invalid;
+	}
+
+	return ProcessOptions::Path::Invalid;
+}

@@ -16,22 +16,22 @@
 /**
 @author David Saxton
 */
-class BiDirLED : public Component
+class BiDirLED final : public Component
 {
 	public:
 		BiDirLED( ICNDocument * icnDocument, bool newItem, const char *id = 0L );
 		~BiDirLED() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-	
+
 		void dataChanged() override;
 		void stepNonLogic() override;
 		bool doesStepNonLogic() const override { return true; }
-	
+
 	private:
 		void drawShape( QPainter &p ) override;
-	
+
 		double r[2];
 		double g[2];
 		double b[2];

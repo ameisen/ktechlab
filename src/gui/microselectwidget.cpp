@@ -31,7 +31,7 @@ MicroSelectWidget::MicroSelectWidget( QWidget* parent, const char* name, Qt::WFl
 
 	m_allowedAsmSet = AsmInfo::AsmSetAll;
 	m_allowedGpsimSupport = m_allowedFlowCodeSupport = m_allowedMicrobeSupport = MicroInfo::AllSupport;
-	
+
 	if ( !name ) {
 		setObjectName( "MicroSelectWidget" );
     }
@@ -81,7 +81,7 @@ void MicroSelectWidget::setAllowedFlowCodeSupport( unsigned allowed )
 {
 	m_allowedFlowCodeSupport = allowed;
 	updateFromAllowed();
-}	
+}
 void MicroSelectWidget::setAllowedMicrobeSupport( unsigned allowed )
 {
 	m_allowedMicrobeSupport = allowed;
@@ -92,9 +92,9 @@ void MicroSelectWidget::setAllowedMicrobeSupport( unsigned allowed )
 void MicroSelectWidget::updateFromAllowed()
 {
 	QString oldFamily = m_pMicroFamily->currentText();
-	
+
 	m_pMicroFamily->clear();
-	
+
 #define CHECK_ADD(family) \
     if ( (m_allowedAsmSet & AsmInfo::family) \
             && !MicroLibrary::self()->microIDs( AsmInfo::family, \
@@ -120,7 +120,7 @@ void MicroSelectWidget::updateFromAllowed()
                 c->setItemText(c->currentIndex(), text);
         }
     }
-	
+
 	microFamilyChanged(oldFamily);
 }
 
@@ -130,7 +130,7 @@ void MicroSelectWidget::setMicro( const QString & id )
 	MicroInfo * info = MicroLibrary::self()->microInfoWithID(id);
 	if (!info)
 		return;
-	
+
 	m_pMicro->clear();
 	m_pMicro->insertItems( m_pMicro->count(),
         MicroLibrary::self()->microIDs( info->instructionSet()->set() ) );
@@ -171,11 +171,11 @@ QString MicroSelectWidget::micro() const
 void MicroSelectWidget::microFamilyChanged( const QString & family )
 {
 	QString oldID = m_pMicro->currentText();
-	
+
 	m_pMicro->clear();
 	m_pMicro->insertItems( m_pMicro->count(),
         MicroLibrary::self()->microIDs( AsmInfo::stringToSet(family), m_allowedGpsimSupport, m_allowedFlowCodeSupport, m_allowedMicrobeSupport ) );
-	
+
 	if ( m_pMicro->contains(oldID) ) {
 		//m_pMicro->setCurrentText(oldID); // 2018.12.07
         {
@@ -190,4 +190,4 @@ void MicroSelectWidget::microFamilyChanged( const QString & family )
     }
 }
 
-#include "microselectwidget.moc"
+#include "moc_microselectwidget.cpp"

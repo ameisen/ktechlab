@@ -29,9 +29,9 @@
 
 class QuickMatrix {
 public :
-	 QuickMatrix(CUI m_in, CUI n_in);
-	 QuickMatrix(CUI m_in);
-	 QuickMatrix(const QuickMatrix *old); // ye olde copy constructor.
+	QuickMatrix(CUI m_in, CUI n_in);
+	QuickMatrix(CUI m_in);
+	QuickMatrix(const QuickMatrix *old); // ye olde copy constructor.
 	~QuickMatrix();
 
 // accessors
@@ -51,11 +51,11 @@ public :
 
 // functions for some elementary row operations.
 // these are actually procedures because they operate on the current matrix rather than
-// producing a results matrix.  
+// producing a results matrix.
 	bool scaleRow(CUI m_a, const double scalor);
 		// changes B by adding A.
 	bool addRowToRow(CUI m_a, CUI m_b);
-		// changes B by adding the result of A times a scalor 
+		// changes B by adding the result of A times a scalor
 	bool scaleAndAdd(CUI m_a, CUI m_b, const double scalor);
 	bool partialScaleAndAdd(CUI m_a, CUI m_b, const double scalor);
 	bool partialSAF(CUI m_a, CUI m_b, CUI from, const double scalor);
@@ -89,13 +89,13 @@ public :
 	void dumpToAux() const;
 
 private :
-// We don't have a default matrix size so therefore we lock the default constructor. 
+// We don't have a default matrix size so therefore we lock the default constructor.
 	QuickMatrix() {};
 
 	void allocator();
 
+	double **values = nullptr;
 	unsigned int m, n;
-	double **values;
 };
 
 #endif

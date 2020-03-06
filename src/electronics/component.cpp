@@ -60,8 +60,8 @@ Component::Component( ICNDocument *icnDocument, bool newItem, const QString &id 
 
     for ( int i=0; i<4; ++i )
     {
-        m_pPNode[i] = 0l;
-        m_pNNode[i] = 0l;
+        m_pPNode[i] = nullptr;
+        m_pNNode[i] = nullptr;
     }
 
     // Get configuration options
@@ -104,8 +104,8 @@ void Component::removeElements( bool setPinsInterIndependent )
     }
     m_elementMapList.clear();
 
-    const SwitchList::iterator swEnd = m_switchList.end();
-    for ( SwitchList::iterator it = m_switchList.begin(); it != swEnd; ++it )
+    const QPtrList<Switch>::iterator swEnd = m_switchList.end();
+    for ( QPtrList<Switch>::iterator it = m_switchList.begin(); it != swEnd; ++it )
     {
         Switch *sw = *it;
         if ( !sw ) continue;
@@ -115,8 +115,13 @@ void Component::removeElements( bool setPinsInterIndependent )
     }
     m_switchList.clear();
 
-    if ( setPinsInterIndependent )
+    if (setPinsInterIndependent) {
         setAllPinsInterIndependent();
+    }
+
+    if (!Ptr::isNull(m_pCircuitDocument)) {
+        m_pCircuitDocument->requestAssignCircuits();
+    }
 }
 
 
@@ -151,7 +156,9 @@ void Component::removeSwitch( Switch *sw )
     emit switchDestroyed( sw );
     delete sw;
     m_switchList.removeAll(sw);
-    m_pCircuitDocument->requestAssignCircuits();
+    if (!Ptr::isNull(m_pCircuitDocument)) {
+        m_pCircuitDocument->requestAssignCircuits();
+    }
 }
 
 void Component::setNodalCurrents()
@@ -726,7 +733,7 @@ BJT* Component::createBJT( Pin *cN, Pin *bN, Pin *eN, bool isNPN )
 {
     BJT *e = new BJT(isNPN);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << bN << cN << eN;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -738,7 +745,7 @@ Capacitance* Component::createCapacitance( Pin *n0, Pin *n1, double capacitance 
 {
     Capacitance *e = new Capacitance( capacitance, LINEAR_UPDATE_PERIOD );
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -750,7 +757,7 @@ CCCS* Component::createCCCS( Pin *n0, Pin *n1, Pin *n2, Pin *n3, double gain )
 {
     CCCS *e = new CCCS(gain);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1 << n2 << n3;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -762,7 +769,7 @@ CCVS* Component::createCCVS( Pin *n0, Pin *n1, Pin *n2, Pin *n3, double gain )
 {
     CCVS *e = new CCVS(gain);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1 << n2 << n3;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -783,7 +790,7 @@ CurrentSignal* Component::createCurrentSignal( Pin *n0, Pin *n1, double current 
 {
     CurrentSignal *e = new CurrentSignal( LINEAR_UPDATE_PERIOD, current );
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -795,7 +802,7 @@ CurrentSource* Component::createCurrentSource( Pin *n0, Pin *n1, double current 
 {
     CurrentSource *e = new CurrentSource(current);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -807,7 +814,7 @@ Diode* Component::createDiode( Pin *n0, Pin *n1 )
 {
     Diode *e = new Diode();
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -819,7 +826,7 @@ JFET * Component::createJFET( Pin * D, Pin * G, Pin * S, int JFET_type )
 {
     JFET * e = new JFET( (JFET::JFET_type) JFET_type );
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << D << G << S;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -831,7 +838,7 @@ Inductance* Component::createInductance( Pin *n0, Pin *n1, double inductance )
 {
     Inductance *e = new Inductance( inductance, LINEAR_UPDATE_PERIOD );
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -843,10 +850,11 @@ LogicIn *Component::createLogicIn( Pin *node )
 {
     LogicIn *e = new LogicIn(LogicIn::getConfig());
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << node;
 
     ElementMapList::iterator it = handleElement( e, pins );
+    setInterDependent( it, pins );
     return e;
 }
 
@@ -854,7 +862,7 @@ LogicOut *Component::createLogicOut( Pin *node, bool isHigh )
 {
     LogicOut *e = new LogicOut( LogicIn::getConfig(), isHigh);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << node;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -866,7 +874,7 @@ MOSFET * Component::createMOSFET( Pin * D, Pin * G, Pin * S, Pin * B, int MOSFET
 {
     MOSFET * e = new MOSFET( (MOSFET::MOSFET_type) MOSFET_type );
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << D << G << S << B;
 
     /// \todo remove the following line removing body if null
@@ -881,7 +889,7 @@ OpAmp * Component::createOpAmp( Pin * nonInverting, Pin * inverting, Pin * out )
 {
     OpAmp * e = new OpAmp();
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << nonInverting << inverting << out;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -893,7 +901,7 @@ Resistance* Component::createResistance( Pin *n0, Pin *n1, double resistance )
 {
     Resistance *e = new Resistance(resistance);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -918,7 +926,7 @@ VCCS* Component::createVCCS( Pin *n0, Pin *n1, Pin *n2, Pin *n3, double gain )
 {
     VCCS *e = new VCCS(gain);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1 << n2 << n3;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -930,7 +938,7 @@ VCVS* Component::createVCVS( Pin *n0, Pin *n1, Pin *n2, Pin *n3, double gain )
 {
     VCVS *e = new VCVS(gain);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1 << n2 << n3;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -950,7 +958,7 @@ VoltagePoint* Component::createVoltagePoint( Pin *n0, double voltage )
 {
     VoltagePoint *e = new VoltagePoint(voltage);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -962,7 +970,7 @@ VoltageSignal* Component::createVoltageSignal( Pin *n0, Pin *n1, double voltage 
 {
     VoltageSignal *e = new VoltageSignal(LINEAR_UPDATE_PERIOD, voltage );
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -974,7 +982,7 @@ VoltageSource* Component::createVoltageSource( Pin *n0, Pin *n1, double voltage 
 {
     VoltageSource *e = new VoltageSource(voltage);
 
-    QList<Pin*> pins;
+    QPtrList<Pin> pins;
     pins << n0 << n1;
 
     ElementMapList::iterator it = handleElement( e, pins );
@@ -983,7 +991,7 @@ VoltageSource* Component::createVoltageSource( Pin *n0, Pin *n1, double voltage 
 }
 
 
-ElementMapList::iterator Component::handleElement( Element *e, const QList<Pin*> & pins )
+ElementMapList::iterator Component::handleElement( Element *e, const QPtrList<Pin> & pins )
 {
     if (!e)
         return m_elementMapList.end();
@@ -991,8 +999,8 @@ ElementMapList::iterator Component::handleElement( Element *e, const QList<Pin*>
     ElementMap em;
     em.e = e;
     int at = 0;
-    QList<Pin*>::ConstIterator end = pins.end();
-    for ( QList<Pin*>::ConstIterator it = pins.begin(); it != end; ++it )
+    QPtrList<Pin>::ConstIterator end = pins.end();
+    for ( QPtrList<Pin>::ConstIterator it = pins.begin(); it != end; ++it )
     {
         (*it)->addElement(e);
         em.n[at++] = *it;
@@ -1006,19 +1014,19 @@ ElementMapList::iterator Component::handleElement( Element *e, const QList<Pin*>
 }
 
 
-void Component::setInterDependent( ElementMapList::iterator it, const QList<Pin*> & pins )
+void Component::setInterDependent( ElementMapList::iterator it, const QPtrList<Pin> & pins )
 {
     setInterCircuitDependent( it, pins );
     setInterGroundDependent( it, pins );
 }
 
 
-void Component::setInterCircuitDependent( ElementMapList::iterator it, const QList<Pin*> & pins )
+void Component::setInterCircuitDependent( ElementMapList::iterator it, const QPtrList<Pin> & pins )
 {
-    QList<Pin*>::ConstIterator end = pins.end();
-    for ( QList<Pin*>::ConstIterator it1 = pins.begin(); it1 != end; ++it1 )
+    QPtrList<Pin>::ConstIterator end = pins.end();
+    for ( QPtrList<Pin>::ConstIterator it1 = pins.begin(); it1 != end; ++it1 )
     {
-        for ( QList<Pin*>::ConstIterator it2 = pins.begin(); it2 != end; ++it2 )
+        for ( QPtrList<Pin>::ConstIterator it2 = pins.begin(); it2 != end; ++it2 )
         {
             (*it1)->addCircuitDependentPin( *it2 );
         }
@@ -1028,12 +1036,12 @@ void Component::setInterCircuitDependent( ElementMapList::iterator it, const QLi
 }
 
 
-void Component::setInterGroundDependent( ElementMapList::iterator it, const QList<Pin*> & pins )
+void Component::setInterGroundDependent( ElementMapList::iterator it, const QPtrList<Pin> & pins )
 {
-    QList<Pin*>::ConstIterator end = pins.end();
-    for ( QList<Pin*>::ConstIterator it1 = pins.begin(); it1 != end; ++it1 )
+    QPtrList<Pin>::ConstIterator end = pins.end();
+    for ( QPtrList<Pin>::ConstIterator it1 = pins.begin(); it1 != end; ++it1 )
     {
-        for ( QList<Pin*>::ConstIterator it2 = pins.begin(); it2 != end; ++it2 )
+        for ( QPtrList<Pin>::ConstIterator it2 = pins.begin(); it2 != end; ++it2 )
         {
             (*it1)->addGroundDependentPin( *it2 );
         }
@@ -1164,7 +1172,4 @@ ElementMap::ElementMap()
 }
 //END class ElementMap
 
-
-#include "component.moc"
-
-
+#include "moc_component.cpp"

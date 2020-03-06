@@ -40,25 +40,25 @@ View::View( Document *document, ViewContainer *viewContainer, uint viewAreaId, c
 	m_pDocument = document;
 	p_viewContainer = viewContainer;
 	m_pViewIface = 0l;
-	
+
 	setFocusPolicy( Qt::ClickFocus );
-	
+
 	if ( ViewArea * viewArea = viewContainer->viewArea(viewAreaId) )
 		viewArea->setView(this);
-	
+
 	else
 		qDebug() << Q_FUNC_INFO << " viewArea = " << viewArea <<endl;
-	
+
 	m_layout = new QVBoxLayout(this);
-	
+
 	// Don't bother creating statusbar if no ktechlab as we are not a main ktechlab tab
 	if ( KTechlab::self() )
 	{
 		m_statusBar = new ViewStatusBar(this);
-	
+
 		m_layout->addWidget( new KVSSBSep(this) );
 		m_layout->addWidget( m_statusBar );
-	
+
 		connect( KTechlab::self(), SIGNAL(configurationChanged()), this, SLOT(slotUpdateConfiguration()) );
 	}
 }
@@ -102,10 +102,10 @@ void View::setFocusWidget( QWidget * focusWidget )
 {
 	assert( focusWidget );
 	assert( !m_pFocusWidget );
-	
+
 	if ( hasFocus() )
 		focusWidget->setFocus();
-	
+
 	m_pFocusWidget = focusWidget;
 	setFocusProxy( m_pFocusWidget );
 	m_pFocusWidget->installEventFilter( this );
@@ -116,16 +116,16 @@ void View::setFocusWidget( QWidget * focusWidget )
 bool View::eventFilter( QObject * watched, QEvent * e )
 {
 // 	qDebug() << Q_FUNC_INFO << e->type() << endl;
-	
+
 	if ( watched != m_pFocusWidget )
 		return false;
-	
+
 	switch ( e->type() )
 	{
 		case QEvent::FocusIn:
 		{
 			p_viewContainer->setActiveViewArea( viewAreaId() );
-	
+
 			if ( KTechlab * ktl = KTechlab::self() )
 			{
 				ktl->actionByName("file_save")->setEnabled(true);
@@ -135,25 +135,25 @@ bool View::eventFilter( QObject * watched, QEvent * e )
 				ktl->actionByName("edit_paste")->setEnabled(true);
 				ktl->actionByName("view_split_leftright")->setEnabled(true);
 				ktl->actionByName("view_split_topbottom")->setEnabled(true);
-		
+
 				ItemInterface::self()->updateItemActions();
 			}
-	
+
 // 			qDebug() << Q_FUNC_INFO << "Focused In\n";
 			emit focused(this);
 			break;
 		}
-		
+
 		case QEvent::FocusOut:
 		{
 // 			qDebug() << Q_FUNC_INFO << "Focused Out.\n";
             QFocusEvent *fe = static_cast<QFocusEvent*>(e);
-			
+
 			if ( QWidget * fw = qApp->focusWidget() )
 			{
 				QString fwClassName( fw->metaObject()->className() );
 // 				qDebug() << "New focus widget is \""<<fw->name()<<"\" of type " << fwClassName << endl;
-				
+
 				if ( (fwClassName != "KateViewInternal") &&
 								  (fwClassName != "QViewportWidget") )
 				{
@@ -165,27 +165,27 @@ bool View::eventFilter( QObject * watched, QEvent * e )
 			{
 // 				qDebug() << "No widget currently has focus.\n";
 			}
-			
+
 			if ( fe->reason() == Qt::PopupFocusReason )
 			{
 // 				qDebug() << Q_FUNC_INFO << "Ignoring focus-out event as was a popup.\n";
 				break;
 			}
-			
+
 			if ( fe->reason() == Qt::ActiveWindowFocusReason )
 			{
 // 				qDebug() << Q_FUNC_INFO << "Ignoring focus-out event as main window lost focus.\n";
 				break;
 			}
-			
+
 			emit unfocused();
 			break;
 		}
-		
+
 		default:
 			break;
 	}
-	
+
 	return false;
 }
 
@@ -194,16 +194,16 @@ void View::setDCOPID( unsigned id )
 {
 	if ( m_dcopID == id )
 		return;
-	
+
 	m_dcopID = id;
 	if ( m_pViewIface )
 	{
 		QString docID;
 		docID.setNum( document()->dcopID() );
-		
+
 		QString viewID;
 		viewID.setNum( dcopID() );
-		
+
 		m_pViewIface->setObjId( "View#" + docID + "." + viewID );
 	}
 }
@@ -216,24 +216,24 @@ ViewStatusBar::ViewStatusBar( View *view )
 	: KStatusBar(view)
 {
 	p_view = view;
-	
+
 	m_modifiedLabel = new QLabel(this);
 	addWidget( m_modifiedLabel, 0 /*, false */ );
 	m_fileNameLabel = new KSqueezedTextLabel(this);
 	addWidget( m_fileNameLabel, 1 /*, false */ );
-	
+
 	m_modifiedPixmap = KIconLoader::global()->loadIcon( "document-save", KIconLoader::Small );
 	m_unmodifiedPixmap = KIconLoader::global()->loadIcon( "null", KIconLoader::Small );
-	
+
 	connect( view->document(), SIGNAL(modifiedStateChanged()), this, SLOT(slotModifiedStateChanged()) );
 	connect( view->document(), SIGNAL(fileNameChanged(const KUrl& )), this, SLOT(slotFileNameChanged(const KUrl& )) );
-	
+
 	connect( view, SIGNAL(focused(View* )), this, SLOT(slotViewFocused(View* )) );
 	connect( view, SIGNAL(unfocused()), this, SLOT(slotViewUnfocused()) );
-	
+
 	slotModifiedStateChanged();
 	slotFileNameChanged( view->document()->url() );
-	
+
 	slotViewUnfocused();
 }
 
@@ -289,4 +289,4 @@ void KVSSBSep::paintEvent( QPaintEvent *e )
 }
 //END  class KVSSBSep
 
-#include "view.moc"
+#include "moc_view.cpp"

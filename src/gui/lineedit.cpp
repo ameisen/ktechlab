@@ -32,9 +32,9 @@ void LineEdit::setText( const QString & text )
 {
 	if ( this->text() == text )
 		return;
-	
+
 	KLineEdit::setText( text );
 }
 
 
-#include "lineedit.moc"
+#include "moc_lineedit.cpp"

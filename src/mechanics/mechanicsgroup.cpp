@@ -29,7 +29,7 @@ bool MechanicsGroup::addItem( Item *item )
 	if ( !item || !item->canvas() || m_itemList.contains(item) ) {
 		return false;
 	}
-	
+
 	// Check that the item's parent isn't already selected
 	Item *parent = item->parentItem();
 	while (parent)
@@ -39,7 +39,7 @@ bool MechanicsGroup::addItem( Item *item )
 		parent = parent->parentItem();
 	}
 	removeChildren(item);
-	
+
 	registerItem(item);
 	updateInfo();
 	item->setSelected(true);
@@ -70,10 +70,10 @@ void MechanicsGroup::removeChildren( Item *item )
 {
 	if (!item)
 		return;
-	
-	const ItemList children = item->children();
-	const ItemList::const_iterator end = children.end();
-	for ( ItemList::const_iterator it = children.begin(); it != end; ++it )
+
+	const QPtrList<Item> children = item->children();
+	const QPtrList<Item>::const_iterator end = children.end();
+	for ( QPtrList<Item>::const_iterator it = children.begin(); it != end; ++it )
 	{
 		removeChildren(*it);
 		removeItem(*it);
@@ -84,8 +84,8 @@ void MechanicsGroup::removeChildren( Item *item )
 void MechanicsGroup::setRaised( bool isRaised )
 {
 	b_isRaised = isRaised;
-	const ItemList::iterator end = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+	const QPtrList<Item>::iterator end = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 	{
 		MechanicsItem *mechanicsItem = dynamic_cast<MechanicsItem*>((Item*)*it);
 		if (mechanicsItem)
@@ -96,8 +96,8 @@ void MechanicsGroup::setRaised( bool isRaised )
 
 void MechanicsGroup::setSelectionMode( uint sm )
 {
-	const ItemList::iterator end = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+	const QPtrList<Item>::iterator end = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 	{
 		MechanicsItem *mechanicsItem = dynamic_cast<MechanicsItem*>((Item*)*it);
 		if (mechanicsItem)
@@ -109,15 +109,15 @@ void MechanicsGroup::setSelectionMode( uint sm )
 MechanicsItemList MechanicsGroup::extractMechanicsItems() const
 {
 	MechanicsItemList mechanicsItemList;
-	
-	const ItemList::const_iterator end = m_itemList.end();
-	for ( ItemList::const_iterator it = m_itemList.begin(); it != end; ++it )
+
+	const QPtrList<Item>::const_iterator end = m_itemList.end();
+	for ( QPtrList<Item>::const_iterator it = m_itemList.begin(); it != end; ++it )
 	{
 		MechanicsItem *mechanicsItem = dynamic_cast<MechanicsItem*>((Item*)*it);
 		if (mechanicsItem)
 			mechanicsItemList.append(mechanicsItem);
 	}
-	
+
 	return mechanicsItemList;
 }
 
@@ -125,9 +125,9 @@ MechanicsItemList MechanicsGroup::extractMechanicsItems() const
 MechanicsItemList MechanicsGroup::toplevelMechItemList() const
 {
 	MechanicsItemList toplevel;
-	
+
 	MechanicsItemList mechItemList = extractMechanicsItems();
-	
+
 	const MechanicsItemList::const_iterator end = mechItemList.end();
 	for ( MechanicsItemList::const_iterator it = mechItemList.begin(); it != end; ++it )
 	{
@@ -136,19 +136,19 @@ MechanicsItemList MechanicsGroup::toplevelMechItemList() const
 		{
 			if ( !parent->parentItem() && !toplevel.contains(parent) )
 				toplevel.append(parent);
-			
+
 			parent = dynamic_cast<MechanicsItem*>(parent->parentItem());
 		}
 	}
-	
+
 	return toplevel;
 }
 
 
 void MechanicsGroup::setSelected( bool sel )
 {
-	const ItemList::iterator end = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+	const QPtrList<Item>::iterator end = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 	{
 		if (*it && (*it)->isSelected() != sel ) {
 			(*it)->setSelected(sel);
@@ -170,13 +170,13 @@ bool MechanicsGroup::contains(KtlQCanvasItem* item) const
 
 void MechanicsGroup::deleteAllItems()
 {
-	const ItemList::iterator end = m_itemList.end();
-	for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+	const QPtrList<Item>::iterator end = m_itemList.end();
+	for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 	{
 		if (*it)
 			(*it)->removeItem();
 	}
-	
+
 	removeAllItems();
 }
 
@@ -186,10 +186,10 @@ void MechanicsGroup::mergeGroup(ItemGroup* itemGroup)
 	if (!group) {
 		return;
 	}
-	
-	const ItemList items = group->items();
-	const ItemList::const_iterator end = items.end();
-	for ( ItemList::const_iterator it = items.begin(); it != end; ++it )
+
+	const QPtrList<Item> items = group->items();
+	const QPtrList<Item>::const_iterator end = items.end();
+	for ( QPtrList<Item>::const_iterator it = items.begin(); it != end; ++it )
 	{
 		addItem(*it);
 	}
@@ -210,22 +210,22 @@ void MechanicsGroup::removeQCanvasItem(KtlQCanvasItem* item)
 void MechanicsGroup::setItems(KtlQCanvasItemList list)
 {
 	{
-		ItemList removeList;
-		const ItemList::iterator end = m_itemList.end();
-		for ( ItemList::iterator it = m_itemList.begin(); it != end; ++it )
+		QPtrList<Item> removeList;
+		const QPtrList<Item>::iterator end = m_itemList.end();
+		for ( QPtrList<Item>::iterator it = m_itemList.begin(); it != end; ++it )
 		{
 			if ( !list.contains(*it) ) {
 				removeList.append(*it);
 			}
 		}
-		const ItemList::iterator rend = removeList.end();
-		for ( ItemList::iterator it = removeList.begin(); it != rend; ++it )
+		const QPtrList<Item>::iterator rend = removeList.end();
+		for ( QPtrList<Item>::iterator it = removeList.begin(); it != rend; ++it )
 		{
 			removeItem(*it);
 			(*it)->setSelected(false);
 		}
 	}
-	
+
 	const KtlQCanvasItemList::iterator end = list.end();
 	for ( KtlQCanvasItemList::iterator it = list.begin(); it != end; ++it )
 	{
@@ -240,4 +240,4 @@ void MechanicsGroup::updateInfo()
 {
 }
 
-#include "mechanicsgroup.moc"
+#include "moc_mechanicsgroup.cpp"

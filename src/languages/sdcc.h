@@ -21,10 +21,10 @@ class SDCC : public ExternalLanguage
 	public:
 		SDCC( ProcessChain * processChain );
 		~SDCC() override;
-	
-		void processInput( ProcessOptions options ) override;
-		ProcessOptions::ProcessPath::Path outputPath( ProcessOptions::ProcessPath::Path inputPath ) const override;
-	
+
+		void processInput(const ProcessOptions &options) override;
+		ProcessOptions::Path outputPath( ProcessOptions::Path inputPath ) const override;
+
 	protected:
 		bool isError( const QString & message ) const override;
 		bool isWarning( const QString & message ) const override;

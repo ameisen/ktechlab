@@ -29,71 +29,73 @@ ConRouter::~ConRouter()
 }
 
 
-QPointList ConRouter::pointList( bool reverse ) const
+QList<QPoint> ConRouter::pointList( bool reverse ) const
 {
-	QPointList pointList;
-	
+	QList<QPoint> pointList;
+
 	if (reverse) {
 		bool notDone = m_cellPointList.size() > 0;
-		for ( QPointList::const_iterator it = (--m_cellPointList.constEnd()); notDone; --it )
+		for ( QList<QPoint>::const_iterator it = (--m_cellPointList.constEnd()); notDone; --it )
 		{
 			pointList.append( toCanvas(&*it) );
 			if ( it == m_cellPointList.begin() ) notDone = false;
 		}
 	} else {
-		const QPointList::const_iterator end = m_cellPointList.end();
-		for ( QPointList::const_iterator it = m_cellPointList.begin(); it != end; ++it )
+		const QList<QPoint>::const_iterator end = m_cellPointList.end();
+		for ( QList<QPoint>::const_iterator it = m_cellPointList.begin(); it != end; ++it )
 		{
 			pointList.append( toCanvas(&*it) );
 		}
 	}
-	
+
 	return pointList;
 }
 
 
-QPointListList ConRouter::splitPoints( const QPoint &pos ) const
+QList<QList<QPoint>> ConRouter::splitPoints( const QPoint &pos ) const
 {
+	if (m_cellPointList.isEmpty()) return QList<QList<QPoint>>{};
+
 	const QPoint split = fromCanvas(&pos);
-	
-	QList<QPointList> list;
-	
+
+	QList<QList<QPoint>> list;
+
 	// Check that the point is in the connector points, and not at the start or end
 	bool found = false;
-	QPointList::const_iterator end = m_cellPointList.end();
-	
+	QList<QPoint>::const_iterator end = m_cellPointList.end();
+
 	double dl[] = { 0.0, 1.1, 1.5 }; // sqrt(2) < 1.5 < sqrt(5)
 	for ( unsigned i = 0; (i < 3) && !found; ++i )
 	{
-		for ( QPointList::const_iterator it = m_cellPointList.begin(); it != end && !found; ++it )
+		for ( QList<QPoint>::const_iterator it = m_cellPointList.begin(); it != end && !found; ++it )
 		{
-            QPointList::const_iterator fromLast = --m_cellPointList.constEnd();
+            QList<QPoint>::const_iterator fromLast = --m_cellPointList.constEnd();
 			if ( qpoint_distance( *it, split ) <= dl[i] && it != m_cellPointList.begin() && it != fromLast) // m_cellPointList.fromLast() )
 				found = true;
 		}
 	}
-	
-	QPointList first;
-	QPointList second;
-	
+
+	QList<QPoint> first;
+	QList<QPoint> second;
+
 	if (!found) {
 		qWarning() << "ConRouter::splitConnectorPoints: Could not find point ("<<pos.x()<<", "<<pos.y()<<") in connector points"<<endl;
 		qWarning() << "ConRouter::splitConnectorPoints: Returning generic list"<<endl;
-		
+
 		first.append( toCanvas(m_cellPointList.first()) );
 		first.append(pos);
 		second.append(pos);
 		second.append( toCanvas(m_cellPointList.last()) );
-		
+
 		list.append(first);
 		list.append(second);
-		
+
 		return list;
 	}
-	
+
 	// Now add the points to the two lists
 	bool gotToSplit = false;
-	for ( QPointList::const_iterator it = m_cellPointList.begin(); it != end; ++it )
+	for ( QList<QPoint>::const_iterator it = m_cellPointList.begin(); it != end; ++it )
 	{
 		QPoint canvasPoint = toCanvas(&*it);
 		if ( *it == split ) {
@@ -107,35 +109,35 @@ QPointListList ConRouter::splitPoints( const QPoint &pos ) const
 			second.append(canvasPoint);
 		}
 	}
-	
+
 	list.append(first);
 	list.append(second);
-	
+
 	return list;
 }
 
 
-QPointListList ConRouter::dividePoints( uint n ) const
+QList<QList<QPoint>> ConRouter::dividePoints( uint n ) const
 {
 	// Divide the points up into n pieces...
-	
-	QPointList points = m_cellPointList;
+
+	QList<QPoint> points = m_cellPointList;
 	assert( n != 0 );
 	if ( points.size() == 0 ) {
 		points += QPoint( toCanvas(m_lcx), toCanvas(m_lcy) );
 	}
-	
+
 	const float avgLength = float(points.size()-1)/float(n);
-	
-	QPointListList pll;
+
+	QList<QList<QPoint>> pll;
 	for ( uint i=0; i<n; ++i )
 	{
-		QPointList pl;
+		QList<QPoint> pl;
 		// Get the points between (pos) and (pos+avgLength)
 		const int endPos = roundDouble( avgLength*(i+1) );
 		const int startPos = roundDouble( avgLength*i );
-		//const QPointList::iterator end = ++points.at(endPos);
-		//for ( QPointList::iterator it = points.at(startPos); it != end; ++it )
+		//const QList<QPoint>::iterator end = ++points.at(endPos);
+		//for ( QList<QPoint>::iterator it = points.at(startPos); it != end; ++it )
         for (int pos = startPos; pos < endPos; ++pos)
 		{
 			//pl += toCanvas(*it);
@@ -152,32 +154,32 @@ void ConRouter::checkACell( int x, int y, Cell *prev, int prevX, int prevY, int 
 // 	if ( !p_icnDocument->isValidCellReference(x,y) ) return;
 	if ( !cellsPtr->haveCell( x, y ) )
 		return;
-	
+
 	Cell * c = &cellsPtr->cell( x, y );
 	if ( c->permanent )
 		return;
-	
+
 	int newScore = nextScore + c->CIpenalty + c->Cpenalty;
-	
+
 	// Check for changing direction
 	if		( x != prevX && prev->prevX == prevX ) newScore += 5;
 	else if ( y != prevY && prev->prevY == prevY ) newScore += 5;
-	
+
 	if ( c->bestScore < newScore )
 		return;
-	
+
 	// We only want to change the previous cell if the score is different,
 	// or the score is the same but this cell allows the connector
 	// to travel in the same direction
-	
+
 	if ( c->bestScore == newScore &&
 		 x != prevX &&
 		 y != prevY ) return;
-	
+
 	c->bestScore = newScore;
 	c->prevX = prevX;
 	c->prevY = prevY;
-	
+
 	if ( !c->addedToLabels ) {
 		c->addedToLabels = true;
 		Point point;
@@ -196,10 +198,10 @@ void ConRouter::checkACell( int x, int y, Cell *prev, int prevX, int prevY, int 
 void ConRouter::checkCell( int x, int y )
 {
 	Cell * c = &cellsPtr->cell( x, y );
-	
+
 	c->permanent = true;
 	int nextScore = c->bestScore+1;
-	
+
 	// Check the surrounding cells (up, left, right, down)
 	checkACell( x, y-1, c, x, y, nextScore );
 	checkACell( x-1, y, c, x, y, nextScore );
@@ -214,61 +216,61 @@ bool ConRouter::needsRouting( int sx, int sy, int ex, int ey ) const
 		// Better be on the safe side...
 		return true;
 	}
-	
+
 	const int scx = fromCanvas(sx);
 	const int scy = fromCanvas(sy);
 	const int ecx = fromCanvas(ex);
 	const int ecy = fromCanvas(ey);
-	
+
 	const int psx = m_cellPointList.first().x();
 	const int psy = m_cellPointList.first().y();
 	const int pex = m_cellPointList.last().x();
 	const int pey = m_cellPointList.last().y();
-	
+
 	return (psx != scx || psy != scy || pex != ecx || pey != ecy ) &&
 		   (pex != scx || pey != scy || psx != ecx || psy != ecy );
 }
 
 
-void ConRouter::setRoutePoints( const QPointList &pointList )
+void ConRouter::setRoutePoints( const QList<QPoint> &pointList )
 {
 	m_cellPointList = pointList;
 	removeDuplicatePoints();
 }
 
 
-void ConRouter::setPoints( const QPointList &pointList, bool reverse  )
+void ConRouter::setPoints( const QList<QPoint> &pointList, bool reverse  )
 {
 	if (  pointList.size() == 0 ) return;
 
-	QPointList cellPointList;
+	QList<QPoint> cellPointList;
 
 	QPoint prevCellPoint = fromCanvas(*pointList.begin());
 	cellPointList.append(prevCellPoint);
-	const QPointList::const_iterator end = pointList.end();
-	for ( QPointList::const_iterator it = pointList.begin(); it != end; ++it )
+	const QList<QPoint>::const_iterator end = pointList.end();
+	for ( QList<QPoint>::const_iterator it = pointList.begin(); it != end; ++it )
 	{
 		QPoint cellPoint = fromCanvas(*it);
-		
+
 		while ( prevCellPoint != cellPoint )
 		{
 			cellPointList.append(prevCellPoint);
-			
+
 			if		( prevCellPoint.x() < cellPoint.x() ) prevCellPoint.setX( prevCellPoint.x()+1 );
 			else if ( prevCellPoint.x() > cellPoint.x() ) prevCellPoint.setX( prevCellPoint.x()-1 );
 			if		( prevCellPoint.y() < cellPoint.y() ) prevCellPoint.setY( prevCellPoint.y()+1 );
 			else if ( prevCellPoint.y() > cellPoint.y() ) prevCellPoint.setY( prevCellPoint.y()-1 );
 		};
-		
+
 		prevCellPoint = cellPoint;
 	}
 	cellPointList.append(prevCellPoint);
-	
+
 	if (reverse)
 	{
 		m_cellPointList.clear();
-		const QPointList::iterator begin = cellPointList.begin();
-		for ( QPointList::iterator it = --cellPointList.end(); it != begin; --it )
+		const QList<QPoint>::iterator begin = cellPointList.begin();
+		for ( QList<QPoint>::iterator it = --cellPointList.end(); it != begin; --it )
 		{
 			m_cellPointList += *it;
 		}
@@ -276,7 +278,7 @@ void ConRouter::setPoints( const QPointList &pointList, bool reverse  )
 	} else {
 		m_cellPointList = cellPointList;
 	}
-	
+
 	removeDuplicatePoints();
 }
 
@@ -287,16 +289,16 @@ void ConRouter::translateRoute( int dx, int dy )
 
 	m_lcx += dx;
 	m_lcy += dy;
-	
+
 // 	const QPoint ds = QPoint( fromCanvas(dx), fromCanvas(dy) );
 	const QPoint ds = QPoint( dx/8, dy/8 );
-	
-	QPointList::iterator end = m_cellPointList.end();
-	for ( QPointList::iterator it = m_cellPointList.begin(); it != end; ++it )
+
+	QList<QPoint>::iterator end = m_cellPointList.end();
+	for ( QList<QPoint>::iterator it = m_cellPointList.begin(); it != end; ++it )
 	{
 		(*it) += ds;
 	}
-	
+
 	removeDuplicatePoints();
 }
 
@@ -307,23 +309,23 @@ void ConRouter::mapRoute( int sx, int sy, int ex, int ey )
 	const int scy = fromCanvas(sy);
 	const int ecx = fromCanvas(ex);
 	const int ecy = fromCanvas(ey);
-	
+
 	cellsPtr = p_icnDocument->cells();
-	
+
 	if ( !cellsPtr->haveCell( scx, scy ) || !cellsPtr->haveCell( ecx, ecy ) ) {
         qDebug() << Q_FUNC_INFO << "cellPtr doesn't have cells, giving up";
 		return;
     }
-	
+
 	m_cellPointList.clear();
 	m_lcx = ecx;
 	m_lcy = ecy;
-	
+
 	// First, lets try some common connector routes (which will not necesssarily
 	// be shortest, but they will be neat, and cut down on overall CPU usage)
 	// If that fails, we will resort to a shortest-route algorithm to find an
 	// appropriate route.
-	
+
 	// Connector configuration: Line
 	{
 		bool ok = checkLineRoute( scx, scy, ecx, ecy, 4*ICNDocument::hs_connector, 0 );
@@ -333,7 +335,7 @@ void ConRouter::mapRoute( int sx, int sy, int ex, int ey )
 			m_cellPointList.clear();
 		}
 	}
-	
+
 	// Corner 1
 	{
 		bool ok = checkLineRoute( scx, scy, ecx, ecy, 2*ICNDocument::hs_connector, 0 );
@@ -348,7 +350,7 @@ void ConRouter::mapRoute( int sx, int sy, int ex, int ey )
 			}
 		}
 	}
-	
+
 	// Corner 2
 	{
 		bool ok = checkLineRoute( scx, scy, ecx, ecy, 2*ICNDocument::hs_connector, 0 );
@@ -363,24 +365,24 @@ void ConRouter::mapRoute( int sx, int sy, int ex, int ey )
 			}
 		}
 	}
-	
+
 	// It seems we must resort to brute-force route-checking
 	{
 		cellsPtr->reset();
-	
+
 		xcells = p_icnDocument->canvas()->width()/8;
 		ycells = p_icnDocument->canvas()->height()/8;
-	
+
 		// Now to map out the shortest routes to the cells
 		Cell * const startCell = &cellsPtr->cell( ecx, ecy );
 		startCell->permanent = true;
 		startCell->bestScore = 0;
 		startCell->prevX = startCellPos;
 		startCell->prevY = startCellPos;
-		
+
 		tempLabels.clear();
 		checkCell( ecx, ecy );
-		
+
 		// Daniel: I changed it from a do while to a while otherwise
 		// in rare cases the iterator can end up as end().
 		while ( tempLabels.size() > 0 && !cellsPtr->cell( scx, scy ).permanent )
@@ -389,7 +391,7 @@ void ConRouter::mapRoute( int sx, int sy, int ex, int ey )
 			checkCell( it->second.x, it->second.y );
 			tempLabels.erase(it);
 		}
-		
+
 		// Now, retrace the shortest route from the endcell to get out points :)
 		int x = scx, y = scy;
 		bool ok = true;
@@ -404,11 +406,11 @@ void ConRouter::mapRoute( int sx, int sy, int ex, int ey )
 			x = newx;
 			y = newy;
 		} while ( cellsPtr->haveCell( x, y ) && (x != startCellPos) && (y != startCellPos) && ok );
-		
+
 		// And append the last point...
 		m_cellPointList.append( QPoint( ecx, ecy ) );
 	}
-	
+
 	removeDuplicatePoints();
 }
 
@@ -419,7 +421,7 @@ bool ConRouter::checkLineRoute( int scx, int scy, int ecx, int ecy, int maxConSc
 		return false;
 
 	const bool isHorizontal = scy == ecy;
-	
+
 	int start=0, end=0, x=0, y=0, dd=0;
 	if (isHorizontal) {
 		dd = (scx<ecx)?1:-1;
@@ -432,9 +434,9 @@ bool ConRouter::checkLineRoute( int scx, int scy, int ecx, int ecy, int maxConSc
 		end = ecy+dd;
 		x = scx;
 	}
-	
+
 	Cells * cells = p_icnDocument->cells();
-	
+
 	if (isHorizontal)
 	{
 		for ( int x = start; x!=end; x+=dd )
@@ -455,7 +457,7 @@ bool ConRouter::checkLineRoute( int scx, int scy, int ecx, int ecy, int maxConSc
 			}
 		}
 	}
-	
+
 	m_cellPointList.prepend( QPoint( scx, scy ) );
 	m_cellPointList.append( QPoint( ecx, ecy ) );
 	removeDuplicatePoints();
@@ -467,9 +469,9 @@ void ConRouter::removeDuplicatePoints()
 {
 	QPoint invalid( -(1<<30), -(1<<30) );
 	QPoint prev = invalid;
-	
-	const QPointList::iterator end = m_cellPointList.end();
-	for ( QPointList::iterator it = m_cellPointList.begin(); it != end; ++it )
+
+	const QList<QPoint>::iterator end = m_cellPointList.end();
+	for ( QList<QPoint>::iterator it = m_cellPointList.begin(); it != end; ++it )
 	{
 		if ( *it == prev ) {
 			*it = invalid;

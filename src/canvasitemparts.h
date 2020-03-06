@@ -25,7 +25,7 @@ class SliderWidget;
 class ToolButton;
 class QString;
 
-class GuiPart : /* public QObject, */ public KtlQCanvasRectangle
+class GuiPart : public KtlQCanvasRectangle
 {
 	Q_OBJECT
 	public:
@@ -34,7 +34,7 @@ class GuiPart : /* public QObject, */ public KtlQCanvasRectangle
 		 * of calling KtlQCanvasRectangle::setSize. This allows GuiPart to know
 		 * when its size has been changed
 		 */
-		GuiPart( CNItem *parent, const QRect & r, KtlQCanvas * canvas );
+		GuiPart( CNItem *parent, const QRect &r, KtlQCanvas *canvas );
 		~GuiPart() override;
 
 		virtual QRect recommendedRect() const { return m_originalRect; }
@@ -73,16 +73,16 @@ class GuiPart : /* public QObject, */ public KtlQCanvasRectangle
 		 * Rotate / etc the painter. You must call deinitPainter after
 		 * calling this function.
 		 */
-		void initPainter( QPainter & p );
+		void initPainter( QPainter &p );
 		/**
 		 * Complement function to initPainter - restores painter to normal
 		 * transform
 		 */
-		void deinitPainter( QPainter & p );
-		int m_angleDegrees;
-		CNItem *p_parent;
-		bool b_pointsAdded;
+		void deinitPainter( QPainter &p );
 		QRect m_originalRect;
+		CNItem *p_parent;
+		int m_angleDegrees = 0;
+		bool b_pointsAdded = false;
 
 	private slots:
 		void slotMoveBy( double dx, double dy );
@@ -97,16 +97,16 @@ class Text : public GuiPart
 {
 	Q_OBJECT
 	public:
-		Text( const QString &text, CNItem *parent, const QRect & r, KtlQCanvas * canvas, int flags = Qt::AlignHCenter | Qt::AlignVCenter );
+		Text( const QString &text, CNItem *parent, const QRect &r, KtlQCanvas *canvas, int flags = Qt::AlignHCenter | Qt::AlignVCenter );
 		~Text() override;
-		
+
 		/**
 		 * Set the text, returning true if the size of this Text on the canvas
 		 * has changed.
 		 */
-		bool setText( const QString & text );
+		bool setText( const QString &text );
 		QRect recommendedRect() const override;
-		void drawShape ( QPainter & p ) override;
+		void drawShape ( QPainter &p ) override;
 		/**
 		 * The text flags (see QPainter::drawText) - Qt::AlignmentFlags and
 		 * Qt::TextFlags OR'd together.
@@ -121,7 +121,7 @@ class Text : public GuiPart
 		QString m_text;
 		int m_flags;
 };
-typedef QMap<QString, QPointer<Text> > TextMap;
+using TextMap = QMap<QString, QPointer<Text>>;
 
 
 /**
@@ -131,12 +131,12 @@ typedef QMap<QString, QPointer<Text> > TextMap;
 class Widget : public GuiPart
 {
 	public:
-		Widget( const QString & id, CNItem *parent, const QRect & r, KtlQCanvas * canvas );
+		Widget( const QString &id, CNItem *parent, const QRect &r, KtlQCanvas *canvas );
 		~Widget() override;
 
 
-		virtual QWidget *widget() const = 0;
-		QString id() const { return m_id; }
+		virtual QWidget * widget() const = 0;
+		const QString & id() const { return m_id; }
 
 		/**
 		 * Set the widget enabled/disabled
@@ -149,23 +149,23 @@ class Widget : public GuiPart
 		/**
 		 * Mouse was pressed. pos is given relative to CNItem position.
 		 */
-		virtual void mousePressEvent( QMouseEvent *e ) { Q_UNUSED(e); }
+		virtual void mousePressEvent( [[maybe_unused]] QMouseEvent *e ) { }
 		/**
 		 * Mouse was released. pos is given relative to CNItem position.
 		 */
-		virtual void mouseReleaseEvent( QMouseEvent *e ) { Q_UNUSED(e); }
+		virtual void mouseReleaseEvent( [[maybe_unused]] QMouseEvent *e ) { }
 		/**
 		 * Mouse was double clicked. pos is given relative to CNItem position.
 		 */
-		virtual void mouseDoubleClickEvent( QMouseEvent *e ) { Q_UNUSED(e); }
+		virtual void mouseDoubleClickEvent( [[maybe_unused]] QMouseEvent *e ) { }
 		/**
 		 * Mouse was moved. pos is given relative to CNItem position.
 		 */
-		virtual void mouseMoveEvent( QMouseEvent *e ) { Q_UNUSED(e); }
+		virtual void mouseMoveEvent( [[maybe_unused]] QMouseEvent *e ) { }
 		/**
 		 * Mouse was scrolled. pos is given relative to CNItem position.
 		 */
-		virtual void wheelEvent( QWheelEvent *e ) { Q_UNUSED(e); }
+		virtual void wheelEvent( [[maybe_unused]] QWheelEvent *e ) { }
 
 		void drawShape( QPainter &p ) override;
 
@@ -178,8 +178,8 @@ class Widget : public GuiPart
 class ToolButton : public QToolButton
 {
 	public:
-		ToolButton( QWidget* parent );
-		
+		ToolButton( QWidget *parent );
+
 		void mousePressEvent( QMouseEvent *e ) override { QToolButton::mousePressEvent(e); }
 		void mouseReleaseEvent( QMouseEvent *e ) override { QToolButton::mouseReleaseEvent(e); }
 		void mouseDoubleClickEvent ( QMouseEvent *e ) override { QToolButton::mouseDoubleClickEvent(e); }
@@ -187,14 +187,14 @@ class ToolButton : public QToolButton
 		void wheelEvent( QWheelEvent *e ) override { QToolButton::wheelEvent(e); }
 		void enterEvent(QEvent *) override { QToolButton::enterEvent(0l); }
 		void leaveEvent(QEvent *) override { QToolButton::leaveEvent(0l); }
-		
+
 		void setAngleDegrees( int angleDegrees ) { m_angleDegrees = angleDegrees; }
 
 	protected:
-		virtual void drawButtonLabel( QPainter * p );
+		virtual void drawButtonLabel( QPainter *p );
 
-		int m_angleDegrees;
 		QFont m_font;
+		int m_angleDegrees = 0;
 };
 
 
@@ -206,14 +206,14 @@ class Button : public Widget
 {
 	Q_OBJECT
 	public:
-		Button( const QString & id, CNItem *parent, bool isToggle, const QRect &r, KtlQCanvas *canvas );
+		Button( const QString &id, CNItem *parent, bool isToggle, const QRect &r, KtlQCanvas *canvas );
 		~Button() override;
-		
+
 		void mousePressEvent( QMouseEvent *e ) override;
 		void mouseReleaseEvent( QMouseEvent *e ) override;
 		void enterEvent(QEvent *) override;
 		void leaveEvent(QEvent *) override;
-		
+
 		/**
 		 * Set the text displayed inside the button
 		 */
@@ -222,27 +222,27 @@ class Button : public Widget
 		bool isToggle() const { return b_isToggle; }
 		QWidget *widget() const override;
 		bool state() const;
-		void setIcon( const QIcon & );
+		void setIcon( const QIcon& );
 		void setState( bool state );
 		QRect recommendedRect() const override;
-		
+
 	protected:
 		void posChanged() override;
-		
+
 	private slots:
 		void slotStateChanged();
 
 	private:
+		ToolButton *m_button = nullptr;
 		bool b_isToggle; // i.e. whether it should be depressed when the mouse is released
-		ToolButton *m_button;
 };
 
 
 class SliderWidget : public QSlider
 {
 	public:
-		SliderWidget( QWidget* parent );
-	
+		SliderWidget( QWidget *parent );
+
 		void mousePressEvent( QMouseEvent *e ) override { QSlider::mousePressEvent(e); }
 		void mouseReleaseEvent( QMouseEvent *e ) override { QSlider::mouseReleaseEvent(e); }
 		void mouseDoubleClickEvent ( QMouseEvent *e ) override { QSlider::mouseDoubleClickEvent(e); }
@@ -261,9 +261,9 @@ class Slider : public Widget
 {
 	Q_OBJECT
 	public:
-		Slider( const QString & id, CNItem *parent, const QRect & r, KtlQCanvas * canvas );
+		Slider( const QString &id, CNItem *parent, const QRect &r, KtlQCanvas *canvas );
 		~Slider() override;
-		
+
 		void mousePressEvent( QMouseEvent *e ) override;
 		void mouseReleaseEvent( QMouseEvent *e ) override;
 		void mouseDoubleClickEvent ( QMouseEvent *e ) override;
@@ -271,23 +271,22 @@ class Slider : public Widget
 		void wheelEvent( QWheelEvent *e ) override;
 		void enterEvent(QEvent *) override;
 		void leaveEvent(QEvent *) override;
-		
-		QWidget *widget() const override;
+
+		QWidget * widget() const override;
 		int value() const;
 		void setValue( int value );
 		void setOrientation( Qt::Orientation o );
 
 	protected:
 		void posChanged() override;
-		
+
 	private slots:
 		void slotValueChanged( int value );
 
 	private:
-		bool m_bSliderInverted; ///< In some orientations, the slider is reflected
 		SliderWidget *m_slider;
-		Qt::Orientation m_orientation;
+		Qt::Orientation m_orientation = Qt::Vertical;
+		bool m_bSliderInverted = false; ///< In some orientations, the slider is reflected
 };
 
 #endif
-

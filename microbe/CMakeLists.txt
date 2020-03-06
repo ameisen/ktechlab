@@ -16,6 +16,11 @@ SET(microbe_SRCS
 
 add_executable(microbe ${microbe_SRCS})
 
+target_precompile_headers(microbe
+    PUBLIC
+        pch.hpp
+)
+
 target_link_libraries(microbe
     KF5::KDELibs4Support
     KF5::CoreAddons

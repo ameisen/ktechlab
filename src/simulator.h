@@ -11,6 +11,8 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
+#include "pch.hpp"
+
 #include <list>
 
 #include "circuit.h"
@@ -55,8 +57,6 @@ class Switch;
 
 class Wire;
 
-typedef QList<ECNode*> ECNodeList;
-typedef QList<LogicIn*> LogicInList;
 typedef void(Component::*VoidCallbackPtr)();
 
 class ComponentCallback {
@@ -105,7 +105,7 @@ public:
 	/**
 	 * Initializes a new logic chain.
 	 */
-	void createLogicChain(LogicOut *logicOut, const LogicInList &logicInList, const PinList &pinList);
+	void createLogicChain(LogicOut *logicOut, const QList<LogicIn *> &logicInList, const QPtrList<Pin> &pinList);
 	/**
 	 * Adds the given LogicOut to the list of changed LogicOuts
 	 */

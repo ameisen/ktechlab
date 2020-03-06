@@ -49,7 +49,7 @@ Simulator::Simulator()
 	m_components	   = new list<Component*>;
 	m_ordinaryCircuits = new list<Circuit*>;
 
-// use integer math for these, update period is double. 
+// use integer math for these, update period is double.
 	unsigned max = unsigned(LOGIC_UPDATE_RATE / LINEAR_UPDATE_RATE);
 
 	for (unsigned i = 0; i < max; i++) {
@@ -190,7 +190,7 @@ void Simulator::step() {
 
 					double v = changed->isHigh() ? changed->outputHighVoltage() : 0.0;
 
-					for (PinList::iterator it = changed->pinListBegin; it != changed->pinListEnd; ++it) {
+					for (QPtrList<Pin>::iterator it = changed->pinListBegin; it != changed->pinListEnd; ++it) {
 						if (Pin *pin = *it)
 							pin->setVoltage(v);
 					}
@@ -222,7 +222,7 @@ void Simulator::slotSetSimulating(bool simulate) {
 	emit simulatingStateChanged(simulate);
 }
 
-void Simulator::createLogicChain(LogicOut *logicOut, const LogicInList &logicInList, const PinList &pinList) {
+void Simulator::createLogicChain(LogicOut *logicOut, const QList<LogicIn *> &logicInList, const QPtrList<Pin> &pinList) {
 	if (!logicOut) return;
 
 	bool state = logicOut->outputState();
@@ -234,9 +234,9 @@ void Simulator::createLogicChain(LogicOut *logicOut, const LogicInList &logicInL
 
 	LogicIn *last = logicOut;
 
-	const LogicInList::const_iterator end = logicInList.end();
+	const QList<LogicIn *>::const_iterator end = logicInList.end();
 
-	for (LogicInList::const_iterator it = logicInList.begin(); it != end; ++it) {
+	for (QList<LogicIn *>::const_iterator it = logicInList.begin(); it != end; ++it) {
 		LogicIn *next = *it;
 		last->setNextLogic(next);
 		last->setLastState(state);
@@ -388,5 +388,4 @@ void Simulator::detachCircuit(Circuit *circuit) {
 
 //END class Simulator
 
-#include "simulator.moc"
-
+#include "moc_simulator.cpp"

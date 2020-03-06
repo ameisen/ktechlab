@@ -20,18 +20,18 @@ const unsigned max_md_height = 20;
 /**
 @author David Saxton
 */
-class MatrixDisplay : public Component
+class MatrixDisplay final : public Component
 {
 	public:
 		MatrixDisplay( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~MatrixDisplay() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-	
+
 		void stepNonLogic() override;
 		bool doesStepNonLogic() const override { return true; }
-		
+
 	protected:
 		void drawShape( QPainter &p ) override;
 		void dataChanged() override;

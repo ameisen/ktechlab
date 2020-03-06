@@ -11,6 +11,8 @@
 #ifndef CIRCUIT_H
 #define CIRCUIT_H
 
+#include "pch.hpp"
+
 #include <qpointer.h>
 #include "qstringlist.h"
 #include "qlist.h"
@@ -22,10 +24,6 @@ class Wire;
 class Pin;
 class Element;
 class LogicOut;
-
-typedef QList<QPointer<Pin> > PinList;
-typedef QList<Element*> ElementList;
-
 
 class LogicCacheNode
 {
@@ -94,7 +92,7 @@ public:
 		* @returns the number of ground nodes. If all nodes are at or below the
 		* 			gt_never threshold, then this will be zero.
 		*/
-	static int identifyGround( PinList nodeList, int *highest = 0l );
+	static int identifyGround( QPtrList<Pin> nodeList, int *highest = 0l );
 
 	void setNextChanged( Circuit * circuit, unsigned char chain ) { m_pNextChanged[chain] = circuit; }
 	Circuit * nextChanged( unsigned char chain ) const { return m_pNextChanged[chain]; }
@@ -114,14 +112,14 @@ protected:
 	/**
 		* Returns true if any of the nodes are ground
 		*/
-	static bool recursivePinAdd( Pin *node, PinList *unassignedNodes, PinList *associated, PinList *nodes );
+	static bool recursivePinAdd( Pin *node, QPtrList<Pin> *unassignedNodes, QPtrList<Pin> *associated, QPtrList<Pin> *nodes );
 
 	int m_cnodeCount;
 	int m_branchCount;
 	int m_prepNLCount; // Count until next m_elementSet->prepareNonLinear() is called
 
-	PinList m_pinList;
-	ElementList m_elementList;
+	QPtrList<Pin> m_pinList;
+	QList<Element *> m_elementList;
 	ElementSet *m_elementSet;
 
 	//Stuff for caching

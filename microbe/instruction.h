@@ -1,35 +1,9 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke <daniel.jc@gmail.com>        *
- *                      2005 by David Saxton <david@bluehaze.org>          *
- *									   *
- *   24-04-2007                                                            *
- *   Modified to add pic 16f877,16f627 and 16f628 			   *
- *   by george john george@space-kerala.org 				   *
- *   supported by SPACE www.space-kerala.org	 			   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
+#pragma once
 
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
-
-#include <qmap.h>
-#include <qstring.h>
-#include <qstringlist.h>
-#include <qlist.h>
+#include <QMap>
+#include <QString>
+#include <QStringList>
+#include <QList>
 
 class Code;
 class CodeIterator;
@@ -38,7 +12,6 @@ class Instruction;
 class PIC14;
 
 typedef QList<Instruction*> InstructionList;
-
 
 /**
 Abstraction for a Register - should be used instead of a register name. Contains
@@ -1190,7 +1163,7 @@ class Instr_goto : public Instruction
 		void generateLinksAndStates( Code::iterator current ) override;
 		ProcessorBehaviour behaviour() const override;
 		AssemblyType assemblyType() const override { return Other; }
-		
+
 		QString label() const { return m_label; }
 		void setLabel( const QString & label ) { m_label = label; }
 
@@ -1321,7 +1294,3 @@ class Instr_raw : public Instruction
 		AssemblyType assemblyType() const override { return None; }
 };
 //END Microbe (non-assembly) Operations
-
-
-
-#endif

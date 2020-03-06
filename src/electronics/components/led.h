@@ -18,7 +18,7 @@
 @short Simulates a LED
 @author David Saxton
 */
-class LED : public ECDiode
+class LED final : public ECDiode
 {
 public:
 	LED( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
@@ -31,11 +31,11 @@ public:
 	 * Returns the brightness for the given current, from 255 (off) -> 0 (on)
 	 */
 	static uint brightness( double i );
-	
+
 	void dataChanged() override;
 	void stepNonLogic() override;
 	bool doesStepNonLogic() const override { return true; }
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 

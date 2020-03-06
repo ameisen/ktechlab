@@ -11,29 +11,28 @@
 #ifndef PIN_H
 #define PIN_H
 
+#include "pch.hpp"
+
+#include "switch.h"
 #include "wire.h"
 
 #include <qpointer.h>
 #include <qobject.h>
 #include <qlist.h>
 
+#include <algorithm>
+
 class ECNode;
 class Element;
 class Pin;
-class Switch;
 class Wire;
-
-typedef QList<Element*> ElementList;
-typedef QList<QPointer<Pin> > PinList;
-typedef QList<Switch*> SwitchList;
-typedef QList<QPointer<Wire> > WireList;
-
 
 /**
 @author David Saxton
 */
-class Pin : public QObject
-{
+class Pin : public QObject {
+	Q_OBJECT
+
 	public:
 		/**
 		 * Priorities for ground pin. gt_always will (as expected) always assign
@@ -55,13 +54,13 @@ class Pin : public QObject
 		};
 		Pin( ECNode * parent );
 		~Pin() override;
-		
+
 		ECNode * parentECNode() const { return m_pECNode; }
 		/**
 		 * This function returns the pins that are directly connected to this pins:
 		 * either at the ends of connected wires, or via switches.
 		 */
-		PinList localConnectedPins() const;
+		QPtrList<Pin> localConnectedPins() const;
 		/**
 		 * Adds/removes the given pin to the list of ones that this pin is/isn't
 		 * connected to via a switch.
@@ -145,12 +144,12 @@ class Pin : public QObject
 		 * Returns the ids of the pins whose voltages will affect this pin.
 		 * @see void setDependentPins( QStringList ids )
 		 */
-		PinList circuitDependentPins() const { return m_circuitDependentPins; }
+		QPtrList<Pin> circuitDependentPins() const { return m_circuitDependentPins; }
 		/**
 		 * Returns the ids of the pins whose voltages will affect this pin.
 		 * @see void setDependentPins( QStringList ids )
 		 */
-		PinList groundDependentPins() const { return m_groundDependentPins; }
+		QPtrList<Pin> groundDependentPins() const { return m_groundDependentPins; }
 		/**
 		 * Use this function to set the pin identifier for equations,
 		 * which should be done every time new pins are registered.
@@ -166,7 +165,7 @@ class Pin : public QObject
 		 * pin is part of a resistor, then that list will contain a pointer to a
 		 * Resistance element)
 		 */
-		ElementList elements() const { return m_elementList; }
+		QList<Element *> elements() const { return m_elementList; }
 		/**
 		 * Adds an element to the list of those that will affect this pin.
 		 */
@@ -183,14 +182,14 @@ class Pin : public QObject
 		 * Removes an switch from the list of those that will affect this pin.
 		 */
 		void removeSwitch( Switch *e );
-		
+
 		void addInputWire( Wire * wire );
 		void addOutputWire( Wire * wire );
 		void removeWire( Wire * wire );
-		WireList inputWireList() const { return m_inputWireList; }
-		WireList outputWireList() const { return m_outputWireList; }
+		QPtrList<Wire> inputWireList() const { return m_inputWireList; }
+		QPtrList<Wire> outputWireList() const { return m_outputWireList; }
 		int numWires() const { return m_inputWireList.size() + m_outputWireList.size(); }
-		
+
 	protected:
 		double m_voltage;
 		double m_current;
@@ -200,18 +199,18 @@ class Pin : public QObject
 
 		bool m_bCurrentIsKnown;
 
-		PinList m_circuitDependentPins;
-		PinList m_groundDependentPins;
-		PinList m_switchConnectedPins;
+		QPtrList<Pin> m_circuitDependentPins;
+		QPtrList<Pin> m_groundDependentPins;
+		QPtrList<Pin> m_switchConnectedPins;
 
-		ElementList m_elementList;
+		QList<Element *> m_elementList;
 
-		WireList m_inputWireList;
-		WireList m_outputWireList;
+		QPtrList<Wire> m_inputWireList;
+		QPtrList<Wire> m_outputWireList;
 		ECNode * m_pECNode;
 
-		SwitchList m_switchList;
-		SwitchList m_unknownSwitchCurrents;
+		QPtrList<Switch> m_switchList;
+		QPtrList<Switch> m_unknownSwitchCurrents;
 };
 
 #endif

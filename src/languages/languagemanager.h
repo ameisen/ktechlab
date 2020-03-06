@@ -11,11 +11,13 @@
 #ifndef LANGUAGEMANAGER_H
 #define LANGUAGEMANAGER_H
 
-#include <qobject.h>
-#include <qlist.h>
+#include <QObject>
+#include <QList>
+#include <QSharedPointer>
 
 #include "language.h"
 #include "logview.h"
+#include "processchain.h"
 
 class FlowCode;
 class Gpasm;
@@ -25,8 +27,6 @@ class Language;
 class LanguageManager;
 class MessageInfo;
 class Microbe;
-class ProcessChain;
-class ProcessListChain;
 class ProcessOptions;
 namespace KateMDI { class ToolView; }
 
@@ -37,7 +37,7 @@ class LanguageManager : public QObject
 {
 	Q_OBJECT
 	public:
-		static LanguageManager * self( KateMDI::ToolView * parent = 0l );
+		static LanguageManager * self(KateMDI::ToolView *parent = nullptr);
 		static QString toolViewIdentifier() { return "LanguageManager"; }
 		~LanguageManager() override;
 
@@ -47,8 +47,8 @@ class LanguageManager : public QObject
 		 * ProcessChain for notification of compile success / failure
 		 * @return Pointer to the ProcessChain used to compile
 		 */
-		ProcessChain * compile( ProcessOptions options );
-		ProcessListChain * compile( ProcessOptionsList pol );
+		ProcessChain * compile(const ProcessOptions &options);
+		ProcessListChain * compile(const ProcessOptionsList &pol);
 		/**
 		 * @return Pointer to the LogView that displays the output messages
 		 */
@@ -84,7 +84,6 @@ class LanguageManager : public QObject
 
 	private:
 		LogView * m_logView;
-		static LanguageManager * m_pSelf;
 };
 
 #endif

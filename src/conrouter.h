@@ -11,6 +11,8 @@
 #ifndef CONROUTER_H
 #define CONROUTER_H
 
+#include "pch.hpp"
+
 #include "cells.h"
 
 #include <qpoint.h>
@@ -18,9 +20,6 @@
 
 class ICNDocument;
 class Cell;
-
-typedef QList<QPoint> QPointList;
-typedef QList<QPointList> QPointListList;
 
 /**
 Abstraction for the routing of a connector.
@@ -37,7 +36,7 @@ class ConRouter
 public:
 	ConRouter( ICNDocument *cv );
 	~ConRouter();
-	
+
 	/**
 	 * What this class is all about - finding a route, from (sx,sy) to (ex,ey).
 	 */
@@ -50,11 +49,11 @@ public:
 	 * Sets the route to the given canvas points
 	 * @param reverse if true, the points in pointList will be reversed
 	 */
-	void setPoints( const QPointList &pointList, bool reverse = false );
+	void setPoints( const QList<QPoint> &pointList, bool reverse = false );
 	/**
 	 * Sets the route to the given route points
 	 */
-	void setRoutePoints( const QPointList &pointList );
+	void setRoutePoints( const QList<QPoint> &pointList );
 	/**
 	 * @returns true if the start or end points differ from that of the current route
 	 */
@@ -62,22 +61,22 @@ public:
 	/**
 	 * Returns the list of canvas points
 	 */
-	QPointList pointList( bool reverse ) const;
+	QList<QPoint> pointList( bool reverse ) const;
 	/**
 	 * Returns a pointer to the internall cellPointList
 	 */
-	QPointList *cellPointList() { return &m_cellPointList; }
+	QList<QPoint> *cellPointList() { return &m_cellPointList; }
 	/**
 	 * This will return two lists of Canvas points from the splitting of the
 	 * route at the Canvas point "pos". The internall stored points are not
 	 * affected.
 	 */
-	QPointListList splitPoints( const QPoint &pos ) const;
+	QList<QList<QPoint>> splitPoints( const QPoint &pos ) const;
 	/**
 	 * This will return a list of Canvas pointLists from the route, divided
 	 * into n parts (at n-1 equally spaced places).
 	 */
-	QPointListList dividePoints( uint n ) const;
+	QList<QList<QPoint>> dividePoints( uint n ) const;
 
 protected:
 	/**
@@ -90,13 +89,13 @@ protected:
 	 * Remove duplicated points from the route
 	 */
 	void removeDuplicatePoints();
-	
+
 	int xcells, ycells;
 	int m_lcx, m_lcy; // Last x / y from mapRoute, if we need a point on the route
 	Cells *cellsPtr;
 	TempLabelMap tempLabels;
 	ICNDocument *p_icnDocument;
-	QPointList m_cellPointList;
+	QList<QPoint> m_cellPointList;
 };
 
 #endif

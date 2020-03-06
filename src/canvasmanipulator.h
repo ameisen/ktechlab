@@ -11,9 +11,11 @@
 #ifndef CANVAsmANIPULATOR_H
 #define CANVAsmANIPULATOR_H
 
-#include "eventinfo.h"
+#include "pch.hpp"
 
-//#include <canvas.h> // 2018.10.16 - not needed
+#include "eventinfo.h"
+#include "drawpart.h"
+
 #include "canvasitems.h"
 #include <qpointer.h>
 
@@ -48,9 +50,6 @@ class QWheelEvent;
 
 typedef CanvasManipulator*(*CreateManipulatorPtr)( ItemDocument *, CMManager * );
 typedef bool(*AcceptManipulationPtr)( uint eventState, uint cmState, uint itemType, uint cnItemType );
-typedef QList<NodeGroup*> NodeGroupList;
-typedef QList<QPointer<Connector> > ConnectorList;
-typedef QList<QPoint> QPointList;
 
 
 class ManipulatorInfo
@@ -133,8 +132,8 @@ public:
 	uint cmState() const { return m_cmState; }
 	void addManipulatorInfo( ManipulatorInfo *info );
 	QString repeatedItemId() const { return m_repeatedItemId; }
-	void setDrawAction( int drawAction );
-	int drawAction() const { return m_drawAction; }
+	void setDrawAction( DrawAction drawAction );
+	DrawAction drawAction() const { return m_drawAction; }
 
 public slots:
 	void slotSetManualRoute( bool manualRoute );
@@ -159,7 +158,7 @@ protected:
 	QPointer<Item> p_lastItemClicked;
 	QTimer *m_allowItemScrollTmr; // When a user scrolls on the canvas, we don't want to stop scrolling when the user gets to (e.g.) a scrollable widget. So this timer prevents scrolling a widget for a few hundred milliseconds after a scroll event if it was initiated over the canvas
 	bool b_allowItemScroll; // See above.
-	int m_drawAction;
+	DrawAction m_drawAction = DrawAction::invalid;
 
 private slots:
 	void slotAllowItemScroll() { b_allowItemScroll = true; }
@@ -250,16 +249,16 @@ public:
 	CMRepeatedItemAdd( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMRepeatedItemAdd() override;
 	Type type() const override { return RepeatedItemAdd; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mousePressedRepeat( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
 };
 
@@ -274,15 +273,15 @@ public:
 	CMRightClick( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMRightClick() override;
 	Type type() const override { return RightClick; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
 };
 
@@ -295,7 +294,7 @@ class ConnectorDraw : public CanvasManipulator
 	public:
 		ConnectorDraw( ItemDocument *itemDocument, CMManager *cmManager );
 		~ConnectorDraw() override;
-		
+
 		/**
 		 * Returns the colour used to indicate that the current connection
 		 * being drawn is valid. Invalid colour is black.
@@ -339,15 +338,15 @@ public:
 	CMAutoConnector( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMAutoConnector() override;
 	Type type() const override { return AutoConnector; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
 	KtlQCanvasLine *m_connectorLine;
 };
@@ -362,18 +361,18 @@ public:
 	CMManualConnector( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMManualConnector() override;
 	Type type() const override { return ManualConnector; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mousePressedRepeat( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
-	ConnectorList m_fixedRouteConnectors;
+	QPtrList<Connector> m_fixedRouteConnectors;
 	ManualConnectorDraw *m_manualConnectorDraw;
 };
 
@@ -387,16 +386,16 @@ public:
 	CMItemMove( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMItemMove() override;
 	Type type() const override { return ItemMove; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
 	bool mousePressedRepeat( const EventInfo & info ) override;
-	
+
 protected:
 	void canvasResized( const QRect & oldSize, const QRect & newSize ) override;
 	void scrollCanvasToSelection();
@@ -405,8 +404,8 @@ protected:
 	bool m_bItemsSnapToGrid; ///< true iff selection contains CNItems
 	int m_dx;
 	int m_dy;
-	ConnectorList m_translatableConnectors;
-	NodeGroupList m_translatableNodeGroups;
+	QPtrList<Connector> m_translatableConnectors;
+	QPtrList<NodeGroup> m_translatableNodeGroups;
 	FlowContainer *p_flowContainerCandidate;
 };
 
@@ -420,15 +419,15 @@ public:
 	CMItemResize( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMItemResize() override;
 	Type type() const override { return ItemResize; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
 	ResizeHandle *p_resizeHandle;
 	double m_rh_dx;
@@ -445,15 +444,15 @@ public:
 	CMMechItemMove( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMMechItemMove() override;
 	Type type() const override { return MechItemMove; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
 	uint m_prevClickedOnSM; // Previous select mode of the item that was clicked on
 };
@@ -495,15 +494,15 @@ public:
 	CMSelect( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMSelect() override;
 	Type type() const override { return Select; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
 	SelectRectangle *m_selectRectangle;
 };
@@ -518,15 +517,15 @@ public:
 	CMItemDrag( ItemDocument *itemDocument, CMManager *cmManager );
 	~CMItemDrag() override;
 	Type type() const override { return ItemDrag; }
-	
+
 	static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 	static ManipulatorInfo *manipulatorInfo();
 	static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 	bool mousePressedInitial( const EventInfo &info ) override;
 	bool mouseMoved( const EventInfo &info ) override;
 	bool mouseReleased( const EventInfo &info ) override;
-	
+
 protected:
 	bool b_dragged;
 };
@@ -556,15 +555,15 @@ class CMDraw : public CanvasManipulator
 		CMDraw( ItemDocument *itemDocument, CMManager *cmManager );
 		~CMDraw() override;
 		Type type() const override { return Draw; }
-	
+
 		static CanvasManipulator* construct( ItemDocument *itemDocument, CMManager *cmManager );
 		static ManipulatorInfo *manipulatorInfo();
 		static bool acceptManipulation( uint eventState, uint cmState, uint itemType, uint cnItemType );
-	
+
 		bool mousePressedInitial( const EventInfo &info ) override;
 		bool mouseMoved( const EventInfo &info ) override;
 		bool mouseReleased( const EventInfo &info ) override;
-	
+
 	protected:
 		KtlQCanvasRectangle * m_pDrawRectangle;
 		CanvasEllipseDraw * m_pDrawEllipse;
@@ -595,7 +594,7 @@ class ManualConnectorDraw
 		/**
 		 * Returns the list of points that define the manual connection route
 		 */
-		QPointList pointList();
+		QList<QPoint> pointList();
 		/**
 		 * Sets the colour used to draw the connection lines.
 		 */

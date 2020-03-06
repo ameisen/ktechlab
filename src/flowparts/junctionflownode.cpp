@@ -1,7 +1,7 @@
 //
 // C++ Implementation: junctionflownode
 //
-// Description: 
+// Description:
 //
 //
 // Copyright: See COPYING file that comes with this distribution
@@ -42,7 +42,7 @@ bool JunctionFlowNode::acceptOutput() const
 void JunctionFlowNode::checkForRemoval( Connector *connector )
 {
 	FPNode::checkForRemoval(connector);
-		
+
 	if( !m_outputConnector )
 		removeNode();
 }
@@ -91,7 +91,7 @@ void JunctionFlowNode::drawShape ( QPainter &p )
 				continue;
 
 			// Work out the direction of the connector
-			const QPointList points = connector->connectorPoints ( false );
+			const QList<QPoint> points = connector->connectorPoints ( false );
 
 			const int count = points.size();
 			if ( count < 2 )
@@ -136,4 +136,3 @@ void JunctionFlowNode::drawShape ( QPainter &p )
 	else if ( m_dir == 270 )	p.drawLine ( _x, _y, _x, _y+8 );
 
 }
-

@@ -61,18 +61,18 @@ MicroSettingsDlg::MicroSettingsDlg( MicroSettings * microSettings, QWidget *pare
 	m_pNewPinMappingWidget = 0l;
 	m_pNewPinMappingDlg = 0l;
 	m_pWidget = new MicroSettingsWidget(this);
-	
+
 	setWhatsThis( i18n("This dialog allows editing of the initial properties of the PIC") );
 	m_pWidget->portsGroupBox->setWhatsThis( i18n("Edit the initial value of the ports here. For each binary number, the order from right-to-left is pins 0 through 7.<br><br>The \"Type (TRIS)\" edit shows the initial input/output state of the ports; 1 represents an input, and 0 an output.<br><br>The \"State (PORT)\" edit shows the initial high/low state of the ports; 1 represents a high, and 0 a low.") );
 	m_pWidget->variables->setWhatsThis( i18n("Edit the initial value of the variables here.<br><br>Note that the value of the variable can only be in the range 0->255. These variables will be initialized before any other code is executed.") );
-	
-	
+
+
 	//BEGIN Initialize initial port settings
 	m_portNames = microSettings->microInfo()->package()->portNames();
-	
+
 	m_portTypeEdit.resize( m_portNames.size() /*, 0  - 2018.06.02 - initialized below */);
 	m_portStateEdit.resize( m_portNames.size() /*, 0 - 2018.06.02 - initialized below */ );
-	
+
 	uint row = 0;
 	QStringList::iterator end = m_portNames.end();
 	for ( QStringList::iterator it = m_portNames.begin(); it != end; ++it, ++row )
@@ -87,10 +87,10 @@ MicroSettingsDlg::MicroSettingsDlg( MicroSettings * microSettings, QWidget *pare
 		fill.fill( '0', 8-portState.length() );
 		portState.prepend(fill);
 		//END Get current Type / State text
-		
-		
+
+
 		QGroupBox * groupBox = new QGroupBox( *it, m_pWidget->portsGroupBox );
-		
+
 		//groupBox->setColumnLayout(0, Qt::Vertical ); // 2018.06.02 - not needed
         groupBox->setLayout(new QVBoxLayout);
 		groupBox->layout()->setSpacing( 6 );
@@ -99,9 +99,9 @@ MicroSettingsDlg::MicroSettingsDlg( MicroSettings * microSettings, QWidget *pare
 		groupBoxLayout->setAlignment( Qt::AlignTop );
         groupBoxLayout->setSpacing(groupBox->layout()->spacing());
         groupBox->layout()->addItem(groupBoxLayout);
-		
+
 		// TODO: replace this with i18n( "the type", "Type (TRIS register):" );
-		groupBoxLayout->addWidget( new QLabel( i18n("Type (TRIS register):"), groupBox ), 0, 0 ); 
+		groupBoxLayout->addWidget( new QLabel( i18n("Type (TRIS register):"), groupBox ), 0, 0 );
 		groupBoxLayout->addWidget( new QLabel( i18n("State (PORT register):"), groupBox ), 1, 0 );
 
 		m_portTypeEdit[row] = new KLineEdit( portType, groupBox );
@@ -114,13 +114,13 @@ MicroSettingsDlg::MicroSettingsDlg( MicroSettings * microSettings, QWidget *pare
 		(dynamic_cast<QVBoxLayout*>(m_pWidget->portsGroupBox->layout()))->addWidget( groupBox );
 	}
 	//END Initialize initial port settings
-	
-	
-	
+
+
+
 	//BEGIN Initialize initial variable settings
 	// Hide row headers
 	//m_pWidget->variables->setLeftMargin(0); // 2018.06.02 - fixed in UI file
-	
+
 	// Make columns as thin as possible
 	//m_pWidget->variables->setColumnStretchable( 0, true );  // 2018.06.02 - to be fixed
 	//m_pWidget->variables->setColumnStretchable( 1, true );  // 2018.06.02 - to be fixed
@@ -130,7 +130,7 @@ MicroSettingsDlg::MicroSettingsDlg( MicroSettings * microSettings, QWidget *pare
         headerLabels.append( i18n("Variable value") );
         m_pWidget->variables->setHorizontalHeaderLabels(headerLabels);
     }
-	
+
 	QStringList variableNames = microSettings->variableNames();
 	row = 0;
 	end = variableNames.end();
@@ -150,32 +150,32 @@ MicroSettingsDlg::MicroSettingsDlg( MicroSettings * microSettings, QWidget *pare
 	}
 	m_pWidget->variables->insertRow( row );
     qDebug() << Q_FUNC_INFO << "row count: " << m_pWidget->variables->rowCount();
-	
+
 	connect( m_pWidget->variables, SIGNAL(cellChanged(int,int)), this, SLOT(checkAddVariableRow()) );
 	//END Initialize initial variable settings
-	
-	
-	
+
+
+
 	//BEGIN Initialize pin maps
 	connect( m_pWidget->pinMapAdd, SIGNAL(clicked()), this, SLOT(slotCreatePinMap()) );
 	connect( m_pWidget->pinMapModify, SIGNAL(clicked()), this, SLOT(slotModifyPinMap()) );
 	connect( m_pWidget->pinMapRename, SIGNAL(clicked()), this, SLOT(slotRenamePinMap()) );
 	connect( m_pWidget->pinMapRemove, SIGNAL(clicked()), this, SLOT(slotRemovePinMap()) );
-	
+
 	m_pinMappings = microSettings->pinMappings();
 	m_pWidget->pinMapCombo->insertItems(m_pWidget->pinMapCombo->count(),
                                         m_pinMappings.keys() );
-	
+
 	updatePinMapButtons();
 	//END Initialize pin maps
-	
-	
+
+
 	//enableButtonSeparator( false );
     showButtonSeparator( false );
 	setMainWidget(m_pWidget);
 	m_pWidget->adjustSize();
 	adjustSize();
-	
+
 	connect( this, SIGNAL(applyClicked()), this, SLOT(slotSaveStuff()) );
 }
 
@@ -195,13 +195,13 @@ void MicroSettingsDlg::accept()
 
 void MicroSettingsDlg::slotSaveStuff()
 {
-	for ( unsigned i = 0; i < m_portNames.size(); i++ )
+	for ( int i = 0; i < m_portNames.size(); i++ )
 		savePort(i);
-	
+
 	m_pMicroSettings->removeAllVariables();
 	for ( int i=0; i< m_pWidget->variables->rowCount(); i++ )
 		saveVariable(i);
-	
+
 	m_pMicroSettings->setPinMappings( m_pinMappings );
 }
 
@@ -216,22 +216,22 @@ void MicroSettingsDlg::reject()
 QValidator::State MicroSettingsDlg::validatePinMapName( QString & name ) const
 {
 	name.replace( ' ', '_' );
-	
+
 	if ( name.isEmpty() )
 		return QValidator::Intermediate;
-	
-	for ( unsigned i = 0; i < name.length(); ++i )
+
+	for ( int i = 0; i < name.length(); ++i )
 	{
 		if ( !name[i].isLetterOrNumber() && name[i] != '_' )
 			return QValidator::Invalid;
 	}
-	
+
 	if ( name[0].isNumber() )
 		return QValidator::Intermediate;
-	
+
 	if ( m_pWidget->pinMapCombo->contains( name ) )
 		return QValidator::Intermediate;
-	
+
 	return QValidator::Acceptable;
 }
 
@@ -240,11 +240,11 @@ void MicroSettingsDlg::slotCheckNewPinMappingName( const QString & name )
 {
 	// Validate name might change the name so that it is valid
 	QString newName = name;
-	
+
 	if ( m_pNewPinMappingWidget ) {
 		m_pNewPinMappingDlg->enableButtonOk( validatePinMapName( newName ) == QValidator::Acceptable );
     }
-	
+
 	if ( newName != name )
 		m_pNewPinMappingWidget->nameEdit->setText( newName );
 }
@@ -261,52 +261,52 @@ void MicroSettingsDlg::slotCreatePinMap()
 	m_pNewPinMappingDlg->setButtonText( Ok, i18n("Create") );
 	m_pNewPinMappingWidget = new NewPinMappingWidget( m_pNewPinMappingDlg );
 	m_pNewPinMappingDlg->setMainWidget( m_pNewPinMappingWidget );
-	
+
 	PinMappingNameValidator * validator = new PinMappingNameValidator( this );
 	m_pNewPinMappingWidget->nameEdit->setValidator( validator );
-	
+
 	connect( m_pNewPinMappingWidget->nameEdit, SIGNAL(textChanged(const QString &)), this, SLOT(slotCheckNewPinMappingName(const QString &)) );
 	slotCheckNewPinMappingName( 0 );
-	
+
 	int accepted = m_pNewPinMappingDlg->exec();
 	unsigned selectedType = m_pNewPinMappingWidget->typeCombo->currentIndex();
 	QString name = m_pNewPinMappingWidget->nameEdit->text();
-	
+
 	delete m_pNewPinMappingDlg;
 	delete validator;
 	m_pNewPinMappingDlg = 0l;
 	m_pNewPinMappingWidget = 0l;
 	if ( accepted != QDialog::Accepted )
 		return;
-	
+
 	PinMapping::Type type = PinMapping::Invalid;
-		
+
 	switch ( selectedType )
 	{
 		case 0:
 			type = PinMapping::SevenSegment;
 			break;
-				
+
 		case 1:
 			type = PinMapping::Keypad_4x3;
 			break;
-				
+
 		case 2:
 			type = PinMapping::Keypad_4x4;
 			break;
-				
+
 		default:
 			qCritical() << Q_FUNC_INFO << "Unknown selected type " << type << endl;
 			break;
 	}
-	
+
 	m_pinMappings[name] = PinMapping( type );
 	m_pWidget->pinMapCombo->insertItem(
                     m_pWidget->pinMapCombo->count(),
                     name );
 	//m_pWidget->pinMapCombo->setCurrentItem( m_pWidget->pinMapCombo->count() - 1 );
     m_pWidget->pinMapCombo->setCurrentItem( name );
-	
+
 	updatePinMapButtons();
 	slotModifyPinMap();
 }
@@ -315,27 +315,27 @@ void MicroSettingsDlg::slotCreatePinMap()
 void MicroSettingsDlg::slotRenamePinMap()
 {
 	KComboBox * combo = m_pWidget->pinMapCombo;
-	
+
 	QString oldName = combo->currentText();
 	if ( oldName.isEmpty() )
 		return;
-	
+
 	PinMappingNameValidator * validator = new PinMappingNameValidator( this, oldName );
-	
+
 	bool ok = false;
 	QString newName = KInputDialog::getText( i18n("New Pin Map Name"), i18n("Name"), oldName, & ok, this,/* 0, */ validator );
-	
+
 	delete validator;
-	
+
 	if ( !ok )
 		return;
-	
+
 	if ( newName == oldName )
 		return;
-	
+
 	m_pinMappings[ newName ] = m_pinMappings[ oldName ];
 	m_pinMappings.remove( oldName );
-	
+
 	//combo->setCurrentText( newName ); // 2018.12.02
     combo->setItemText( combo->currentIndex(), newName );
 }
@@ -345,15 +345,15 @@ void MicroSettingsDlg::slotModifyPinMap()
 {
 	QString name = m_pWidget->pinMapCombo->currentText();
 	PinMapping pinMapping = m_pinMappings[ name ];
-	
+
 	PinMapEditor * pinMapEditor = new PinMapEditor( & pinMapping, m_pMicroSettings->microInfo(), this, "PinMapEditor" );
 	int accepted = pinMapEditor->exec();
-	
+
 	delete pinMapEditor;
-	
+
 	if ( accepted != QDialog::Accepted )
 		return;
-	
+
 	m_pinMappings[ name ] = pinMapping;
 }
 
@@ -361,14 +361,14 @@ void MicroSettingsDlg::slotModifyPinMap()
 void MicroSettingsDlg::slotRemovePinMap()
 {
 	KComboBox * combo = m_pWidget->pinMapCombo;
-	
+
 	QString pinMapID = combo->currentText();
 	if ( pinMapID.isEmpty() )
 		return;
-	
+
 	m_pinMappings.remove( pinMapID );
 	combo->removeItem( combo->currentIndex() );
-	
+
 	updatePinMapButtons();
 }
 
@@ -376,7 +376,7 @@ void MicroSettingsDlg::slotRemovePinMap()
 void MicroSettingsDlg::updatePinMapButtons()
 {
 	bool havePinMaps = (m_pWidget->pinMapCombo->count() != 0);
-	
+
 	m_pWidget->pinMapModify->setEnabled( havePinMaps );
 	m_pWidget->pinMapRename->setEnabled( havePinMaps );
 	m_pWidget->pinMapRemove->setEnabled( havePinMaps );
@@ -386,34 +386,34 @@ void MicroSettingsDlg::updatePinMapButtons()
 void MicroSettingsDlg::savePort( int row )
 {
 	QString port = m_portNames[row];
-	
+
 	int type, state;
-	
+
 	QString typeText = m_portTypeEdit[row]->text();
 	bool typeOk = true;
 	if 		( typeText.startsWith( "0x", Qt::CaseInsensitive ) ) type = typeText.remove(0,2).toInt( &typeOk, 16 );
 	else if ( typeText.contains( QRegExp("[^01]") ) ) type = typeText.toInt( &typeOk, 10 );
 	else type = typeText.toInt( &typeOk, 2 );
-	
+
 	if ( !typeOk )
 	{
 // 		KMessageBox::sorry( this, i18n("Unregnised Port Type: %1", typeText) );
 		return;
 	}
-	
-	
+
+
 	QString stateText = m_portStateEdit[row]->text();
 	bool stateOk = true;
 	if 		( stateText.startsWith( "0x", Qt::CaseInsensitive ) ) state = stateText.remove(0,2).toInt( &stateOk, 16 );
 	else if ( stateText.contains( QRegExp("[^01]") ) ) state = stateText.toInt( &stateOk, 10 );
 	else state = stateText.toInt( &stateOk, 2 );
-	
+
 	if ( !stateOk )
 	{
 // 		KMessageBox::sorry( this, i18n("Unregnised Port State: %1", stateText) );
 		return;
 	}
-	
+
 	m_pMicroSettings->setPortState( port, state );
 	m_pMicroSettings->setPortType( port, type );
 }
@@ -427,7 +427,7 @@ void MicroSettingsDlg::saveVariable( int row )
     }
 	QString name = nameItem->text();
 	if ( name.isEmpty() ) return;
-	
+
     QTableWidgetItem *valueItem = m_pWidget->variables->item( row, 1 );
 	QString valueText;
     if (valueItem) {
@@ -443,7 +443,7 @@ void MicroSettingsDlg::saveVariable( int row )
 		KMessageBox::sorry( this, i18n("Invalid variable value: %1", valueText) );
 		return;
 	}
-	
+
 	qDebug() << Q_FUNC_INFO << "save variable: " << name << " val: " << value;
 
 	m_pMicroSettings->setVariable( name, value, true );
@@ -469,4 +469,4 @@ void MicroSettingsDlg::checkAddVariableRow()
 
 
 
-#include "microsettingsdlg.moc"
+#include "moc_microsettingsdlg.cpp"

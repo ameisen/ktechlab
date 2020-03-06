@@ -444,6 +444,6 @@ void PICComponent::slotUpdateBtns()
 }
 
 
-#include "piccomponent.moc"
+#include "moc_piccomponent.cpp"
 
 #endif

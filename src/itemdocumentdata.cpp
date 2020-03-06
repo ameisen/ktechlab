@@ -641,8 +641,8 @@ QDomElement ItemDocumentData::connectorDataToElement( QDomDocument &doc, const C
 	node.setAttribute( "manual-route", connectorData.manualRoute );
 
 	QString route;
-	const QPointList::const_iterator end = connectorData.route.end();
-	for ( QPointList::const_iterator it = connectorData.route.begin(); it != end; ++it )
+	const QList<QPoint>::const_iterator end = connectorData.route.end();
+	for ( QList<QPoint>::const_iterator it = connectorData.route.begin(); it != end; ++it )
 	{
 		route.append( QString::number((*it).x())+"," );
 		route.append( QString::number((*it).y())+"," );
@@ -884,8 +884,8 @@ void ItemDocumentData::translateContents( int dx, int dy )
 		const ConnectorDataMap::iterator end = m_connectorDataMap.end();
 		for ( ConnectorDataMap::iterator it = m_connectorDataMap.begin(); it != end; ++it )
 		{
-			const QPointList::iterator routeEnd = it.value().route.end();
-			for ( QPointList::iterator routeIt = it.value().route.begin(); routeIt != routeEnd; ++routeIt )
+			const QList<QPoint>::iterator routeEnd = it.value().route.end();
+			for ( QList<QPoint>::iterator routeIt = it.value().route.begin(); routeIt != routeEnd; ++routeIt )
 			{
 				*routeIt += QPoint( dx/8, dy/8 );
 			}
@@ -910,15 +910,15 @@ void ItemDocumentData::restoreDocument( ItemDocument *itemDocument )
 	mergeWithDocument(itemDocument,false);
 
 	{
-		ItemList removeItems = itemDocument->itemList();
+		QPtrList<Item> removeItems = itemDocument->itemList();
 		removeItems.removeAll((Item*)0l);
 
 		const ItemDataMap::iterator end = m_itemDataMap.end();
 		for ( ItemDataMap::iterator it = m_itemDataMap.begin(); it != end; ++it )
 			removeItems.removeAll( itemDocument->itemWithID(it.key()) );
 
-		const ItemList::iterator removeEnd = removeItems.end();
-		for ( ItemList::iterator it = removeItems.begin(); it != removeEnd; ++it )
+		const QPtrList<Item>::iterator removeEnd = removeItems.end();
+		for ( QPtrList<Item>::iterator it = removeItems.begin(); it != removeEnd; ++it )
 		{
 			if ( (*it)->canvas() && (*it)->type() != PicItem::typeString() )
 				(*it)->removeItem();
@@ -928,30 +928,30 @@ void ItemDocumentData::restoreDocument( ItemDocument *itemDocument )
 	if (icnd)
 	{
 		{
-			NodeList removeNodes = icnd->nodeList();
+			QPtrList<Node> removeNodes = icnd->nodeList();
 			removeNodes.removeAll((Node*)0l);
 
 			const NodeDataMap::iterator end = m_nodeDataMap.end();
 			for ( NodeDataMap::iterator it = m_nodeDataMap.begin(); it != end; ++it )
 				removeNodes.removeAll( icnd->nodeWithID( it.key() ) );
 
-			const NodeList::iterator removeEnd = removeNodes.end();
-			for ( NodeList::iterator it = removeNodes.begin(); it != removeEnd; ++it )
+			const QPtrList<Node>::iterator removeEnd = removeNodes.end();
+			for ( QPtrList<Node>::iterator it = removeNodes.begin(); it != removeEnd; ++it )
 			{
 				if ( (*it)->canvas() && !(*it)->isChildNode() )
 					(*it)->removeNode();
 			}
 		}
 		{
-			ConnectorList removeConnectors = icnd->connectorList();
+			QPtrList<Connector> removeConnectors = icnd->connectorList();
 			removeConnectors.removeAll((Connector*)0l);
 
 			const ConnectorDataMap::iterator end = m_connectorDataMap.end();
 			for ( ConnectorDataMap::iterator it = m_connectorDataMap.begin(); it != end; ++it )
 				removeConnectors.removeAll( icnd->connectorWithID(it.key()) );
 
-			const ConnectorList::iterator removeEnd = removeConnectors.end();
-			for ( ConnectorList::iterator it = removeConnectors.begin(); it != removeEnd; ++it )
+			const QPtrList<Connector>::iterator removeEnd = removeConnectors.end();
+			for ( QPtrList<Connector>::iterator it = removeConnectors.begin(); it != removeEnd; ++it )
 			{
 				if ( (*it)->canvas() )
 					(*it)->removeConnector();
@@ -1119,9 +1119,9 @@ void ItemDocumentData::mergeWithDocument( ItemDocument *itemDocument, bool selec
 	// This is kind of hackish, but never mind
 	if ( FlowCodeDocument *fcd = dynamic_cast<FlowCodeDocument*>(itemDocument) )
 	{
-		const ItemList fcdItems = fcd->itemList();
-		const ItemList::const_iterator fcdItemsEnd = fcdItems.constEnd();
-		for ( ItemList::const_iterator it = fcdItems.constBegin(); it != fcdItemsEnd; ++it )
+		const QPtrList<Item> fcdItems = fcd->itemList();
+		const QPtrList<Item>::const_iterator fcdItemsEnd = fcdItems.constEnd();
+		for ( QPtrList<Item>::const_iterator it = fcdItems.constBegin(); it != fcdItemsEnd; ++it )
 		{
 			if ( FlowContainer * fc = dynamic_cast<FlowContainer*>((Item*)*it) )
 				fc->updateContainedVisibility();
@@ -1136,10 +1136,10 @@ void ItemDocumentData::setMicroData( const MicroData &data )
 }
 
 
-void ItemDocumentData::addItems( const ItemList &itemList )
+void ItemDocumentData::addItems( const QPtrList<Item> &itemList )
 {
-	const ItemList::const_iterator end = itemList.constEnd();
-	for ( ItemList::const_iterator it = itemList.constBegin(); it != end; ++it )
+	const QPtrList<Item>::const_iterator end = itemList.constEnd();
+	for ( QPtrList<Item>::const_iterator it = itemList.constBegin(); it != end; ++it )
 	{
 		if ( *it && (*it)->canvas() && (*it)->type() != PicItem::typeString() )
 			addItemData( (*it)->itemData(), (*it)->id() );
@@ -1147,10 +1147,10 @@ void ItemDocumentData::addItems( const ItemList &itemList )
 }
 
 
-void ItemDocumentData::addConnectors( const ConnectorList &connectorList )
+void ItemDocumentData::addConnectors( const QPtrList<Connector> &connectorList )
 {
-	const ConnectorList::const_iterator end = connectorList.constEnd();
-	for ( ConnectorList::const_iterator it = connectorList.constBegin(); it != end; ++it )
+	const QPtrList<Connector>::const_iterator end = connectorList.constEnd();
+	for ( QPtrList<Connector>::const_iterator it = connectorList.constBegin(); it != end; ++it )
 	{
 		if ( *it && (*it)->canvas() )
 		{
@@ -1164,10 +1164,10 @@ void ItemDocumentData::addConnectors( const ConnectorList &connectorList )
 }
 
 
-void ItemDocumentData::addNodes( const NodeList &nodeList )
+void ItemDocumentData::addNodes( const QPtrList<Node> &nodeList )
 {
-	const NodeList::const_iterator end = nodeList.constEnd();
-	for ( NodeList::const_iterator it = nodeList.constBegin(); it != end; ++it )
+	const QPtrList<Node>::const_iterator end = nodeList.constEnd();
+	for ( QPtrList<Node>::const_iterator it = nodeList.constBegin(); it != end; ++it )
 	{
 		if ( *it && (*it)->canvas() && !(*it)->isChildNode() )
 			addNodeData( (*it)->nodeData(), (*it)->id() );
@@ -1225,16 +1225,6 @@ ConnectorData::ConnectorData()
 	endNodeIsChild = false;
 }
 //END class ConnectorData
-
-
-//BEGIN class NodeData
-NodeData::NodeData()
-{
-	x = 0;
-	y = 0;
-}
-//END class NodeDaata
-
 
 //BEGIN class PinData
 PinData::PinData()
@@ -1382,4 +1372,3 @@ void SubcircuitData::initECSubcircuit( ECSubcircuit * ecSubcircuit )
 	ecSubcircuit->doneSCInit();
 }
 //END class SubcircuitData
-

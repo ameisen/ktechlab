@@ -11,6 +11,8 @@
 #ifndef ECNODE_H
 #define ECNODE_H
 
+#include "pch.hpp"
+
 #include "node.h"
 
 // #include <q3valuevector.h>
@@ -21,9 +23,7 @@ class Pin;
 class Switch;
 class QTimer;
 
-typedef QList<ECNode*> ECNodeList;
-typedef QList<Element*> ElementList;
-typedef QVector<Pin*> PinVector;
+using PinVector = QVector<QPointer<Pin>>;
 
 /**
 @short Electrical node with voltage / current / etc properties
@@ -33,11 +33,11 @@ class ECNode : public Node
 {
 	Q_OBJECT
 	public:
-		ECNode( ICNDocument *icnDocument, Node::node_type type, int dir, const QPoint &pos, QString *id = 0L );
+		ECNode( ICNDocument *icnDocument, Node::node_type type, int dir, const QPoint &pos, QString *id = nullptr );
 		~ECNode() override;
 
 		void setParentItem( CNItem *parentItem ) override;
-		
+
 		/**
 		 *  draws the ECNode; still only a pure virtual function
 		 */
@@ -54,7 +54,7 @@ class ECNode : public Node
 		/**
 		 * @return the pins in the node, as a vector
 		 */
-		PinVector pins() const { return m_pins; }
+		const PinVector & pins() const { return m_pins; }
 
 		/**
 		 * @param num number of the
@@ -76,12 +76,12 @@ class ECNode : public Node
 		 * being the connected nodes, and so can simply return if they are in there.
 		 * If it is null, it will assume that it is the first ndoe & will create a list
 		 */
-		bool isConnected( Node *node, NodeList *checkedNodes = 0L ) override;
+		bool isConnected( Node *node, QPtrList<Node> *checkedNodes = nullptr ) override;
 		/**
 		 * Sets the node's visibility, as well as updating the visibility of the
 		 * attached connectors as appropriate
-	 	*/		
-		void setVisible( bool yes ) override;
+	 	*/
+		void setVisible( bool visible ) override;
 		/**
 		 * Registers an input connector (i.e. this is the end node) as connected
 		 * to this node.
@@ -97,13 +97,13 @@ class ECNode : public Node
 		/**
 		 * Returns a list of the attached connectors; implemented inline
 	 	*/
-		ConnectorList connectorList() const { return m_connectorList; }
+		const QPtrList<Connector> & connectorList() const { return m_connectorList; }
 
 		/**
 		 * @return the list of all the connectors attached to the node
 		 */
-		ConnectorList getAllConnectors() const override { return m_connectorList; }
-		
+		QPtrList<Connector> getAllConnectors() const override { return m_connectorList; }
+
 		/**
 		 * Removes all the NULL connectors
 	 	 */
@@ -128,7 +128,7 @@ class ECNode : public Node
 		 * @return pointer to the desired connector
 		 */
 		Connector* getAConnector() const override ;
-		
+
 	signals:
 		void numPinsChanged( unsigned newNum );
 
@@ -141,12 +141,14 @@ class ECNode : public Node
 		void removeSwitch( Switch * sw );
 
 	protected:
+		/** The attached connectors to this electronic node. No directionality here */
+		QPtrList<Connector> m_connectorList;
+		PinVector m_pins;
+		KtlQCanvasRectangle * m_pinPoint = nullptr;
+		double m_prevV = 0;
+		double m_prevI = 0;
 		bool m_bShowVoltageBars;
 		bool m_bShowVoltageColor;
-		double m_prevV;
-		double m_prevI;
-		KtlQCanvasRectangle * m_pinPoint;
-		PinVector m_pins;
 
 		// -- functionality from node.h --
 		/** If this node has precisely two connectors emerging from it, then this
@@ -155,13 +157,9 @@ class ECNode : public Node
 		 * TODO: find a meaning for this function, for an electronic node...
 		 */
 		QPoint findConnectorDivergePoint( bool * found ) override;
-		
-		/** The attached connectors to this electronic node. No directionality here */
-		ConnectorList m_connectorList;
 
 		/** (please document this) registers some signals for the node and the new connector (?) */
 		bool handleNewConnector( Connector * newConnector );
 };
 
 #endif
-

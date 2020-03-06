@@ -11,6 +11,8 @@
 #ifndef FLOWCODE_H
 #define FLOWCODE_H
 
+#include "pch.hpp"
+
 #include "language.h"
 
 #include <qpointer.h>
@@ -25,7 +27,6 @@ class Item;
 class MicroSettings;
 
 typedef QList<FlowPart*> FlowPartList;
-typedef QList<QPointer<Item> > ItemList;
 
 /**
 "FlowCode" can possibly be considered a misnomer, as the output is actually Microbe.
@@ -41,8 +42,8 @@ class FlowCode : public Language
 public:
 	FlowCode( ProcessChain *processChain );
 
-	void processInput( ProcessOptions options ) override;
-	ProcessOptions::ProcessPath::Path outputPath( ProcessOptions::ProcessPath::Path inputPath ) const override;
+	void processInput(const ProcessOptions &options) override;
+	ProcessOptions::Path outputPath( ProcessOptions::Path inputPath ) const override;
 
 	/**
 	 * You must set the start part
@@ -76,7 +77,7 @@ public:
 	/**
 	 * Generates and returns the microbe code
 	 */
-	QString generateMicrobe( const ItemList &itemList, MicroSettings *settings );
+	QString generateMicrobe( const QPtrList<Item> &itemList, MicroSettings *settings );
 	/**
 	 * Returns true if the FlowPart is a valid one for adding a branch
 	 */

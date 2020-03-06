@@ -38,7 +38,7 @@
 #include <qpainter.h>
 #include <qtimer.h>
 
-// FIXME: This source file is HUUUGE!!!, contains numerous clases, should be broken down. 
+// FIXME: This source file is HUUUGE!!!, contains numerous clases, should be broken down.
 
 
 //BEGIN class CMManager
@@ -52,10 +52,9 @@ CMManager::CMManager( ItemDocument *itemDocument )
 	m_cmState = 0;
 	p_lastMouseOverItem = 0l;
 	p_lastItemClicked = 0l;
-	m_drawAction = -1;
 	m_allowItemScrollTmr = new QTimer(this);
 	connect( m_allowItemScrollTmr, SIGNAL(timeout()), this, SLOT(slotAllowItemScroll()) );
-	
+
 	KConfigGroup grGen = KGlobal::config()->group("General");
 	slotSetManualRoute( grGen.readEntry( "ManualRouting", false ) );
 }
@@ -102,19 +101,19 @@ void CMManager::mousePressEvent( EventInfo eventInfo )
 		}
 		return;
 	}
-	
+
 	uint eventState=0;
 	if (eventInfo.isRightClick)
 		eventState |= CMManager::es_right_click;
-	
+
 	if (eventInfo.ctrlPressed)
 		eventState |= CMManager::es_ctrl_pressed;
-	
+
 	uint itemType=0;
 	uint cnItemType=0;
-	
+
 	KtlQCanvasItem * qcanvasItem = eventInfo.qcanvasItemClickedOn;
-	
+
 	if ( ! qcanvasItem ) itemType = it_none;
 	else if ( dynamic_cast<Node*>(qcanvasItem) ) itemType = it_node;
 	else if ( dynamic_cast<ConnectorLine*>(qcanvasItem) || dynamic_cast<Connector*>(qcanvasItem) )
@@ -124,7 +123,7 @@ void CMManager::mousePressEvent( EventInfo eventInfo )
 	else if ( DrawPart *drawPartClickedOn = dynamic_cast<DrawPart*>(qcanvasItem) )
 	{
 		itemType = it_drawpart;
-			
+
 		if ( drawPartClickedOn->mousePressEvent(eventInfo) ) {
 			p_lastItemClicked = drawPartClickedOn;
 			return;
@@ -135,7 +134,7 @@ void CMManager::mousePressEvent( EventInfo eventInfo )
 	} else if ( MechanicsItem *p_mechanicsItemClickedOn = dynamic_cast<MechanicsItem*>(qcanvasItem) )
 	{
 		itemType = it_mechanics_item;
-			
+
 		if ( p_mechanicsItemClickedOn->mousePressEvent(eventInfo) )
 		{
 			p_lastItemClicked = p_mechanicsItemClickedOn;
@@ -144,22 +143,22 @@ void CMManager::mousePressEvent( EventInfo eventInfo )
 	} else {
 		if ( Widget *widget = dynamic_cast<Widget*>(qcanvasItem) )
 			qcanvasItem = widget->parent();
-		
+
 		if ( CNItem *cnItemClickedOn = dynamic_cast<CNItem*>(qcanvasItem) )
 		{
 			itemType = it_canvas_item;
-			
+
 			if ( cnItemClickedOn->mousePressEvent(eventInfo) )
 			{
 				p_lastItemClicked = cnItemClickedOn;
 				return;
 			}
-			
+
 			if ( cnItemClickedOn->isMovable() )
 				cnItemType |= CMManager::isi_isMovable;
 		}
 	}
-	
+
 // 	uint highestScore=0;
 // 	ManipulatorInfo *best=0l;
 	const ManipulatorInfoList::iterator end = m_manipulatorInfoList.end();
@@ -194,7 +193,7 @@ void CMManager::mouseDoubleClickEvent( const EventInfo &eventInfo )
 		}
 		return;
 	}
-	
+
 	Item *item = dynamic_cast<Item*>(eventInfo.qcanvasItemClickedOn);
 	if (item)
 	{
@@ -225,25 +224,25 @@ void CMManager::mouseMoveEvent( const EventInfo &eventInfo )
 			itemView->scrollToMouse(eventInfo.pos);
 		return;
 	}
-	
+
 	//BEGIN
 	KtlQCanvasItem *qcnItem = p_itemDocument->itemAtTop(eventInfo.pos);
 	Item *item;
 	Widget *widget = dynamic_cast<Widget*>(qcnItem);
 	if (widget) item = widget->parent();
 	else item = dynamic_cast<Item*>(qcnItem);
-	
+
 	if ( p_lastMouseOverItem != (QPointer<Item>)item ) {
 		QEvent event(QEvent::Leave);
-		
+
 		if (p_lastMouseOverItem)
 			p_lastMouseOverItem->leaveEvent(0);
-		
+
 		if (item) item->enterEvent(0);
-		
+
 		p_lastMouseOverItem = item;
 	}
-	
+
 	// If we clicked on an item, then continue to pass mouse events to that item until we release the mouse...
 	if (p_lastItemClicked) {
 		p_lastItemClicked->mouseMoveEvent(eventInfo);
@@ -251,7 +250,7 @@ void CMManager::mouseMoveEvent( const EventInfo &eventInfo )
 		item->mouseMoveEvent(eventInfo);
 	}
 	//END
-	
+
 	updateCurrentResizeHandle( dynamic_cast<ResizeHandle*>(qcnItem) );
 }
 
@@ -277,13 +276,13 @@ void CMManager::mouseReleaseEvent( const EventInfo &eventInfo )
 		delete m_canvasManipulator;
 		m_canvasManipulator = 0l;
 	}
-	
+
 	if (p_lastItemClicked)
 	{
 		p_lastItemClicked->mouseReleaseEvent(eventInfo);
 		p_lastItemClicked=0l;
 	}
-	
+
 	updateCurrentResizeHandle( dynamic_cast<ResizeHandle*>( p_itemDocument->itemAtTop(eventInfo.pos) ) );
 }
 
@@ -308,7 +307,7 @@ void CMManager::wheelEvent( const EventInfo &eventInfo )
 		m_allowItemScrollTmr->stop();
         m_allowItemScrollTmr->setSingleShot(true);
 		m_allowItemScrollTmr->start(500 /*,true */ );
-		
+
 		ItemView *itemView = dynamic_cast<ItemView*>(p_itemDocument->activeView());
 		if (itemView)
 		{
@@ -320,13 +319,13 @@ void CMManager::wheelEvent( const EventInfo &eventInfo )
 }
 
 
-void CMManager::setDrawAction( int drawAction )
+void CMManager::setDrawAction( DrawAction drawAction )
 {
 	if ( m_drawAction == drawAction )
 		return;
-	
+
 	m_drawAction = drawAction;
-	setCMState( cms_draw, (m_drawAction != -1) );
+	setCMState( cms_draw, (m_drawAction != DrawAction::invalid) );
 }
 
 
@@ -334,7 +333,7 @@ void CMManager::slotSetManualRoute( bool manualRoute )
 {
 	KConfigGroup grGen = KGlobal::config()->group("General");
 	grGen.writeEntry( "ManualRouting", manualRoute );
-	
+
 	setCMState( cms_manual_route, manualRoute );
 }
 
@@ -343,7 +342,7 @@ void CMManager::setCMState( CMState type, bool state )
 {
 	// Set or clear the correct bit
 	state ? (m_cmState|=type) : (m_cmState&=(~type));
-	
+
 	if ( type == CMManager::cms_manual_route )
 		emit manualRoutingChanged(state);
 }
@@ -370,7 +369,7 @@ CanvasManipulator::CanvasManipulator( ItemDocument *itemDocument, CMManager *cmM
 	p_mechItemSelectList = dynamic_cast<MechanicsGroup*>(p_selectList);
 	p_cnItemClickedOn = 0l;
 	p_cmManager = cmManager;
-	
+
 	connect( itemDocument->canvas(), SIGNAL(resized( const QRect&, const QRect& )), this, SLOT(canvasResized( const QRect&, const QRect& )) );
 }
 
@@ -430,7 +429,7 @@ bool CMRepeatedItemAdd::mousePressedInitial( const EventInfo &eventInfo )
 		p_cmManager->setCMState( CMManager::cms_repeated_add, false );
 		return true;
 	}
-	
+
 	p_icnDocument->addItem( p_cmManager->repeatedItemId(), eventInfo.pos, true );
 	p_itemDocument->requestStateSave();
 	return false;
@@ -525,21 +524,21 @@ QPoint ConnectorDraw::toValidPos( const QPoint & clickPos, Connector * clickedCo
 {
 	if ( !clickedConnector )
 		return clickPos;
-	
-	const QPointList pointList = clickedConnector->connectorPoints();
-	
-	QPointList::const_iterator end = pointList.end();
-	
+
+	const QList<QPoint> pointList = clickedConnector->connectorPoints();
+
+	QList<QPoint>::const_iterator end = pointList.end();
+
 	double dl[] = { 0.5, 8.5, 11.5, 18.0, 23.0 }; // various distances rounded up of (0,0) cells, (0,1), etc
 	for ( unsigned i = 0; i < 5; ++i )
 	{
-		for ( QPointList::const_iterator it = pointList.begin(); it != end; ++it )
+		for ( QList<QPoint>::const_iterator it = pointList.begin(); it != end; ++it )
 		{
 			if ( qpoint_distance( *it, clickPos ) <= dl[i] )
 				return *it;
 		}
 	}
-	
+
 	return clickPos;
 }
 
@@ -548,7 +547,7 @@ Connector * ConnectorDraw::toConnector( Node * node )
 {
 	if ( !node || node->numCon( true, false ) < 3 )
 		return 0l;
-	
+
 	return node->getAConnector();
 }
 
@@ -557,23 +556,23 @@ void ConnectorDraw::grabEndStuff( KtlQCanvasItem * endItem, const QPoint & pos, 
 {
 	if (!endItem)
 		return;
-	
+
 	CNItem * cnItem = dynamic_cast<CNItem*>(endItem);
 	if ( cnItem && !posIsExact )
 		p_endNode = cnItem->getClosestNode(pos);
 	else
 		p_endNode = dynamic_cast<Node*>(endItem);
-	
+
 	if ( p_endNode && p_endNode->numCon( true, false ) > 2 )
 	{
 		p_endConnector = toConnector(p_endNode);
 		p_endNode = 0l;
 	}
-	
+
 	// If the endItem is a node, we have to finish exactly on the end when posIsExact is true
 	if ( posIsExact && p_endNode && (p_endNode->x() != pos.x() || p_endNode->y() != pos.y()) )
 		p_endNode = 0l;
-	
+
 	if (!p_endConnector)
 		p_endConnector = dynamic_cast<Connector*>(endItem);
 }
@@ -616,9 +615,9 @@ bool CMAutoConnector::acceptManipulation( uint /*eventState*/, uint cmState, uin
 bool CMAutoConnector::mousePressedInitial( const EventInfo &eventInfo )
 {
 	m_eventInfo = eventInfo;
-	
+
 	p_startNode = dynamic_cast<Node*>(eventInfo.qcanvasItemClickedOn);
-	
+
 	if (p_startNode)
 	{
 		m_eventInfo.pos = m_prevPos = p_icnDocument->gridSnap( QPoint( (int)p_startNode->x(), (int)p_startNode->y() ) );
@@ -632,9 +631,9 @@ bool CMAutoConnector::mousePressedInitial( const EventInfo &eventInfo )
 // 		startConnectorPoint = m_eventInfo.pos = m_prevPos = p_icnDocument->gridSnap(m_eventInfo.pos);
 		startConnectorPoint = m_eventInfo.pos = m_prevPos = toValidPos( m_eventInfo.pos, p_startConnector );
 	} else return true;
-		
+
 	p_icnDocument->unselectAll();
-	
+
 	delete m_connectorLine;
 	m_connectorLine = new KtlQCanvasLine(p_canvas);
 	m_connectorLine->setPen( QColor(0,0,0) );
@@ -647,7 +646,7 @@ bool CMAutoConnector::mousePressedInitial( const EventInfo &eventInfo )
 bool CMAutoConnector::mouseMoved( const EventInfo &eventInfo )
 {
 	const QPoint pos = eventInfo.pos;
-	
+
 	int newX = p_icnDocument->gridSnap( pos.x() );
 	int newY = p_icnDocument->gridSnap( pos.y() );
 
@@ -666,18 +665,18 @@ bool CMAutoConnector::mouseMoved( const EventInfo &eventInfo )
 	}
 
 	m_connectorLine->setPoints( m_eventInfo.pos.x(), m_eventInfo.pos.y(), newX, newY );
-		
+
 	if (movedFlag) {
 		KtlQCanvasItem *startItem = 0l;
 		if (p_startNode)
 			startItem = p_startNode;
 		else if (p_startConnector)
 			startItem = p_startConnector;
-		
+
 		KtlQCanvasItem *endItem = p_icnDocument->itemAtTop( QPoint( newX, newY ) );
 		if ( CNItem * cni = dynamic_cast<CNItem*>(endItem) )
 			endItem = cni->getClosestNode( QPoint( newX, newY ) );
-		
+
 		bool validLine = p_icnDocument->canConnect( startItem, endItem );
 		m_connectorLine->setPen( validLine ? validConnectionColor() : Qt::black );
 	}
@@ -688,17 +687,17 @@ bool CMAutoConnector::mouseMoved( const EventInfo &eventInfo )
 bool CMAutoConnector::mouseReleased( const EventInfo &eventInfo )
 {
 	const QPoint pos = eventInfo.pos;
-	
+
 	QPoint end = m_connectorLine->endPoint();
 	delete m_connectorLine;
 	m_connectorLine = 0l;
-	
+
 	KtlQCanvasItem *qcanvasItem = p_icnDocument->itemAtTop(end);
 	if ( !qcanvasItem )
 		return true;
-	
+
 	grabEndStuff( qcanvasItem, pos, false );
-	
+
 	if (p_startConnector)
 	{
 		if (p_endConnector) {
@@ -718,7 +717,7 @@ bool CMAutoConnector::mouseReleased( const EventInfo &eventInfo )
 				return true;
 		} else	return true;
 	} else return true;
-	
+
 	p_itemDocument->requestStateSave();
 	return true;
 }
@@ -762,11 +761,11 @@ bool CMManualConnector::mousePressedInitial( const EventInfo &eventInfo )
 	if ( eventInfo.isRightClick ) return true;
 
 	m_eventInfo = eventInfo;
-	
+
 	p_icnDocument->unselectAll();
-	
+
 	QPoint sp;
-	
+
 	if ( (p_startNode = dynamic_cast<Node*>(eventInfo.qcanvasItemClickedOn)) )
 	{
 		sp.setX( (int)p_startNode->x() );
@@ -783,7 +782,7 @@ bool CMManualConnector::mousePressedInitial( const EventInfo &eventInfo )
 		sp = toValidPos( eventInfo.pos, p_startConnector );
 	}
 	startConnectorPoint = sp;
-	
+
 	if (m_manualConnectorDraw)
 		delete m_manualConnectorDraw;
 	m_manualConnectorDraw = new ManualConnectorDraw( p_icnDocument, sp );
@@ -806,9 +805,9 @@ bool CMManualConnector::mouseMoved( const EventInfo &eventInfo )
 {
 	if ( !m_manualConnectorDraw )
 		return true;
-	
+
 	const QPoint pos = eventInfo.pos;
-	
+
     int newX = p_icnDocument->gridSnap( pos.x() );
 	int newY = p_icnDocument->gridSnap( pos.y() );
 
@@ -825,7 +824,7 @@ bool CMManualConnector::mouseMoved( const EventInfo &eventInfo )
 		m_prevPos.setY(newY);
 		movedFlag = true;
 	}
-	
+
 	if ( movedFlag )
 	{
 		KtlQCanvasItem *startItem = 0l;
@@ -833,22 +832,22 @@ bool CMManualConnector::mouseMoved( const EventInfo &eventInfo )
 			startItem = p_startNode;
 		else if (p_startConnector)
 			startItem = p_startConnector;
-		
+
 		KtlQCanvasItem * endItem = p_icnDocument->itemAtTop( QPoint( newX, newY ) );
-		
+
 		// If the endItem is a node, we have to finish exactly on the end.
 		if ( Node * node = dynamic_cast<Node*>(endItem) )
 		{
 			if ( node->x() != newX || node->y() != newY )
 				endItem = 0l;
 		}
-		
+
 		bool validLine = p_icnDocument->canConnect( startItem, endItem );
-		
+
 		m_manualConnectorDraw->setColor( validLine ? validConnectionColor() : Qt::black );
 		m_manualConnectorDraw->mouseMoved( QPoint( newX, newY ) );
 	}
-	
+
 	return false;
 }
 
@@ -858,17 +857,17 @@ bool CMManualConnector::mouseReleased( const EventInfo &eventInfo )
 	if (!m_manualConnectorDraw) return true;
 
 	QPoint pos = p_icnDocument->gridSnap(eventInfo.pos);
-	
+
 	grabEndStuff( m_manualConnectorDraw->mouseClicked(pos), pos, true );
-	
+
 	if ( !p_endNode && !p_endConnector )
 		return false;
-	
+
 	// Create the points that define the manual route
-	QPointList list = m_manualConnectorDraw->pointList();
+	QList<QPoint> list = m_manualConnectorDraw->pointList();
 	delete m_manualConnectorDraw;
 	m_manualConnectorDraw = 0l;
-	
+
 	if (p_startConnector)
 	{
 		if (p_endConnector)
@@ -891,7 +890,7 @@ bool CMManualConnector::mouseReleased( const EventInfo &eventInfo )
 				return true;
 		}
 	} else return true;
-	
+
 	p_itemDocument->requestStateSave();
 	return true;
 }
@@ -933,60 +932,60 @@ bool CMItemMove::mousePressedInitial( const EventInfo &eventInfo )
 {
 	m_eventInfo = eventInfo;
 	m_prevPos = eventInfo.pos;
-	
+
 	Item *item = dynamic_cast<Item*>(eventInfo.qcanvasItemClickedOn);
 
 	if (!item) return true;
-	
+
 	if ( !p_selectList->contains(item) )
 	{
 		if (!eventInfo.ctrlPressed)
 			p_itemDocument->unselectAll();
-		
+
 		p_itemDocument->select(item);
 	} else if (m_eventInfo.ctrlPressed)
 		p_itemDocument->unselect(item);
-	
+
 	if ( p_selectList->isEmpty() )
 		return true;
-	
+
 	// We want to allow dragging into FlowContainers if this is a FlowView
 	p_flowContainerCandidate = 0l;
 	{
-		const ItemList &itemList = p_icnDocument->itemList();
-		const ItemList::const_iterator ciEnd = itemList.end();
-		for ( ItemList::const_iterator it = itemList.begin(); it != ciEnd; ++it )
+		const QPtrList<Item> &itemList = p_icnDocument->itemList();
+		const QPtrList<Item>::const_iterator ciEnd = itemList.end();
+		for ( QPtrList<Item>::const_iterator it = itemList.begin(); it != ciEnd; ++it )
 		{
 			if ( FlowContainer *flowContainer = dynamic_cast<FlowContainer*>((Item*)*it) )
 				flowContainer->setFullBounds(true);
 		}
 	}
-	
-	ItemList itemList = p_cnItemSelectList->items(false);
+
+	QPtrList<Item> itemList = p_cnItemSelectList->items(false);
 	itemList.removeAll((Item*)0l);
-	
+
 	m_bItemsSnapToGrid = false;
-	const ItemList::iterator itemListEnd = itemList.end();
-	for ( ItemList::iterator it = itemList.begin(); it != itemListEnd; ++it )
+	const QPtrList<Item>::iterator itemListEnd = itemList.end();
+	for ( QPtrList<Item>::iterator it = itemList.begin(); it != itemListEnd; ++it )
 	{
 		CNItem *cnItem = dynamic_cast<CNItem*>((Item*)*it);
 		if ( !cnItem || !cnItem->canvas() )
 			continue;
-			
+
 		m_bItemsSnapToGrid = true;
 	}
-	
+
 	if ( m_bItemsSnapToGrid )
 		m_prevSnapPoint = this->snapPoint( m_prevPos );
 	else	m_prevSnapPoint = m_prevPos;
-	
-	ConnectorList fixedConnectors;
+
+	QPtrList<Connector> fixedConnectors;
 	p_icnDocument->getTranslatable( itemList, &fixedConnectors, &m_translatableConnectors, &m_translatableNodeGroups );
-	
-	const ConnectorList::iterator fixedConnectorsEnd = fixedConnectors.end();
-	for ( ConnectorList::iterator it = fixedConnectors.begin(); it != fixedConnectorsEnd; ++it )
+
+	const QPtrList<Connector>::iterator fixedConnectorsEnd = fixedConnectors.end();
+	for ( QPtrList<Connector>::iterator it = fixedConnectors.begin(); it != fixedConnectorsEnd; ++it )
 		(*it)->setSemiHidden(true);
-	
+
 	p_flowContainerCandidate = p_icnDocument->flowContainer(eventInfo.pos);
 
 	return false;
@@ -996,9 +995,9 @@ bool CMItemMove::mousePressedInitial( const EventInfo &eventInfo )
 void CMItemMove::canvasResized( const QRect & /*oldSize*/, const QRect & /*newSize*/ )
 {
 	//QPoint delta = oldSize.topLeft() - newSize.topLeft(); // 2017.10.01 - comment out unused variable
-	
+
 // 	scrollCanvasToSelection();
-	
+
 // 	QCursor::setPos( QCursor::pos() + delta );
 // 	m_prevPos += delta;
 // 	m_prevSnapPoint += delta;
@@ -1008,12 +1007,12 @@ void CMItemMove::canvasResized( const QRect & /*oldSize*/, const QRect & /*newSi
 void CMItemMove::scrollCanvasToSelection()
 {
 	QRect bound;
-	ItemList itemList = p_cnItemSelectList->items(false);
+	QPtrList<Item> itemList = p_cnItemSelectList->items(false);
 	itemList.removeAll((Item*)0l);
-	const ItemList::iterator itemListEnd = itemList.end();
-	for ( ItemList::iterator it = itemList.begin(); it != itemListEnd; ++it )
+	const QPtrList<Item>::iterator itemListEnd = itemList.end();
+	for ( QPtrList<Item>::iterator it = itemList.begin(); it != itemListEnd; ++it )
 		bound |= (*it)->boundingRect();
-	
+
 	QPoint scrollToPos = m_prevPos;
 	if ( m_dx < 0 ) {
 		// Scrolling left
@@ -1040,42 +1039,42 @@ void CMItemMove::scrollCanvasToSelection()
 bool CMItemMove::mouseMoved( const EventInfo &eventInfo )
 {
 	QPoint pos = eventInfo.pos;
-	
+
 	QPoint snapPoint = pos;
 	if ( m_bItemsSnapToGrid )
 		snapPoint = this->snapPoint( snapPoint );
-	
+
 	int dx = snapPoint.x() - m_prevSnapPoint.x();
 	int dy = snapPoint.y() - m_prevSnapPoint.y();
-	
+
 	m_dx = dx;
 	m_dy = dy;
-	
-   	const ItemList itemList = p_cnItemSelectList->items();
-	const ItemList::const_iterator end = itemList.end();
-	
-	for ( ItemList::const_iterator it = itemList.begin(); it != end; ++it )
+
+   	const QPtrList<Item> itemList = p_cnItemSelectList->items();
+	const QPtrList<Item>::const_iterator end = itemList.end();
+
+	for ( QPtrList<Item>::const_iterator it = itemList.begin(); it != end; ++it )
 	{
 		if ( !*it || !(*it)->isMovable() )
 			continue;
-		
+
 		//QRect oldRect = (*it)->boundingRect(); // 2017.10.01 - comment out unused variable
 		(*it)->moveBy( dx, dy );
 		//QRect newRect = (*it)->boundingRect();
 		//QRect merged = oldRect | newRect; // 2017.10.01 - comment out unused variable
 	}
-	
+
 	if ( (dx != 0) || (dy != 0) )
 	{
-		const ConnectorList::iterator frEnd = m_translatableConnectors.end();
-		for ( ConnectorList::iterator it = m_translatableConnectors.begin(); it != frEnd; ++it )
+		const QPtrList<Connector>::iterator frEnd = m_translatableConnectors.end();
+		for ( QPtrList<Connector>::iterator it = m_translatableConnectors.begin(); it != frEnd; ++it )
 			(*it)->translateRoute( dx, dy );
-		
-		const NodeGroupList::iterator end = m_translatableNodeGroups.end();
-		for ( NodeGroupList::iterator it = m_translatableNodeGroups.begin(); it != end; ++it )
+
+		const QPtrList<NodeGroup>::iterator end = m_translatableNodeGroups.end();
+		for ( QPtrList<NodeGroup>::iterator it = m_translatableNodeGroups.begin(); it != end; ++it )
 			(*it)->translate( dx, dy );
 	}
-	
+
 	FlowContainer *fc = p_icnDocument->flowContainer(pos);
 	if ( fc != p_flowContainerCandidate )
 	{
@@ -1091,14 +1090,14 @@ bool CMItemMove::mouseMoved( const EventInfo &eventInfo )
 		p_flowContainerCandidate = fc;
 		p_flowContainerCandidate->setSelected(true);
 	}
-	
+
 	p_itemDocument->requestEvent( ItemDocument::ItemDocumentEvent::ResizeCanvasToItems );
 	p_canvas->update();
 	m_prevPos = pos;
 	m_prevSnapPoint = snapPoint;
-	
+
 // 	scrollCanvasToSelection();
-	
+
 	return false;
 }
 
@@ -1108,53 +1107,53 @@ bool CMItemMove::mouseReleased( const EventInfo &eventInfo )
 	// Is the release event from a right click (which rotates items)?
 	if ( eventInfo.isRightClick || eventInfo.isMiddleClick )
 		return false;
-	
+
 	QStringList itemIDs;
-	
-	const ItemList itemList = p_cnItemSelectList->items();
-	const ItemList::const_iterator ilEnd = itemList.end();
-	for ( ItemList::const_iterator it = itemList.begin(); it != ilEnd; ++it )
+
+	const QPtrList<Item> itemList = p_cnItemSelectList->items();
+	const QPtrList<Item>::const_iterator ilEnd = itemList.end();
+	for ( QPtrList<Item>::const_iterator it = itemList.begin(); it != ilEnd; ++it )
 	{
 		if (*it) itemIDs.append( (*it)->id() );
 	}
-	
+
 	//const QPoint pos = eventInfo.pos; // 2017.10.10 - comment out unused variable
-	
+
 	// And make sure all connectors are properly shown
-	const ConnectorList &connectorList = p_icnDocument->connectorList();
-	const ConnectorList::const_iterator conEnd = connectorList.end();
-	for ( ConnectorList::const_iterator it = connectorList.begin(); it != conEnd; ++it )
+	const QPtrList<Connector> &connectorList = p_icnDocument->connectorList();
+	const QPtrList<Connector>::const_iterator conEnd = connectorList.end();
+	for ( QPtrList<Connector>::const_iterator it = connectorList.begin(); it != conEnd; ++it )
 	{
 		(*it)->setSemiHidden(false);
 	}
-	
+
 	if (p_flowContainerCandidate)
 	{
-		for ( ItemList::const_iterator it = itemList.begin(); it != ilEnd; ++it )
+		for ( QPtrList<Item>::const_iterator it = itemList.begin(); it != ilEnd; ++it )
 			p_flowContainerCandidate->addChild(*it);
-		
+
 		p_flowContainerCandidate->setSelected(false);
 		p_flowContainerCandidate = 0l;
 	} else {
-		for ( ItemList::const_iterator it = itemList.begin(); it != ilEnd; ++it )
+		for ( QPtrList<Item>::const_iterator it = itemList.begin(); it != ilEnd; ++it )
 			(*it)->setParentItem(0l);
 	}
-	
+
 	// And disable the FlowContainers again...
-	const ItemList &cnItemList = p_icnDocument->itemList();
-	const ItemList::const_iterator end = cnItemList.end();
-	for ( ItemList::const_iterator it = cnItemList.begin(); it != end; ++it )
+	const QPtrList<Item> &cnItemList = p_icnDocument->itemList();
+	const QPtrList<Item>::const_iterator end = cnItemList.end();
+	for ( QPtrList<Item>::const_iterator it = cnItemList.begin(); it != end; ++it )
 	{
 		if ( FlowContainer *flowContainer = dynamic_cast<FlowContainer*>((Item*)*it) )
 			flowContainer->setFullBounds(false);
 	}
-	
+
 	if (p_icnDocument) p_icnDocument->requestRerouteInvalidatedConnectors();
-	
+
 	if ( m_eventInfo.pos != eventInfo.pos ) p_itemDocument->requestStateSave();
-	
+
 	p_itemDocument->requestEvent( ItemDocument::ItemDocumentEvent::ResizeCanvasToItems );
-	
+
 	return true;
 }
 
@@ -1165,7 +1164,7 @@ bool CMItemMove::mousePressedRepeat( const EventInfo & info )
 		p_cnItemSelectList->slotRotateCW();
 	else if ( info.isMiddleClick )
 		p_cnItemSelectList->flipHorizontally();
-	
+
 	return false;
 }
 //END class CMItemMove
@@ -1214,14 +1213,14 @@ bool CMItemResize::mouseMoved( const EventInfo &eventInfo )
 {
 	int _x = int(m_rh_dx + eventInfo.pos.x());
 	int _y = int(m_rh_dy + eventInfo.pos.y());
-	
+
 	// Shift pressed == snap to grid
 	if ( eventInfo.shiftPressed )
 	{
 		_x = snapToCanvas(_x);
 		_y = snapToCanvas(_y);
 	}
-	
+
 	p_resizeHandle->moveRH( _x, _y );
 	return false;
 }
@@ -1269,15 +1268,15 @@ bool CMMechItemMove::mousePressedInitial( const EventInfo &eventInfo )
 {
 	m_eventInfo = eventInfo;
 	m_prevPos = eventInfo.pos;
-	
+
 	Item *item = dynamic_cast<Item*>(eventInfo.qcanvasItemClickedOn);
 	if (!item)
 		return true;
-	
+
 	MechanicsItem *mechItem = dynamic_cast<MechanicsItem*>(eventInfo.qcanvasItemClickedOn);
-	
+
 	if (mechItem) m_prevClickedOnSM = mechItem->selectionMode();
-	
+
 	if (eventInfo.shiftPressed)
 	{
 		p_mechanicsDocument->unselectAll();
@@ -1291,22 +1290,22 @@ bool CMMechItemMove::mousePressedInitial( const EventInfo &eventInfo )
 	{
 		if (!eventInfo.ctrlPressed)
 			p_mechanicsDocument->unselectAll();
-		
+
 		p_mechanicsDocument->select(item);
-		
+
 		if (mechItem)
 			mechItem->setSelectionMode(MechanicsItem::sm_move);
 	} else {
 		if (mechItem)
 			mechItem->setSelectionMode(MechanicsItem::sm_move);
-		
+
 		if (m_eventInfo.ctrlPressed)
 			p_mechanicsDocument->unselect(item);
 	}
-	
+
 	if ( p_selectList->isEmpty() )
 		return true;
-	
+
 	p_mechItemSelectList->setSelectionMode( MechanicsItem::sm_move );
 	p_mechItemSelectList->setRaised(true);
 	return false;
@@ -1316,10 +1315,10 @@ bool CMMechItemMove::mousePressedInitial( const EventInfo &eventInfo )
 bool CMMechItemMove::mouseMoved( const EventInfo &eventInfo )
 {
 	const QPoint pos = eventInfo.pos;
-	
+
 	int x = pos.x();
 	int y = pos.y();
-	
+
 	const MechItemList itemList = p_mechItemSelectList->toplevelMechItemList();
 	const MechItemList::const_iterator ilEnd = itemList.end();
 	for ( MechItemList::const_iterator it = itemList.begin(); it != ilEnd; ++it )
@@ -1327,9 +1326,9 @@ bool CMMechItemMove::mouseMoved( const EventInfo &eventInfo )
 		if (*it)
 			(*it)->moveBy( x - m_prevPos.x(), y - m_prevPos.y() );
 	}
-	
+
 	m_prevPos = QPoint( x, y );
-	
+
 	p_canvas->update();
 	p_itemDocument->requestEvent( ItemDocument::ItemDocumentEvent::ResizeCanvasToItems );
 	return false;
@@ -1339,12 +1338,12 @@ bool CMMechItemMove::mouseMoved( const EventInfo &eventInfo )
 bool CMMechItemMove::mouseReleased( const EventInfo &eventInfo )
 {
 	const QPoint pos = eventInfo.pos;
-			
+
 	int dx = pos.x() - m_eventInfo.pos.x();
 	int dy = pos.y() - m_eventInfo.pos.y();
-	
+
 	p_mechItemSelectList->setRaised(false);
-	
+
 	MechanicsItem *mechItem = dynamic_cast<MechanicsItem*>(m_eventInfo.qcanvasItemClickedOn);
 	if ( dx == 0 && dy == 0 )
 	{
@@ -1358,7 +1357,7 @@ bool CMMechItemMove::mouseReleased( const EventInfo &eventInfo )
 		p_itemDocument->requestStateSave();
 		return true;
 	}
-	
+
 	if ( mechItem && mechItem->isSelected() )
 	{
 		if ( m_prevClickedOnSM == MechanicsItem::sm_rotate )
@@ -1366,18 +1365,18 @@ bool CMMechItemMove::mouseReleased( const EventInfo &eventInfo )
 		else
 			mechItem->setSelectionMode(MechanicsItem::sm_resize);
 	}
-	
+
 	QStringList itemIDs;
-	
-	ItemList itemList = p_mechItemSelectList->items();
-	const ItemList::iterator ilEnd = itemList.end();
-	for ( ItemList::iterator it = itemList.begin(); it != ilEnd; ++it )
+
+	QPtrList<Item> itemList = p_mechItemSelectList->items();
+	const QPtrList<Item>::iterator ilEnd = itemList.end();
+	for ( QPtrList<Item>::iterator it = itemList.begin(); it != ilEnd; ++it )
 	{
 		if (*it) {
 			itemIDs.append( (*it)->id() );
 		}
 	}
-	
+
 	p_mechItemSelectList->setSelectionMode( MechanicsItem::sm_resize );
 	p_itemDocument->requestStateSave();
 	p_itemDocument->requestEvent( ItemDocument::ItemDocumentEvent::ResizeCanvasToItems );
@@ -1395,7 +1394,7 @@ SelectRectangle::SelectRectangle( int x, int y, int w, int h, KtlQCanvas *qcanva
 	m_bottomLine = new KtlQCanvasLine(qcanvas);
 	m_leftLine = new KtlQCanvasLine(qcanvas);
 	setSize( w, h );
-	
+
 	KtlQCanvasLine* lines[] = { m_topLine, m_rightLine, m_bottomLine, m_leftLine };
 	for ( int i=0; i<4; ++ i)
 	{
@@ -1429,7 +1428,7 @@ void SelectRectangle::setSize( int w, int h )
 KtlQCanvasItemList SelectRectangle::collisions()
 {
 	KtlQCanvas *canvas = m_topLine->canvas();
-	
+
 	return canvas->collisions( QRect( m_x, m_y, m_w, m_h ) );
 }
 //END class SelectRectangle
@@ -1470,11 +1469,11 @@ bool CMSelect::acceptManipulation( uint /*eventState*/, uint /*cmState*/, uint i
 bool CMSelect::mousePressedInitial( const EventInfo &eventInfo )
 {
 	m_eventInfo = eventInfo;
-	
+
     if (!eventInfo.ctrlPressed) {
 		p_itemDocument->unselectAll();
 	}
-	
+
 	m_selectRectangle = new SelectRectangle( eventInfo.pos.x(), eventInfo.pos.y(), 0, 0, p_canvas );
 	return false;
 }
@@ -1483,9 +1482,9 @@ bool CMSelect::mousePressedInitial( const EventInfo &eventInfo )
 bool CMSelect::mouseMoved( const EventInfo &eventInfo )
 {
 	QPoint pos = eventInfo.pos;
-	
+
     m_selectRectangle->setSize( pos.x()-m_eventInfo.pos.x(), pos.y()-m_eventInfo.pos.y() );
-	
+
 	if (m_eventInfo.ctrlPressed) {
 		p_itemDocument->select( m_selectRectangle->collisions() );
 	} else if (p_selectList) {
@@ -1503,7 +1502,7 @@ bool CMSelect::mouseReleased( const EventInfo &/*eventInfo*/ )
 {
 	delete m_selectRectangle;
 	m_selectRectangle = 0l;
-	
+
 	return true;
 }
 //END class CMSelect
@@ -1550,16 +1549,16 @@ bool CMItemDrag::mousePressedInitial( const EventInfo &eventInfo )
 bool CMItemDrag::mouseMoved( const EventInfo &eventInfo )
 {
 	const QPoint pos = eventInfo.pos;
-			
+
 	if ( b_dragged ||
 		 pos.x() > (m_eventInfo.pos.x()+4 ) ||
 		 pos.x() < (m_eventInfo.pos.x()-4) ||
 		 pos.y() > (m_eventInfo.pos.y()+4) ||
 		 pos.y() < (m_eventInfo.pos.y()-4) )
 	{
-	
+
 		b_dragged = true;
-		
+
 		if ( PinItem * pi = dynamic_cast<PinItem*>(m_eventInfo.qcanvasItemClickedOn) )
 			pi->dragged( pos.x() - m_eventInfo.pos.x() );
 	}
@@ -1574,7 +1573,7 @@ bool CMItemDrag::mouseReleased( const EventInfo &/*eventInfo*/ )
 		if ( PinItem * pi = dynamic_cast<PinItem*>(m_eventInfo.qcanvasItemClickedOn) )
 			pi->switchState();
 	}
-	
+
 	p_itemDocument->requestStateSave();
 	return true;
 }
@@ -1605,7 +1604,7 @@ CMDraw::CMDraw( ItemDocument *itemDocument, CMManager *cmManager )
 
 CMDraw::~CMDraw()
 {
-	p_cmManager->setDrawAction(-1);
+	p_cmManager->setDrawAction(DrawAction::invalid);
 }
 
 CanvasManipulator* CMDraw::construct( ItemDocument *itemDocument, CMManager *cmManager )
@@ -1629,12 +1628,12 @@ bool CMDraw::acceptManipulation( uint /*eventState*/, uint cmState, uint /*itemT
 bool CMDraw::mousePressedInitial( const EventInfo &eventInfo )
 {
 	m_eventInfo = eventInfo;
-	
-	switch ( (DrawPart::DrawAction) p_cmManager->drawAction() )
+
+	switch (p_cmManager->drawAction())
 	{
-		case DrawPart::da_text:
-		case DrawPart::da_rectangle:
-		case DrawPart::da_image:
+		case DrawAction::text:
+		case DrawAction::rectangle:
+		case DrawAction::image:
 		{
 			m_pDrawRectangle = new KtlQCanvasRectangle( eventInfo.pos.x(), eventInfo.pos.y(), 0, 0, p_canvas );
 			m_pDrawRectangle->setPen( QPen( QColor(0,0,0), 1 ) );
@@ -1642,7 +1641,7 @@ bool CMDraw::mousePressedInitial( const EventInfo &eventInfo )
 			m_pDrawRectangle->show();
 			break;
 		}
-		case DrawPart::da_ellipse:
+		case DrawAction::ellipse:
 		{
 			m_pDrawEllipse = new CanvasEllipseDraw( eventInfo.pos.x(), eventInfo.pos.y(), p_canvas );
 			m_pDrawEllipse->setPen( QPen( QColor(0,0,0), 1 ) );
@@ -1650,8 +1649,8 @@ bool CMDraw::mousePressedInitial( const EventInfo &eventInfo )
 			m_pDrawEllipse->show();
 			break;
 		}
-		case DrawPart::da_line:
-		case DrawPart::da_arrow:
+		case DrawAction::line:
+		case DrawAction::arrow:
 		{
 			m_pDrawLine = new KtlQCanvasLine(p_canvas);
 			m_pDrawLine->setPoints( eventInfo.pos.x(), eventInfo.pos.y(), eventInfo.pos.x(), eventInfo.pos.y() );
@@ -1663,7 +1662,7 @@ bool CMDraw::mousePressedInitial( const EventInfo &eventInfo )
 		default:
 			return true;
 	}
-	
+
 	return false;
 }
 
@@ -1671,24 +1670,24 @@ bool CMDraw::mousePressedInitial( const EventInfo &eventInfo )
 bool CMDraw::mouseMoved( const EventInfo &eventInfo )
 {
 	const QPoint pos = eventInfo.pos;
-	
+
 	if (m_pDrawRectangle)
 		m_pDrawRectangle->setSize( pos.x()-m_eventInfo.pos.x(), pos.y()-m_eventInfo.pos.y() );
-	
+
 	else if (m_pDrawEllipse) {
 // 		QRect r( m_eventInfo.pos.x(), m_eventInfo.pos.y(), pos.x()-m_eventInfo.pos.x(), pos.y()-m_eventInfo.pos.y() );
 // 		r = r.normalized();
-// 		
+//
 // 		m_pDrawEllipse->setSize( r.width(), r.height() );
 // 		m_pDrawEllipse->move( r.left()+(r.width()/2), r.top()+(r.height()/2) );
-		
+
 		m_pDrawEllipse->setSize( 2 * abs(pos.x() - m_eventInfo.pos.x()), 2 * abs(pos.y() - m_eventInfo.pos.y()) );
 	}
-	
+
 	else if (m_pDrawLine)
 		m_pDrawLine->setPoints( eventInfo.pos.x(), eventInfo.pos.y(), m_pDrawLine->endPoint().x(), m_pDrawLine->endPoint().y() );
 	else return true;
-	
+
 	return false;
 }
 
@@ -1696,25 +1695,25 @@ bool CMDraw::mouseMoved( const EventInfo &eventInfo )
 bool CMDraw::mouseReleased( const EventInfo & /*eventInfo*/ )
 {
 	//const QPoint pos = eventInfo.pos; // 2017.10.01 - comment out unused variable
-	
+
 	QRect sizeRect;
-	
+
 	if ( m_pDrawRectangle || m_pDrawEllipse )
 	{
 		if (m_pDrawRectangle)
 		{
 			sizeRect = m_pDrawRectangle->rect();
-			
+
 			// We have to manually adjust the size rect so that it matches up with what the user has drawn
-			
+
 			sizeRect.setWidth( sizeRect.width()+1 );
 			sizeRect.setHeight( sizeRect.height()+1 );
-			
+
 			sizeRect = sizeRect.normalized();
-			
+
 			if ( m_pDrawRectangle->rect().width() < 0 )
 				sizeRect.moveLeft( sizeRect.left() + 1);
-			
+
 			if ( m_pDrawRectangle->rect().height() < 0 )
 				sizeRect.moveTop( sizeRect.top() + 1);
 		} else {
@@ -1724,7 +1723,7 @@ bool CMDraw::mouseReleased( const EventInfo & /*eventInfo*/ )
 			int y = int(m_pDrawEllipse->y()-h/2);
 			sizeRect = QRect( x, y, w, h ).normalized();
 		}
-	
+
 		delete m_pDrawRectangle;
 		delete m_pDrawEllipse;
 		m_pDrawRectangle = 0l;
@@ -1734,45 +1733,49 @@ bool CMDraw::mouseReleased( const EventInfo & /*eventInfo*/ )
 		int sy = m_pDrawLine->startPoint().y();
 		int ex = m_pDrawLine->endPoint().x();
 		int ey = m_pDrawLine->endPoint().y();
-		
+
 		sizeRect = QRect( ex, ey, sx-ex, sy-ey );
-		
+
 		delete m_pDrawLine;
 		m_pDrawLine = 0l;
 	} else return true;
-	
+
 	QString id;
-	switch ( (DrawPart::DrawAction) p_cmManager->drawAction() )
+	switch (p_cmManager->drawAction())
 	{
-		case DrawPart::da_rectangle:
+		case DrawAction::rectangle:
 			id = "dp/rectangle";
 			break;
-			
-		case DrawPart::da_image:
+
+		case DrawAction::image:
 			id = "dp/image";
 			break;
-			
-		case DrawPart::da_ellipse:
+
+		case DrawAction::ellipse:
 			id = "dp/ellipse";
 			break;
-			
-		case DrawPart::da_text:
+
+		case DrawAction::text:
 			id = "dp/canvas_text";
-			
+
 			if ( sizeRect.width() < 56 )
 				sizeRect.setWidth( 56 );
-			
+
 			if ( sizeRect.height() < 24 )
 				sizeRect.setHeight( 24 );
-			
+
 			break;
-			
-		case DrawPart::da_line:
+
+		case DrawAction::line:
 			id = "dp/line";
 			break;
-			
-		case DrawPart::da_arrow:
+
+		case DrawAction::arrow:
 			id = "dp/arrow";
+			break;
+
+		default:
+			id = QString{};
 			break;
 	}
 
@@ -1783,9 +1786,9 @@ bool CMDraw::mouseReleased( const EventInfo & /*eventInfo*/ )
 	if (!item) return true;
 
 	item->move( sizeRect.x(), sizeRect.y() ); // We call this again as p_itemDocument->addItem will move the item if it is slightly off the canvas.
-	
+
 	item->setSize( 0, 0, sizeRect.width(), sizeRect.height() );
-	
+
 	p_itemDocument->requestStateSave();
 	return true;
 }
@@ -1796,25 +1799,25 @@ bool CMDraw::mouseReleased( const EventInfo & /*eventInfo*/ )
 ManualConnectorDraw::ManualConnectorDraw( ICNDocument *_icnDocument, const QPoint &initialPos )
 {
 	m_color = Qt::black;
-	
+
 	icnDocument = _icnDocument;
 	m_currentPos = m_previousPos = m_initialPos = initialPos;
 	p_initialItem = icnDocument->itemAtTop(initialPos);
-	
+
 	b_currentVertical = false;
 	b_orientationDefined = false;
-	
+
 	m_connectorLines.append( m_previousCon = new KtlQCanvasLine( icnDocument->canvas() ) );
 	m_connectorLines.append( m_currentCon = new KtlQCanvasLine( icnDocument->canvas() ) );
-	
+
 	m_currentCon->setPoints( initialPos.x(), initialPos.y(), initialPos.x(), initialPos.y() );
 	m_previousCon->setPoints( initialPos.x(), initialPos.y(), initialPos.x(), initialPos.y() );
-	
+
 	m_currentCon->setPen( m_color );
 	m_previousCon->setPen( m_color );
-	
+
 	updateConnectorEnds();
-	
+
 	m_currentCon->show();
 	m_previousCon->show();
 }
@@ -1825,14 +1828,14 @@ ManualConnectorDraw::~ManualConnectorDraw()
 	const QList<KtlQCanvasLine*>::iterator end = m_connectorLines.end();
 	for ( QList<KtlQCanvasLine*>::iterator it = m_connectorLines.begin(); it != end; ++it )
 		delete *it;
-	
+
 	m_connectorLines.clear();
 }
 
 void ManualConnectorDraw::setColor( const QColor & color )
 {
 	m_color = color;
-	
+
 	const QList<KtlQCanvasLine*>::iterator end = m_connectorLines.end();
 	for ( QList<KtlQCanvasLine*>::iterator it = m_connectorLines.begin(); it != end; ++it )
 		(*it)->setPen( m_color );
@@ -1841,21 +1844,21 @@ void ManualConnectorDraw::setColor( const QColor & color )
 void ManualConnectorDraw::mouseMoved( const QPoint &pos )
 {
 	if ( m_currentPos == pos ) return;
-	
+
 	if (!b_orientationDefined)
 	{
 		QPoint previousStart = m_previousCon->startPoint();
-		
+
 		double distance = std::sqrt( std::pow( (double)(m_currentPos.x()-previousStart.x()), 2. ) +
 									 std::pow( (double)(m_currentPos.y()-previousStart.y()), 2. ) );
-	
+
 		if ( distance < 24 )
 		{
 			b_currentVertical = ( std::abs( double(m_currentPos.x()-previousStart.x()) ) >= std::abs( double(m_currentPos.y()-previousStart.y()) ) );
 		}
-		
+
 	}
-	
+
 	m_previousPos = m_currentPos;
 	m_currentPos = pos;
 	updateConnectorEnds();
@@ -1867,24 +1870,24 @@ KtlQCanvasItem* ManualConnectorDraw::mouseClicked( const QPoint &pos )
 	if (b_orientationDefined)
 		b_currentVertical = !b_currentVertical;
 	else	mouseMoved(pos);
-	
+
 	b_orientationDefined = true;
 
 	m_currentPos = pos;
-	
+
 	KtlQCanvasItem * qcanvasItem = icnDocument->itemAtTop(pos);
-	
+
 	if ( qcanvasItem && pos != m_initialPos && qcanvasItem != p_initialItem )
 		return qcanvasItem;
-	
+
 	m_previousCon = m_currentCon;
-	
+
 	m_connectorLines.append( m_currentCon = new KtlQCanvasLine( icnDocument->canvas() ) );
 	m_currentCon->setPoints( pos.x(), pos.y(), pos.x(), pos.y() );
 	m_currentCon->setPen( m_color );
 	updateConnectorEnds();
 	m_currentCon->show();
-	
+
 	return 0L;
 }
 
@@ -1893,7 +1896,7 @@ void ManualConnectorDraw::updateConnectorEnds()
 {
 	QPoint pivot = m_currentPos;
 	QPoint previousStart = m_previousCon->startPoint();
-	
+
 	if (b_currentVertical)
 	{
 		pivot.setY( previousStart.y() );
@@ -1902,22 +1905,22 @@ void ManualConnectorDraw::updateConnectorEnds()
 		pivot.setX( previousStart.x() );
 		m_currentCon->setPoints( pivot.x(), pivot.y(), m_currentPos.x(), pivot.y() );
 	}
-	
+
 	m_previousCon->setPoints( previousStart.x(), previousStart.y(), pivot.x(), pivot.y() );
 }
 
 
-QPointList ManualConnectorDraw::pointList()
+QList<QPoint> ManualConnectorDraw::pointList()
 {
-	QPointList list;
+	QList<QPoint> list;
 	list.append(m_initialPos);
-	
+
 	const QList<KtlQCanvasLine*>::iterator end = m_connectorLines.end();
 	for ( QList<KtlQCanvasLine*>::iterator it = m_connectorLines.begin(); it != end; ++it )
 	{
 		list.append( (*it)->endPoint() );
 	}
-	
+
 	return list;
 }
 //END class ManualConnectorDraw
@@ -1930,4 +1933,4 @@ ManipulatorInfo::ManipulatorInfo()
 //END class ManipulatorInfo
 
 
-#include "canvasmanipulator.moc"
+#include "moc_canvasmanipulator.cpp"

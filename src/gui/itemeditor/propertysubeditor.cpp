@@ -77,4 +77,4 @@ PropertySubEditor::~PropertySubEditor()
 }
 
 
-#include "propertysubeditor.moc"
+#include "moc_propertysubeditor.cpp"

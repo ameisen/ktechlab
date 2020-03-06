@@ -29,26 +29,19 @@
 
 #include <ktlconfig.h>
 
-
-LanguageManager * LanguageManager::m_pSelf = 0l;
-
-
-LanguageManager * LanguageManager::self( KateMDI::ToolView * parent )
-{
-	if (!m_pSelf)
-	{
-		assert(parent);
-		m_pSelf = new LanguageManager( parent );
-	}
-	return m_pSelf;
+LanguageManager * LanguageManager::self(KateMDI::ToolView *parent) {
+	static LanguageManager * const selfPtr = new LanguageManager(parent);
+	return selfPtr;
 }
 
 
 LanguageManager::LanguageManager( KateMDI::ToolView * parent )
 	: QObject( KTechlab::self() )
 {
+	assert(parent);
+
 	m_logView = new LogView( parent, "LanguageManager LogView");
-	
+
 	m_logView->setWhatsThis( i18n("These messages show the output of language-related functionality such as compiling and assembling.<br><br>For error messages, clicking on the line will automatically open up the file at the position of the error.") );
 	connect( m_logView, SIGNAL(paraClicked(const QString&, MessageInfo )), this, SLOT(slotParaClicked(const QString&, MessageInfo )) );
 	reset();
@@ -66,21 +59,21 @@ void LanguageManager::reset()
 }
 
 
-ProcessChain * LanguageManager::compile( ProcessOptions options )
+ProcessChain * LanguageManager::compile(const ProcessOptions &options)
 {
-	if ( KTLConfig::raiseMessagesLog() )
+	if (KTLConfig::raiseMessagesLog())
 		KTechlab::self()->showToolView( KTechlab::self()->toolView( toolViewIdentifier() ) );
-	
-	return new ProcessChain( options );
+
+	return { new ProcessChain(options) };
 }
 
 
-ProcessListChain * LanguageManager::compile( ProcessOptionsList pol )
+ProcessListChain * LanguageManager::compile(const ProcessOptionsList &pol)
 {
-	if ( KTLConfig::raiseMessagesLog() )
+	if (KTLConfig::raiseMessagesLog())
 		KTechlab::self()->showToolView( KTechlab::self()->toolView( toolViewIdentifier() ) );
-	
-	return new ProcessListChain( pol );
+
+	return { new ProcessListChain(pol) };
 }
 
 
@@ -103,4 +96,4 @@ void LanguageManager::slotParaClicked( const QString& message, MessageInfo messa
 	DocManager::self()->gotoTextLine( messageInfo.fileURL(), messageInfo.fileLine() );
 }
 
-#include "languagemanager.moc"
+#include "moc_languagemanager.cpp"

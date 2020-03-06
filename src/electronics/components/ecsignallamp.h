@@ -19,15 +19,15 @@ class Resistance;
 @short Signal Lamp - glows when current flows
 @author David Saxton
 */
-class ECSignalLamp : public Component
+class ECSignalLamp final : public Component
 {
 public:
 	ECSignalLamp( ICNDocument *icnDocument, bool newItem, const char *id = 0);
 	~ECSignalLamp() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void stepNonLogic() override;
 	bool doesStepNonLogic() const override { return true; }
 

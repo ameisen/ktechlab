@@ -510,4 +510,4 @@ void ContextHelp::openURL( const KUrl & url /*, const KParts::OpenUrlArguments &
 
 }
 
-#include "contexthelp.moc"
+#include "moc_contexthelp.cpp"

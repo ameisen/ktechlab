@@ -62,10 +62,10 @@ int ProbePositioner::probePosition( ProbeData *probeData ) const
 {
 	if (!probeData)
 		return -1;
-	
+
 	int spacing = probeOutputHeight();
 	int probeNum = Oscilloscope::self()->probeNumber(probeData->id());
-	
+
 	return int( probeArrowHeight/2 + spacing*( probeNum + probeData->drawPosition() ) );
 }
 
@@ -74,21 +74,21 @@ void ProbePositioner::setProbePosition( ProbeData *probeData, int position )
 {
 	if (!probeData)
 		return;
-	
+
 	int height = int( Oscilloscope::self()->oscilloscopeView->height() - probeArrowHeight );
 	int numProbes = Oscilloscope::self()->numberOfProbes();
 	int spacing = height / numProbes;
 	int probeNum = Oscilloscope::self()->probeNumber(probeData->id());
-	
+
 	int minPos = int(probeArrowHeight/2);
 	int maxPos = int(Oscilloscope::self()->oscilloscopeView->height() - (probeArrowHeight/2)) - 1;
 	if ( position < minPos )
 		position = minPos;
 	else if ( position > maxPos )
 		position = maxPos;
-	
+
 	probeData->setDrawPosition( float(position - probeArrowHeight/2)/float(spacing) - probeNum );
-	
+
 	forceRepaint();
 	Oscilloscope::self()->oscilloscopeView->updateView();
 }
@@ -97,7 +97,7 @@ void ProbePositioner::setProbePosition( ProbeData *probeData, int position )
 ProbeData* ProbePositioner::probeAtPosition( const QPoint &pos )
 {
 	int relativeArrowHeight = int( probeArrowHeight * ( 1. - float(pos.x()/probeArrowWidth) ) );
-	
+
 	const ProbeDataMap::const_iterator end = m_probeDataMap.end();
 	for ( ProbeDataMap::const_iterator it = m_probeDataMap.begin(); it != end; ++it )
 	{
@@ -127,11 +127,11 @@ void ProbePositioner::slotProbeDataUnregistered( int id )
 {
 	m_probeDataMap.remove(id);
 	// We "set" the position of each probe to force it into proper bounds
-	
+
 	const ProbeDataMap::const_iterator end = m_probeDataMap.end();
 	for ( ProbeDataMap::const_iterator it = m_probeDataMap.begin(); it != end; ++it )
 		setProbePosition( it.value(), probePosition( it.value() ) );
-	
+
 	forceRepaint();
 }
 
@@ -144,7 +144,7 @@ void ProbePositioner::resizeEvent( QResizeEvent *e )
 	forceRepaint();
 }
 
-		
+
 void ProbePositioner::mousePressEvent( QMouseEvent * e )
 {
 	p_draggedProbe = probeAtPosition(e->pos());
@@ -172,7 +172,7 @@ void ProbePositioner::mouseMoveEvent( QMouseEvent * e )
 		return;
 	}
 	e->accept();
-	
+
 	setProbePosition( p_draggedProbe, e->pos().y() - m_probePosOffset );
 	forceRepaint();
 }
@@ -181,7 +181,7 @@ void ProbePositioner::mouseMoveEvent( QMouseEvent * e )
 void ProbePositioner::paintEvent( QPaintEvent *e )
 {
 	QRect r = e->rect();
-	
+
 	if (b_needRedraw)
 	{
         if (!m_pixmap) {
@@ -198,24 +198,24 @@ void ProbePositioner::paintEvent( QPaintEvent *e )
         }
 
 		p.setClipRegion(e->region());
-		
+
 		const ProbeDataMap::const_iterator end = m_probeDataMap.end();
 		for ( ProbeDataMap::const_iterator it = m_probeDataMap.begin(); it != end; ++it )
 		{
 			ProbeData *probeData = it.value();
 			p.setBrush( probeData->color() );
 			int currentPos = probePosition(probeData);
-			
+
 			QPolygon pa(3);
 			pa[0] = QPoint( 0, int(currentPos-(probeArrowHeight/2)) );
 			pa[1] = QPoint( int(probeArrowWidth), currentPos );
 			pa[2] = QPoint( 0, int(currentPos+(probeArrowHeight/2)) );
-			
+
 			p.drawPolygon(pa);
 		}
 		b_needRedraw = false;
 	}
-	
+
 	//bitBlt( this, r.x(), r.y(), m_pixmap, r.x(), r.y(), r.width(), r.height() ); // 2018.12.07
     QPainter p;
     const bool paintStarted = p.begin(this);
@@ -226,4 +226,4 @@ void ProbePositioner::paintEvent( QPaintEvent *e )
 }
 
 
-#include "probepositioner.moc"
+#include "moc_probepositioner.cpp"

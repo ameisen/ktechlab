@@ -1,22 +1,9 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
-#ifndef OPTIMIZER_H
-#define OPTIMIZER_H
+#pragma once
 
 #include "instruction.h"
 
-
 /// Used for debugging; returns the uchar as a binary string (e.g. 01101010).
 QString binary( uchar val );
-
 
 /**
 @author David Saxton
@@ -28,7 +15,7 @@ class Optimizer
 		~Optimizer();
 
 		void optimize( Code * code );
-		
+
 	protected:
 		/**
 		 * Repeatedly generates links and states for the instructions and
@@ -80,8 +67,6 @@ class Optimizer
 		 * @param bitMask only look at the given bits of the register
 		 */
 		bool canRemove( Instruction * ins, const Register & reg, uchar bitMask = 0xff );
-		
+
 		Code * m_pCode;
 };
-
-#endif

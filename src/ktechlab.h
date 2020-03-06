@@ -60,7 +60,7 @@ class KTechlab : public KateMDI::MainWindow
 	public:
 		KTechlab();
 		~KTechlab() override;
-		
+
 		/**
 		 * @return pointer to the main KTechlab object. This is set to null when
 		 * KTechlab is about to be deleted.
@@ -200,7 +200,7 @@ class KTechlab : public KateMDI::MainWindow
 		 * To quit the appliaction completly, you should use KTechlab::slotFileQuit()
 		 */
 		bool queryClose() override;
-	
+
 	protected slots:
 		void slotViewContainerActivated( int index );
 		void slotUpdateTabWidget();
@@ -253,26 +253,27 @@ class KTechlab : public KateMDI::MainWindow
 		void setupView();
 		void setupTabWidget();
 
-		RecentFilesAction * m_recentFiles;
-		RecentFilesAction * m_recentProjects;
-		KToggleAction * m_statusbarAction;
-		KTabWidget * m_pViewContainerTabWidget;
-		QString m_lastStatusBarMessage;
-		QList<KXMLGUIClient*> m_noRemoveGUIClients;
-		QLabel * m_pToolBarOverlayLabel;
-		bool m_bIsShown; // Set true when show() is called
-		ViewContainerList m_viewContainerList;
-		QTimer * m_pUpdateCaptionsTimer;
 		IntStringMap m_exampleFiles;
+		ViewContainerList m_viewContainerList;
+		QList<KXMLGUIClient*> m_noRemoveGUIClients;
+		QString m_lastStatusBarMessage;
 		QFont m_itemFont;
-
-		static KTechlab * m_pSelf;
 
 		QPointer<ViewContainer> m_pContextMenuContainer;
 		QPointer<ViewContainer> m_pFocusedContainer;
 		QPointer<ViewContainer> m_pContainerDropSource;
 		QPointer<ViewContainer> m_pContainerDropReceived;
+
+		RecentFilesAction *m_recentFiles = nullptr;
+		RecentFilesAction *m_recentProjects = nullptr;
+		KToggleAction *m_statusbarAction = nullptr;
+		KTabWidget *m_pViewContainerTabWidget = nullptr;
+
+		QLabel *m_pToolBarOverlayLabel = nullptr;
+		QTimer *m_pUpdateCaptionsTimer = nullptr;
+		bool m_bIsShown = false; // Set true when show() is called
+
+		static KTechlab *m_pSelf;
 };
 
 #endif // KTECHLAB_H
-

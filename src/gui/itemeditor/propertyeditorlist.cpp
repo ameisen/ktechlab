@@ -92,7 +92,7 @@ PropertyEditorList::PropertyEditorList( QWidget * parent, Property * property, c
 		case Property::Type::Select:
 			isEditable = false;
 			break;
-			
+
 		case Property::Type::String:
 		case Property::Type::Multiline:
 		case Property::Type::RichText:
@@ -101,7 +101,7 @@ PropertyEditorList::PropertyEditorList( QWidget * parent, Property * property, c
 		case Property::Type::VarName:
 			isEditable = true;
 			break;
-				
+
 		case Property::Type::None:
 		case Property::Type::Int:
 		case Property::Type::Raw:
@@ -111,9 +111,9 @@ PropertyEditorList::PropertyEditorList( QWidget * parent, Property * property, c
 			// not handled by this
 			break;
 	}
-	
+
 	m_combo->setEditable( isEditable );
-	
+
 	m_combo->setInsertPolicy(QComboBox::InsertAtBottom);
 	m_combo->setAutoCompletion(true);
 	m_combo->setMinimumSize(10, 0); // to allow the combo to be resized to a small size
@@ -135,7 +135,7 @@ PropertyEditorList::PropertyEditorList( QWidget * parent, Property * property, c
 	comp->insertItems( m_property->allowed() );
 
 	setWidget(box, m_combo->lineEdit());
-	
+
 	connect( m_combo, SIGNAL(activated( const QString & )), this, SLOT(valueChanged( const QString & )) );
 	connect( m_property, SIGNAL(valueChanged( const QString& )), m_combo, SLOT(setCurrentItem( const QString & )) );
 }
@@ -156,4 +156,4 @@ void PropertyEditorList::valueChanged( const QString & text )
 //END class PropertyEditorList
 
 
-#include "propertyeditorlist.moc"
+#include "moc_propertyeditorlist.cpp"

@@ -57,28 +57,28 @@ void MetaInfo::load( KConfigGroup* conf )
 }
 
 
-OutputMethodInfo::Method::Type MetaInfo::toMethod( const QString & id )
+OutputMethodInfo::Method MetaInfo::toMethod( const QString & id )
 {
 	if ( id == "SaveAndLoad" )
 		return OutputMethodInfo::Method::SaveAndLoad;
-	
+
 	else if ( id == "SaveAndForget" )
 		return OutputMethodInfo::Method::SaveAndForget;
-	
+
 	return OutputMethodInfo::Method::Direct;
 }
 
 
-QString MetaInfo::toID( OutputMethodInfo::Method::Type method )
+QString MetaInfo::toID( OutputMethodInfo::Method method )
 {
 	switch (method)
 	{
 		case OutputMethodInfo::Method::SaveAndLoad:
 			return "SaveAndLoad";
-			
+
 		case OutputMethodInfo::Method::SaveAndForget:
 			return "SaveAndForget";
-			
+
 		case OutputMethodInfo::Method::Direct:
 		default:
 			return "Direct";
@@ -108,7 +108,7 @@ void FileMetaInfo::grabMetaInfo( const KUrl & url, TextDocument * textDocument )
 {
 	if (!textDocument)
 		return;
-	
+
 	m_metaInfoMap[url].setBookmarks( textDocument->bookmarkList() );
 	m_metaInfoMap[url].setBreakpoints( textDocument->breakpointList() );
 }
@@ -118,7 +118,7 @@ void FileMetaInfo::initializeFromMetaInfo( const KUrl & url, TextDocument * text
 {
 	if (!textDocument)
 		return;
-	
+
 	textDocument->setBookmarks(m_metaInfoMap[url].bookmarks());
 	textDocument->setBreakpoints(m_metaInfoMap[url].breakpoints());
 }
@@ -128,7 +128,7 @@ void FileMetaInfo::grabMetaInfo( const KUrl & url, TextView * textView )
 {
 	if (!textView)
 		return;
-	
+
 	m_metaInfoMap[url].setCursorLine( textView->currentLine() );
 	m_metaInfoMap[url].setCursorColumn( textView->currentColumn() );
 }
@@ -138,7 +138,7 @@ void FileMetaInfo::initializeFromMetaInfo( const KUrl & url, TextView * textView
 {
 	if (!textView)
 		return;
-	
+
 	textView->setCursorPosition( m_metaInfoMap[url].cursorLine(), m_metaInfoMap[url].cursorColumn() );
 }
 
@@ -147,7 +147,7 @@ void FileMetaInfo::grabMetaInfo( const KUrl & url, OutputMethodDlg * dlg )
 {
 	if (!dlg)
 		return;
-	
+
 	m_metaInfoMap[url].setOutputMethodInfo( dlg->info() );
 }
 
@@ -156,13 +156,13 @@ void FileMetaInfo::initializeFromMetaInfo( const KUrl & url, OutputMethodDlg * d
 {
 	if ( !dlg || url.isEmpty() || !m_metaInfoMap.contains(url) )
 		return;
-	
-	OutputMethodInfo::Method::Type method = m_metaInfoMap[url].outputMethodInfo().method();
+
+	OutputMethodInfo::Method method = m_metaInfoMap[url].outputMethodInfo().method();
 	dlg->setMethod(method);
-	
+
 	if ( method != OutputMethodInfo::Method::Direct )
 		dlg->setOutputFile( m_metaInfoMap[url].outputMethodInfo().outputFile() );
-	
+
 	dlg->setPicID( m_metaInfoMap[url].outputMethodInfo().picID() );
 }
 
@@ -174,7 +174,7 @@ void FileMetaInfo::saveAllMetaInfo()
 	{
 		if ( it.value().hasDefaultData() )
 			m_metaInfoConfig->deleteGroup(it.key().prettyUrl());
-		
+
 		else
 		{
 			KConfigGroup grUrl = m_metaInfoConfig->group( it.key().prettyUrl() );
@@ -196,4 +196,4 @@ void FileMetaInfo::loadAllMetaInfo()
 }
 //END class FileMetaInfo
 
-#include "filemetainfo.moc"
+#include "moc_filemetainfo.cpp"

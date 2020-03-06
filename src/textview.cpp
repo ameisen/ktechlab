@@ -478,11 +478,9 @@ void TextView::slotCursorPositionChanged()
 void TextView::slotUpdateMarksInfo()
 {
 #ifndef NO_GPSIM
-	uint l,c ;
+	uint l;
 	KTextEditor::Cursor curs = m_view->cursorPosition(); // &l, &c );
 	l = curs.line();
-    c = curs.column();
-
     KTextEditor::MarkInterface *iface = qobject_cast<KTextEditor::MarkInterface*>( m_view->document() );
 	// if ( m_view->getDoc()->mark(l) & TextDocument::Breakpoint )
     if (iface->mark(l) & TextDocument::Breakpoint)
@@ -513,10 +511,9 @@ void TextView::slotInitDebugActions()
 void TextView::toggleBreakpoint()
 {
 #ifndef NO_GPSIM
-	uint l,c ;
+	uint l;
 	KTextEditor::Cursor curs = m_view->cursorPosition(); // &l, &c );
 	l = curs.line();
-    c = curs.column();
     //const bool isBreakpoint = m_view->getDoc()->mark(l) & TextDocument::Breakpoint;
     KTextEditor::MarkInterface *iface = qobject_cast<KTextEditor::MarkInterface*>(m_view->document());
     if (!iface) return;
@@ -733,4 +730,4 @@ void TextViewEventFilter::slotNeedTextHint(const KTextEditor::Cursor &position, 
 
 
 
-#include "textview.moc"
+#include "moc_textview.cpp"

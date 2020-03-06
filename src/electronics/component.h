@@ -11,10 +11,14 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "pch.hpp"
+
 #include "cnitem.h"
 #include "circuitdocument.h"
 
 #include <qlist.h>
+
+#include "switch.h"
 
 class ICNDocument;
 class CircuitDocument;
@@ -38,7 +42,6 @@ class LogicOut;
 class MOSFET;
 class OpAmp;
 class Resistance;
-class Switch;
 class Transformer;
 class VCCS;
 class VCVS;
@@ -46,11 +49,7 @@ class VoltagePoint;
 class VoltageSignal;
 class VoltageSource;
 
-typedef QList<ECNode*> ECNodeList;
-typedef QList<Element*> ElementList;
-typedef QList<Switch*> SwitchList;
-
-typedef QList< QList<Pin*> > PinListList;
+using PinListList = QList<QPtrList<Pin>>;
 
 /**
 Contains vital information about the elements in the component.
@@ -82,7 +81,7 @@ class Component : public CNItem
 	public:
 		Component( ICNDocument *icnDocument, bool newItem, const QString &id );
 		~Component() override;
-	
+
 		ECNode* createPin( double _x, double _y, int orientation, const QString &name );
 		/**
 		 * Converts the voltage level to a colour - this is used in drawing
@@ -120,7 +119,7 @@ class Component : public CNItem
 		/**
 		 * @return pointer to the CircuitDocument that we're in.
 		 */
-		CircuitDocument *circuitDocument() const { return m_pCircuitDocument; }
+		QPointer<CircuitDocument> circuitDocument() const { return m_pCircuitDocument; }
 		void initElements( const uint stage );
 		void finishedCreation() override;
 		/**
@@ -146,7 +145,7 @@ class Component : public CNItem
 		 * Restores the state of the component from the ItemData struct.
 		 */
 		void restoreFromItemData( const ItemData &itemData ) override;
-	
+
 		BJT *		createBJT( Pin *c, Pin *b, Pin *e, bool isNPN = true );
 		BJT *		createBJT( ECNode *c, ECNode *b, ECNode *e, bool isNPN = true );
 
@@ -233,7 +232,7 @@ class Component : public CNItem
 		/**
 		 * @return the list of switches that this component uses.
 		 */
-		SwitchList switchList() const { return m_switchList; }
+		QPtrList<Switch> switchList() const { return m_switchList; }
 
 	signals:
 		/**
@@ -346,7 +345,7 @@ class Component : public CNItem
 		 * @param it Which pins are inter-dependent needs to be recorded in case
 		 * this information is later needed in rebuildPinInterDependence.
 		 */
-		void setInterDependent( ElementMapList::iterator it, const QList<Pin*> & pins );
+		void setInterDependent( ElementMapList::iterator it, const QPtrList<Pin> & pins );
 		/**
 		 * Sets all pins independent of each other.
 		 */
@@ -355,12 +354,12 @@ class Component : public CNItem
 		 * The given pins will affect the simulation of each other. Therefore, they
 		 * will need to be simulated in the same circuit.
 		 */
-		void setInterCircuitDependent( ElementMapList::iterator it, const QList<Pin*> & pins );
+		void setInterCircuitDependent( ElementMapList::iterator it, const QPtrList<Pin> & pins );
 		/**
 		 * If any of the given pins are ground, then that will affect whether
 		 * any of the other pins can be ground.
 		 */
-		void setInterGroundDependent( ElementMapList::iterator it, const QList<Pin*> & pins );
+		void setInterGroundDependent( ElementMapList::iterator it, const QPtrList<Pin> & pins );
 		/**
 		 * List of ElementMaps; which contain information on the pins associated
 		 * with the element as well as the dependence between the pins for that
@@ -372,11 +371,11 @@ class Component : public CNItem
 		 * The switches used by the component.
 TODO: ammend this comment with a more complete justification for the design decision to put this here.
 		 */
-		SwitchList m_switchList;
+		QPtrList<Switch> m_switchList;
 		/**
 		 * @return an iterator to the element in m_elementMapList
 		 */
-		ElementMapList::iterator handleElement( Element *e, const QList<Pin*> & pins );
+		ElementMapList::iterator handleElement( Element *e, const QPtrList<Pin> & pins );
 };
 
 #endif

@@ -49,52 +49,52 @@ void ScopeScreenView::drawContents(QPainter * p)
 	}
 	const int ticksPerScreen = m_intervalsX * m_ticksPerIntervalX;
 	const double pixelsPerTick = cr.width()/double(ticksPerScreen);
-	const double ticksPerPixel = m_intervalsX * m_ticksPerIntervalX / cr.width();	
+	const double ticksPerPixel = m_intervalsX * m_ticksPerIntervalX / cr.width();
 	//draw the current time
 	int curTimeX = ((Simulator::self()->time() + m_offsetX) % (ticksPerScreen)) * pixelsPerTick;
 	//qDebug() << curTimeX <<endl;
 	p->drawLine(curTimeX, cr.top(), curTimeX, cr.bottom());
-	
+
 	//the following is liberally borrowed from OscilloscopeView::drawFloatingData
 	const FloatingProbeDataMap::iterator end = Oscilloscope::self()->m_floatingProbeDataMap.end();
 	for ( FloatingProbeDataMap::iterator it = Oscilloscope::self()->m_floatingProbeDataMap.begin(); it != end; ++it )
 	{
 		FloatingProbeData * probe = it.value();
 		StoredData<float> * data = &(probe->m_data);
-		
+
 		if ( data->allocatedUpTo() == 0 )
 			continue;
-		
+
 		bool logarithmic = probe->scaling() == FloatingProbeData::Logarithmic;
 		double lowerAbsValue = probe->lowerAbsValue();
 		double sf = ((cr.height()/Oscilloscope::self()->numberOfProbes())/2) / (logarithmic ? log(probe->upperAbsValue()/lowerAbsValue) : probe->upperAbsValue());
-		
+
 		const int midHeight = Oscilloscope::self()->probePositioner->probePosition(probe);
-		//const int midHeight = cr.top() + cr.height()/2;		
+		//const int midHeight = cr.top() + cr.height()/2;
 		//const llong timeOffset = Oscilloscope::self()->scrollTime();
 		const llong timeOffset = Simulator::self()->time() - (FADESPEED * m_intervalsX * m_ticksPerIntervalX);
-		
+
 		// Draw the horizontal line indicating the midpoint of our output
 		p->setPen( QColor( 228, 228, 228 ) );
 		p->drawLine( 0, midHeight, width(), midHeight );
-		
+
 		// Set the pen colour according to the colour the user has selected for the probe
 		p->setPen( probe->color() );
-		
-		llong at = probe->findPos(timeOffset); 
+
+		llong at = probe->findPos(timeOffset);
 		const llong maxAt = probe->insertPos();
 		llong prevTime = probe->toTime(at);
-		
+
 		double v = data->dataAt((at>0)?at:0);
 		int prevY = int(midHeight - (logarithmic ? ( (v>0) ? log(v/lowerAbsValue) : -log(-v/lowerAbsValue) ) : v) * sf);
 		int prevX = (int((prevTime - timeOffset)*pixelsPerTick) + curTimeX) % cr.width();
-		
+
 		while ( at < maxAt-1 )
 		{
 			at++;
-			
+
 			ullong nextTime = probe->toTime(at);
-			
+
 			double v = data->dataAt((at>0)?at:0);
 			int nextY = int(midHeight - (logarithmic ? ( (v>0) ? log(v/lowerAbsValue) : -log(-v/lowerAbsValue) ) : v) * sf);
 			int nextX = (int((nextTime - timeOffset)*pixelsPerTick) + curTimeX) % cr.width();
@@ -104,21 +104,21 @@ void ScopeScreenView::drawContents(QPainter * p)
 			}
 			//qDebug() <<at<<" "<<nextX<<" "<<nextY<<" "<<nextTime<<endl;
 			p->drawLine( prevX, prevY, nextX, nextY );
-			
+
 			prevTime = nextTime;
 			prevX = nextX;
 			prevY = nextY;
-			
+
 			//if ( nextX > width() )
 			//break;
 		};
-		
+
 		// If we could not draw right to the end; it is because we exceeded
 		// maxAt
 		//if ( prevX < curTimeX )
 		//	p->drawLine( prevX, prevY, curTimeX, prevY );
 	}
-	
+
 	//and this was liberally borrowed from OscilloscopeView::DrawLogicData
 	{
 	const LogicProbeDataMap::iterator end = Oscilloscope::self()->m_logicProbeDataMap.end();
@@ -132,28 +132,28 @@ void ScopeScreenView::drawContents(QPainter * p)
 		// between pixels ( = deltaAt / totalDeltaAt )
 		llong deltaAt = 1;
 		int totalDeltaAt = 1;
-		
+
 		LogicProbeData * probe = it.value();
 		StoredData<LogicDataPoint> * data = &(probe->m_data);
-		
+
 		if ( data->allocatedUpTo() == 0 )
 			continue;
-		
+
 		const int midHeight = Oscilloscope::self()->probePositioner->probePosition(probe);
 		const llong timeOffset = Simulator::self()->time() - (FADESPEED * m_intervalsX * m_ticksPerIntervalX);//Oscilloscope::self()->scrollTime();
-		
+
 		const int halfOutputHeight = ((cr.height()/Oscilloscope::self()->numberOfProbes())/2);
-		
+
 		// Draw the horizontal line indicating the midpoint of our output
 		p->setPen( QColor( 228, 228, 228 ) );
 		p->drawLine( 0, midHeight, width(), midHeight );
-		
+
 		// Set the pen colour according to the colour the user has selected for the probe
 		p->setPen( probe->color() );
-		
+
 		// The smallest time step that will display in our oscilloscope
 		const int minTimeStep = ticksPerPixel;//int(LOGIC_UPDATE_RATE/pixelsPerSecond);
-		
+
 		llong at = probe->findPos(timeOffset);
 		const llong maxAt = probe->insertPos();
 		llong prevTime = data->dataAt(at).time;
@@ -165,14 +165,14 @@ void ScopeScreenView::drawContents(QPainter * p)
 			// Search for the next pos which will show up at our zoom level
 			llong previousAt = at;
 			llong dAt = deltaAt / totalDeltaAt;
-			
+
 			while ( (dAt > 1) && (at < maxAt) && ( (llong(data->dataAt(at).time) - prevTime) != minTimeStep ) )
 			{
 				// Search forwards until we overshoot
 				while ( at < maxAt && ( llong(data->dataAt(at).time) - prevTime ) < minTimeStep )
 					at += dAt;
 				dAt /= 2;
-				
+
 				// Search backwards until we undershoot
 				while ( (at < maxAt) && ( llong(data->dataAt(at).time) - prevTime ) > minTimeStep )
 				{
@@ -182,37 +182,37 @@ void ScopeScreenView::drawContents(QPainter * p)
 				}
 				dAt /= 2;
 			}
-			
+
 			// Possibly increment the value of at found by one (or more if this is the first go)
 			while ( (previousAt == at) || ((at < maxAt) && ( llong(data->dataAt(at).time) - prevTime ) < minTimeStep) )
 				at++;
-			
+
 			if ( at >= maxAt )
 				break;
-			
+
 			// Update the average values
 			deltaAt += at - previousAt;
 			totalDeltaAt++;
-			
+
 			bool nextHigh = data->dataAt(at).value;
 			if ( nextHigh == prevHigh )
 				continue;
 			llong nextTime = data->dataAt(at).time;
 			int nextX = (int((nextTime - timeOffset)*pixelsPerTick) + curTimeX) % cr.width();
 			int nextY = midHeight + int(nextHigh ? -halfOutputHeight : +halfOutputHeight);
-			
+
 			p->drawLine( prevX, prevY, nextX, prevY );
 			p->drawLine( nextX, prevY, nextX, nextY );
-			
+
 			prevHigh = nextHigh;
 			prevTime = nextTime;
 			prevX = nextX;
 			prevY = nextY;
-			
+
 			if ( nextX > width() )
 				break;
 		};
-		
+
 		// If we could not draw right to the end; it is because we exceeded
 		// maxAt
 		//if ( prevX < width() )
@@ -244,36 +244,35 @@ void ScopeScreenView::updateViewTimeout( )
 void ScopeScreenView::drawBackground( QPainter & p )
 {
 	QRect cr = contentsRect();
-	
+
 	for(int i =1; i < m_intervalsX; i++)
 	{
 		int x = cr.left() + cr.width()*i/m_intervalsX;
 		p.drawLine(x, cr.top(), x, cr.bottom());
 	}
-	
+
 	///\todo REMOVE THIS NOTICE
- 		
+
 	p.drawText(cr.left(), cr.top(), "NOT YET IMPLEMENTED");
-	
+
 }
 
 void ScopeScreenView::drawMidLine( QPainter & p, ProbeData * probe )
 {
 	const int midHeight = Oscilloscope::self()->probePositioner->probePosition(probe);
-	
+
 	// Draw the horizontal line indicating the midpoint of our output
 	p.setPen( QColor( 228, 228, 228 ) );
 	p.drawLine( 0, midHeight, width(), midHeight );
 }
 
 
-void ScopeScreenView::drawProbe( QPainter & p, LogicProbeData * probe )
+void ScopeScreenView::drawProbe( [[maybe_unused]] QPainter & p, [[maybe_unused]] LogicProbeData * probe )
 {
 }
 
-void ScopeScreenView::drawProbe( QPainter & p, FloatingProbeData * probe )
+void ScopeScreenView::drawProbe( [[maybe_unused]] QPainter & p, [[maybe_unused]] FloatingProbeData * probe )
 {
 }
 
-#include "scopescreenview.moc"
-
+#include "moc_scopescreenview.cpp"

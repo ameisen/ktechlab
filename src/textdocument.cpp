@@ -450,23 +450,23 @@ void TextDocument::convertToAssembly()
 {
 	QString filePath;
 	bool showPICSelect = false;
-	ProcessOptions::ProcessPath::MediaType toType;
+	ProcessOptions::MediaType toType;
 
 	if ( m_guessedCodeType == TextDocument::ct_microbe )
 	{
-		toType = ProcessOptions::ProcessPath::AssemblyAbsolute;
+		toType = ProcessOptions::MediaType::AssemblyAbsolute;
 		filePath = outputFilePath(".microbe");
 	}
 
 	else if ( m_guessedCodeType == TextDocument::ct_hex )
 	{
-		toType = ProcessOptions::ProcessPath::Disassembly;
+		toType = ProcessOptions::MediaType::Disassembly;
 		filePath = outputFilePath(".hex");
 	}
 
 	else if ( m_guessedCodeType == TextDocument::ct_c )
 	{
-		toType = ProcessOptions::ProcessPath::AssemblyRelocatable;
+		toType = ProcessOptions::MediaType::AssemblyRelocatable;
 		filePath = outputFilePath(".c");
 		showPICSelect = true;
 	}
@@ -491,7 +491,7 @@ void TextDocument::convertToAssembly()
 	ProcessOptions o( dlg.info() );
 	o.setTextOutputTarget( m_pLastTextOutputTarget, this, SLOT(setLastTextOutputTarget( TextDocument* )) );
 	o.setInputFiles(QStringList( filePath) );
-	o.setProcessPath( ProcessOptions::ProcessPath::path( ProcessOptions::guessMediaType(filePath), toType ) );
+	o.setProcessPath( ProcessOptions::path( ProcessOptions::guessMediaType(filePath), toType ) );
 	LanguageManager::self()->compile(o);
 }
 
@@ -535,7 +535,7 @@ void TextDocument::convertToHex()
 	ProcessOptions o( dlg.info() );
 	o.setTextOutputTarget( m_pLastTextOutputTarget, this, SLOT(setLastTextOutputTarget( TextDocument* )) );
 	o.setInputFiles(QStringList(filePath));
-	o.setProcessPath( ProcessOptions::ProcessPath::path( ProcessOptions::guessMediaType(filePath), ProcessOptions::ProcessPath::Program ) );
+	o.setProcessPath( ProcessOptions::path( ProcessOptions::guessMediaType(filePath), ProcessOptions::MediaType::Program ) );
 	LanguageManager::self()->compile(o);
 }
 
@@ -589,7 +589,7 @@ void TextDocument::convertToPIC()
 	ProcessOptions o;
 	dlg->initOptions( & o );
 	o.setInputFiles( QStringList(filePath ));
-	o.setProcessPath( ProcessOptions::ProcessPath::path( ProcessOptions::guessMediaType(filePath), ProcessOptions::ProcessPath::Pic ) );
+	o.setProcessPath( ProcessOptions::path( ProcessOptions::guessMediaType(filePath), ProcessOptions::MediaType::Pic ) );
 	LanguageManager::self()->compile( o );
 
 	dlg->deleteLater();
@@ -1253,4 +1253,4 @@ const QPixmap* TextDocument::executionPointPixmap()
 		return &pixmap;
 }
 
-#include "textdocument.moc"
+#include "moc_textdocument.cpp"

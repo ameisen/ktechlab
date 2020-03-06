@@ -1,7 +1,7 @@
 //
 // C++ Implementation: electronicconnector
 //
-// Description: 
+// Description:
 //
 //
 // Author: David Saxton, Alan Grimes, Zoltan Padrah <zoltan.padrah@gmail.com>, (C) 2008
@@ -19,7 +19,7 @@ ElectronicConnector::ElectronicConnector(ECNode* startNode, ECNode* endNode, ICN
 {
 	m_startEcNode = startNode;
 	m_endEcNode = endNode;
-	
+
 	if( startNode && endNode ) {
 		connect(startNode, SIGNAL(numPinsChanged(unsigned)), this, SLOT(syncWiresWithNodes()));
 		connect(endNode, SIGNAL(numPinsChanged(unsigned)), this, SLOT(syncWiresWithNodes()));
@@ -37,7 +37,7 @@ void ElectronicConnector::syncWiresWithNodes() {
 
 	ECNode * startEcNode = m_startEcNode;
 	ECNode * endEcNode = m_endEcNode;
-	
+
 	if (!startEcNode || !endEcNode) return;
 
 	// FIXME more dynamic_cast to avoid using type() member
@@ -84,4 +84,4 @@ void ElectronicConnector::syncWiresWithNodes() {
 	emit numWiresChanged(newNumWires);
 }
 
-#include "electronicconnector.moc"
+#include "moc_electronicconnector.cpp"

@@ -19,24 +19,24 @@
 "Container" component for subcircuits
 @author David Saxton
 */
-class ECSubcircuit : public Component
+class ECSubcircuit final : public Component
 {
 Q_OBJECT
 public:
 	ECSubcircuit( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECSubcircuit() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 
 	/**
 	 * Create numExtCon nodes, deleting any old ones
 	 */
-	void setNumExtCon( unsigned numExtCon );
+	void setNumExtCon( int numExtCon );
 	/**
 	 * Give the connecting node at position numId the given name
 	 */
-	void setExtConName( unsigned numId, const QString & name );
+	void setExtConName( int numId, const QString & name );
 	/**
 	 * Called from SubcircuitData once the subcircuit has been fully attached
 	 */
@@ -44,7 +44,7 @@ public:
 
 public slots:
 	void removeItem() override;
-	
+
 signals:
 	/**
 	 * Emitted when the current subcircuit is deleted

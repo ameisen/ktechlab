@@ -79,7 +79,7 @@ void PinSettings::setState( PinSettings::pin_state state )
 MicroSettings::MicroSettings( MicroInfo * microInfo )
 {
 	_microInfo = microInfo;
-	
+
 	QStringList portNames = _microInfo->package()->portNames();
 	const QStringList::iterator portNamesEnd = portNames.end();
 	for ( QStringList::iterator it = portNames.begin(); it != portNamesEnd; ++it )
@@ -91,7 +91,7 @@ MicroSettings::MicroSettings( MicroInfo * microInfo )
 		const int numPins = pinIDs.size();
 		for ( int i=0; i<numPins; i++ )
 		{
-			PinSettings *pinSettings = new PinSettings( PinSettings::pt_input, PinSettings::ps_off, pinIDs[i], *it ); 
+			PinSettings *pinSettings = new PinSettings( PinSettings::pt_input, PinSettings::ps_off, pinIDs[i], *it );
 			m_pinSettingsList.append(pinSettings);
 			portPins.append(pinSettings);
 		}
@@ -136,10 +136,10 @@ PinSettings* MicroSettings::pinWithID( const QString &id )
 int MicroSettings::portState( const QString &port )
 {
 	if ( microInfo()->package()->portNames().indexOf(port) == -1 ) return -1;
-	
+
 	int pinPower = 1;
 	int num = 0;
-	
+
 	const PinSettingsList::iterator pinListEnd = m_pinSettingsList.end();
 	for ( PinSettingsList::iterator it = m_pinSettingsList.begin(); it != pinListEnd; ++it )
 	{
@@ -150,17 +150,17 @@ int MicroSettings::portState( const QString &port )
 			pinPower *= 2;
 		}
 	}
-	
+
 	return num;
 }
 
 int MicroSettings::portType( const QString &port )
 {
 	if ( microInfo()->package()->portNames().indexOf(port) == -1 ) return -1;
-	
+
 	int pinPower = 1;
 	int num = 0;
-	
+
 	const PinSettingsList::iterator pinListEnd = m_pinSettingsList.end();
 	for ( PinSettingsList::iterator it = m_pinSettingsList.begin(); it != pinListEnd; ++it )
 	{
@@ -170,7 +170,7 @@ int MicroSettings::portType( const QString &port )
 			pinPower *= 2;
 		}
 	}
-	
+
 	return num;
 }
 
@@ -178,7 +178,7 @@ void MicroSettings::setPortState( const QString &port, int state )
 {
 	PortList::iterator plit = m_ports.find(port);
 	if ( plit == m_ports.end() ) return;
-	
+
 	const PinSettingsList::iterator plitEnd = plit.value().end();
 	for ( PinSettingsList::iterator it = plit.value().begin(); it != plitEnd; ++it )
 	{
@@ -193,7 +193,7 @@ void MicroSettings::setPortType( const QString &port, int type )
 {
 	PortList::iterator plit = m_ports.find(port);
 	if ( plit == m_ports.end() ) return;
-	
+
 	const PinSettingsList::iterator plitEnd = plit.value().end();
 	for ( PinSettingsList::iterator it = plit.value().begin(); it != plitEnd; ++it )
 	{
@@ -208,21 +208,21 @@ MicroData MicroSettings::microData() const
 	MicroData data;
 	data.id = microInfo()->id();
 	data.pinMappings = pinMappings();
-	
+
 	const PinSettingsList::const_iterator pinListEnd = m_pinSettingsList.end();
 	for ( PinSettingsList::const_iterator it = m_pinSettingsList.begin(); it != pinListEnd; ++it )
 	{
 		data.pinMap[(*it)->id()].type = (*it)->type();
 		data.pinMap[(*it)->id()].state= (*it)->state();
 	}
-	
+
 	const VariableMap::const_iterator variableMapEnd = m_variableMap.end();
 	for ( VariableMap::const_iterator it = m_variableMap.begin(); it != variableMapEnd; ++it )
 	{
 		if ( it.value().permanent )
 			data.variableMap[it.key()] = it.value().valueAsString();
-	} 
-	
+	}
+
 	return data;
 }
 
@@ -230,7 +230,7 @@ MicroData MicroSettings::microData() const
 void MicroSettings::restoreFromMicroData( const MicroData &microData )
 {
 	setPinMappings( microData.pinMappings );
-	
+
 	const PinDataMap::const_iterator pinMapEnd = microData.pinMap.end();
 	for ( PinDataMap::const_iterator it = microData.pinMap.begin(); it != pinMapEnd; ++it )
 	{
@@ -241,7 +241,7 @@ void MicroSettings::restoreFromMicroData( const MicroData &microData )
 			pin->setType( it.value().type );
 		}
 	}
-	
+
 	const QStringMap::const_iterator variableMapEnd = microData.variableMap.end();
 	for ( QStringMap::const_iterator it = microData.variableMap.begin(); it != variableMapEnd; ++it )
 	{
@@ -334,4 +334,4 @@ PinMappingMap MicroSettings::pinMappings() const
 }
 //END class MicroSettings
 
-#include "microsettings.moc"
+#include "moc_microsettings.cpp"

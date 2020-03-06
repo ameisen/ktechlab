@@ -1,7 +1,7 @@
 //
 // C++ Implementation: circuiticndocument
 //
-// Description: 
+// Description:
 //
 //
 // Author: Zoltan P <zoltan.padrah@gmail.com>, (C) 2008
@@ -34,19 +34,19 @@ CircuitICNDocument::~CircuitICNDocument()
 	KtlQCanvasItemList all = m_canvas->allItems();
 	const KtlQCanvasItemList::Iterator end = all.end();
 	for ( KtlQCanvasItemList::Iterator it= all.begin(); it != end; ++it )
-		(*it)->setCanvas(0l);
-	
+		(*it)->setCanvas(nullptr);
+
 	// Remove all items from the canvas
 	selectAll();
 	deleteSelection();
-	
+
 	// Delete anything that got through the above couple of lines
-	ConnectorList connectorsToDelete = m_connectorList;
+	QPtrList<Connector> connectorsToDelete = m_connectorList;
 	connectorsToDelete.clear();
-	const ConnectorList::iterator connectorListEnd = connectorsToDelete.end();
-	for ( ConnectorList::iterator it = connectorsToDelete.begin(); it != connectorListEnd; ++it )
+	const QPtrList<Connector>::iterator connectorListEnd = connectorsToDelete.end();
+	for ( QPtrList<Connector>::iterator it = connectorsToDelete.begin(); it != connectorListEnd; ++it )
 		delete *it;
-		
+
 	deleteAllNodes();
 }
 
@@ -83,27 +83,27 @@ bool CircuitICNDocument::canConnect( KtlQCanvasItem *qcanvasItem1, KtlQCanvasIte
 	// * Can't have more than one route between any two nodes
 	// * In all connections between nodes, must have at least one input and one
 	//   output node at the ends.
-	
+
 	// nothing special in a circuit; we can connect almost anything
 	return ICNDocument::canConnect(qcanvasItem1, qcanvasItem2);
 }
 
 
-Connector * CircuitICNDocument::createConnector( Node *node, Connector *con, const QPoint &pos2, QPointList *pointList )
+Connector * CircuitICNDocument::createConnector( Node *node, Connector *con, const QPoint &pos2, QList<QPoint> *pointList )
 {
 	if(!canConnect( node, con ) ) return 0;
-	
+
 	// FIXME dynamic_cast used, fix it in Connector class
-	
+
 	ECNode *conStartNode = dynamic_cast<ECNode *> (con->startNode() );
 	ECNode *conEndNode   = dynamic_cast<ECNode *> (con->endNode() );
 	ECNode *ecNode       = dynamic_cast<ECNode *> (node );
-	
+
 	const bool usedManual = con->usesManualPoints();
-	
+
 	ECNode *newNode = new JunctionNode(this, 0, pos2);
 
-	QPointList autoPoints;
+	QList<QPoint> autoPoints;
 	if (!pointList) {
 		addAllItemConnectorPoints();
 		ConRouter cr(this);
@@ -111,8 +111,8 @@ Connector * CircuitICNDocument::createConnector( Node *node, Connector *con, con
 		autoPoints = cr.pointList(false);
 		pointList = &autoPoints;
 	}
-	
-	QList<QPointList> oldConPoints = con->splitConnectorPoints(pos2);
+
+	QList<QList<QPoint>> oldConPoints = con->splitConnectorPoints(pos2);
 	con->hide();
 
 	// The actual new connector
@@ -147,71 +147,71 @@ Connector * CircuitICNDocument::createConnector( Node *node, Connector *con, con
 }
 
 
-Connector *CircuitICNDocument::createConnector(Connector *con1, Connector *con2, const QPoint &pos1, const QPoint &pos2, QPointList *pointList )
+Connector *CircuitICNDocument::createConnector(Connector *con1, Connector *con2, const QPoint &pos1, const QPoint &pos2, QList<QPoint> *pointList )
 {
 	if ( !canConnect( con1, con2 ) ) return 0;
-	
+
 	const bool con1UsedManual = con1->usesManualPoints();
 	const bool con2UsedManual = con2->usesManualPoints();
-	
-	QList<QPointList> oldCon1Points = con1->splitConnectorPoints(pos1);
-	QList<QPointList> oldCon2Points = con2->splitConnectorPoints(pos2);
-	
+
+	QList<QList<QPoint>> oldCon1Points = con1->splitConnectorPoints(pos1);
+	QList<QList<QPoint>> oldCon2Points = con2->splitConnectorPoints(pos2);
+
 	ECNode *node1a = dynamic_cast<ECNode*> ( con1->startNode() );
 	ECNode *node1b = dynamic_cast<ECNode*> ( con1->endNode(  ) );
-	
+
 	ECNode *node2a = dynamic_cast<ECNode*> ( con2->startNode() );
 	ECNode *node2b = dynamic_cast<ECNode*> ( con2->endNode(  ) );
-	
+
 	if ( !node1a || !node1b || !node2a || !node2b ) return 0;
-	
-	con1->hide();	
+
+	con1->hide();
 	con2->hide();
 
 	// from this point forward, we are dealing with a circuit document -> all nodes are electronic
-	
+
 	ECNode *newNode1 = new JunctionNode( this, 0, pos1 );
 	ECNode *newNode2 = new JunctionNode( this, 0, pos2 );
-	
+
 	Connector *con1a = newNode1->createConnector(node1a);
 	node1a->addConnector(con1a);
 
 	Connector *con1b = newNode1->createConnector(node1b);
 	node1b->addConnector(con1b);
-	
+
 	Connector *newCon = newNode1->createConnector(newNode2);
 	newNode2->addConnector(newCon);
-	
+
 	Connector *con2a = node2a->createConnector(newNode2);
 	newNode2->addConnector(con2a);
 
 	Connector *con2b = node2b->createConnector(newNode2);
 	newNode2->addConnector(con2b);
-	
+
 	if(!con1a || !con1b || !con2a || !con2b ) {
 		// This should never happen, as the canConnect function should strictly
 		// determine whether the connectors could be created before hand.
 		qWarning() << Q_FUNC_INFO << "Not all the connectors were created, this should never happen" << endl;
-		
+
 		if(con1a) con1a->removeConnector();
 		if(con1b) con1b->removeConnector();
 		if(con2a) con2a->removeConnector();
 		if(con2b) con2b->removeConnector();
-		
+
 		newNode1->removeNode();
 		newNode2->removeNode();
-		
+
 		flushDeleteList();
 		return 0;
 	}
-	
+
 	con1a->setRoutePoints(oldCon1Points.at(0), con1UsedManual );
 	con1b->setRoutePoints(oldCon1Points.at(1), con1UsedManual );
-	
+
 	con2a->setRoutePoints(oldCon2Points.at(0), con2UsedManual );
 	con2b->setRoutePoints(oldCon2Points.at(1), con2UsedManual );
-	
-	QPointList autoPoints;
+
+	QList<QPoint> autoPoints;
 
 	if (!pointList) {
 		addAllItemConnectorPoints();
@@ -231,11 +231,11 @@ Connector *CircuitICNDocument::createConnector(Connector *con1, Connector *con2,
 	con1b->updateDrawList();
 	con2a->updateDrawList();
 	con2b->updateDrawList();
-	
+
 	// Now it's safe to remove the connectors
 	con1->removeConnector();
 	con2->removeConnector();
-	
+
 	flushDeleteList();
 
 	deleteNodeGroup(node1a);
@@ -247,41 +247,41 @@ Connector *CircuitICNDocument::createConnector(Connector *con1, Connector *con2,
 
 	ng->addNode( newNode2, true );
 	ng->init();
-	
+
 	return newCon;
 }
 
 
-Connector *CircuitICNDocument::createConnector( const QString &startNodeId, const QString &endNodeId, QPointList *pointList )
+Connector *CircuitICNDocument::createConnector( const QString &startNodeId, const QString &endNodeId, QList<QPoint> *pointList )
 {
 	ECNode *startNode = getEcNodeWithID(startNodeId);
 	ECNode *endNode = getEcNodeWithID(endNodeId);
-	
+
 	if ( !startNode || !endNode ) {
 		qDebug() << "Either/both the connector start node and end node could not be found" << endl;
-		return 0L;
+		return nullptr;
 	}
-	
-	if ( !canConnect( startNode, endNode ) ) return 0l;
-	
+
+	if ( !canConnect( startNode, endNode ) ) return nullptr;
+
 	Connector *connector = endNode->createConnector(startNode);
 	if (!connector) {
 		qCritical() << Q_FUNC_INFO << "End node did not create the connector" << endl;
-		return 0l;
+		return nullptr;
 	}
 
 	startNode->addConnector(connector);
 	flushDeleteList(); // Delete any connectors that might have been removed by the nodes
-	
+
 	// Set the route to the manual created one if the user created such a route
 	if(pointList) connector->setRoutePoints(*pointList,true);
-	
+
 	// FIXME WTF is going on here? Redundant/meaningless code?
-//	ConnectorList connectorList;
+//	QPtrList<Connector> connectorList;
 //	connectorList.append(connector);
-	
+
 	setModified(true);
-	
+
 	requestRerouteInvalidatedConnectors();
 	return connector;
 }
@@ -291,14 +291,14 @@ Node *CircuitICNDocument::nodeWithID( const QString &id )
 {
 	if ( m_ecNodeList.contains( id ) )
 		return m_ecNodeList[id];
-	else	return 0;
+	return nullptr;
 }
 
 ECNode *CircuitICNDocument::getEcNodeWithID( const QString &id )
 {
 	if ( m_ecNodeList.contains( id ) )
 		return m_ecNodeList[id];
-	else	return 0;
+	return nullptr;
 }
 
 void CircuitICNDocument::slotAssignNodeGroups()
@@ -406,11 +406,11 @@ void CircuitICNDocument::unregisterUID( const QString & uid )
 	ICNDocument::unregisterUID( uid );
 }
 
-/* this method smells a little funny */ 
-NodeList CircuitICNDocument::nodeList() const
+/* this method smells a little funny */
+QPtrList<Node> CircuitICNDocument::nodeList() const
 {
-	NodeList l;
-	
+	QPtrList<Node> l;
+
 	ECNodeMap::const_iterator end = m_ecNodeList.end();
 	for ( ECNodeMap::const_iterator it = m_ecNodeList.begin(); it != end; ++it )
 		l << it.value();
@@ -442,7 +442,7 @@ bool CircuitICNDocument::joinConnectors( ECNode *node )
 	Connector *con1, *con2;
 	ECNode *startNode = NULL;
     ECNode *endNode = NULL;
-	QPointList conPoints;
+	QList<QPoint> conPoints;
 
 	con1 = node->connectorList().at(0).data();
 	con2 = node->connectorList().at(1).data();
@@ -460,7 +460,7 @@ bool CircuitICNDocument::joinConnectors( ECNode *node )
 	else	endNode = dynamic_cast<ECNode*> ( con2->startNode() );
 
 	conPoints = con1->connectorPoints(false) + con2->connectorPoints(false);
-	
+
 	if( !startNode || !endNode ) return false;
 
 	Connector *newCon = endNode->createConnector(startNode);
@@ -478,10 +478,9 @@ bool CircuitICNDocument::joinConnectors( ECNode *node )
 	node->removeNode();
 	con1->removeConnector();
 	con2->removeConnector();
-	
+
 	return true;
 }
 
 
-#include "circuiticndocument.moc"
-
+#include "moc_circuiticndocument.cpp"

@@ -374,8 +374,8 @@ void FlowContainer::updateContainedVisibility()
 	if (m_ext_out)
 		m_ext_out->setVisible( isVisible() );
 
-	const ItemList::iterator cEnd = m_children.end();
-	for ( ItemList::iterator it = m_children.begin(); it != cEnd; ++it )
+	const QPtrList<Item>::iterator cEnd = m_children.end();
+	for ( QPtrList<Item>::iterator it = m_children.begin(); it != cEnd; ++it )
 	{
 		if (*it)
 			(*it)->setVisible( isVisible() && b_expanded );
@@ -383,11 +383,11 @@ void FlowContainer::updateContainedVisibility()
 
 	m_rectangularOverlay->setVisible( isVisible() && b_expanded );
 
-	NodeGroupList hidableNodeGroups;
+	QPtrList<NodeGroup> hidableNodeGroups;
 	p_icnDocument->getTranslatable( children(true) += GuardedItem(this), 0, 0, &hidableNodeGroups );
 
-	NodeGroupList::iterator hngEnd = hidableNodeGroups.end();
-	for ( NodeGroupList::iterator it = hidableNodeGroups.begin(); it != hngEnd; ++it )
+	QPtrList<NodeGroup>::iterator hngEnd = hidableNodeGroups.end();
+	for ( QPtrList<NodeGroup>::iterator it = hidableNodeGroups.begin(); it != hngEnd; ++it )
 		(*it)->setVisible(b_expanded);
 }
 
@@ -404,4 +404,4 @@ void FlowContainer::setVisible( bool yes )
 	updateContainedVisibility();
 }
 
-#include "flowcontainer.moc"
+#include "moc_flowcontainer.cpp"

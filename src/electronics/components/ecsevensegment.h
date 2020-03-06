@@ -20,19 +20,19 @@ class ECNode;
 @short Seven segment display component
 @author David Saxton
 */
-class ECSevenSegment : public Component
+class ECSevenSegment final : public Component
 {
 public:
 	ECSevenSegment( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECSevenSegment() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void stepNonLogic() override;
 	bool doesStepNonLogic() const override { return true; }
 	void dataChanged() override;
-	
+
 private:
 	void drawShape( QPainter &p ) override;
 

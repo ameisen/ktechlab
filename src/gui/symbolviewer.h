@@ -34,7 +34,7 @@ class SymbolViewer : public QWidget
 {
 	Q_OBJECT
 	public:
-		static SymbolViewer * self( KateMDI::ToolView * parent = 0l );
+		static SymbolViewer * self( KateMDI::ToolView * parent = nullptr );
 		static QString toolViewIdentifier() { return "SymbolViewer"; }
 		~SymbolViewer();
 
@@ -91,6 +91,7 @@ class SymbolViewerItem : public QObject, public QTableWidgetItem
 	Q_OBJECT
 	public:
 		SymbolViewerItem( SymbolViewer* symbolViewer, const RegisterInfo* registerInfo, int intendedColumn);
+		virtual ~SymbolViewerItem() {}
 
 	public slots:
 		void valueChanged( unsigned newValue );

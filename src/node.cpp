@@ -18,36 +18,33 @@
 
 #include <qpainter.h>
 
-QColor Node::m_selectedColor = QColor( 101, 134, 192 );
+const QColor Node::m_selectedColor = QColor( 101, 134, 192 );
 
-Node::Node( ICNDocument *icnDocument, Node::node_type type, int dir, const QPoint &pos, QString *id )
-	: //QObject(),
-	  KtlQCanvasPolygon( icnDocument ? icnDocument->canvas() : 0 )
+Node::Node( ICNDocument *icnDocument, Node::node_type type, int dir, const QPoint &pos, QString *id ) :
+	KtlQCanvasPolygon( icnDocument ? icnDocument->canvas() : nullptr ),
+	m_type(type),
+	m_dir(dir),
+	p_icnDocument(icnDocument)
 {
-    QString name("Node");
-    if (id) {
-        name.append(QString("-%1").arg(*id));
-    } else {
-        name.append("-Unknown");
-    }
-    setObjectName(name.toLatin1().data());
-    qDebug() << Q_FUNC_INFO << " this=" << this;
-
-	m_length = 8;
-	p_nodeGroup = 0l;
-	p_parentItem = 0L;
-	b_deleted = false;
-	m_dir = dir;
-	m_type = type;
-	p_icnDocument = icnDocument;
-	m_level = 0;
+	QString name("Node");
+	if (id) {
+			name.append(QString("-%1").arg(*id));
+	}
+	else {
+			name.append("-Unknown");
+	}
+	setObjectName(name.toLatin1().data());
+	qDebug() << Q_FUNC_INFO << " this=" << this;
 
 	if ( p_icnDocument ) {
 		if (id) {
 			m_id = *id;
 			if ( !p_icnDocument->registerUID(*id) )
 				qCritical() << Q_FUNC_INFO << "Could not register id " << *id << endl;
-		} else m_id = p_icnDocument->generateUID("node"+QString::number(type));
+		}
+		else {
+			m_id = p_icnDocument->generateUID("node"+QString::number(type));
+		}
 	}
 
 	initPoints();
@@ -88,10 +85,8 @@ void Node::setOrientation( int dir )
 
 void Node::initPoints()
 {
-	int l = m_length;
-
 	// Bounding rectangle, facing right
-	QPolygon pa( QRect( 0, -8, l, 16 ) );
+	QPolygon pa( QRect( 0, -8, m_length, 16 ) );
 
 	QMatrix m;
 	m.rotate( m_dir );
@@ -99,17 +94,18 @@ void Node::initPoints()
 	setPoints(pa);
 }
 
-void Node::setVisible( bool yes )
+void Node::setVisible( bool visible )
 {
-	if ( isVisible() == yes ) return;
+	if (isVisible() == visible) return;
 
-	KtlQCanvasPolygon::setVisible(yes);
+	KtlQCanvasPolygon::setVisible(visible);
 }
 
 void Node::setParentItem( CNItem *parentItem )
 {
 	if (!parentItem) {
 		qCritical() << Q_FUNC_INFO << "no parent item" << endl;
+		setLevel(0);
 		return;
 	}
 
@@ -143,21 +139,22 @@ void Node::moveBy( double dx, double dy )
 
 NodeData Node::nodeData() const
 {
-	NodeData data;
-	data.x = x();
-	data.y = y();
-	return data;
+	return {
+		x(),
+		y()
+	};
 }
 
-void Node::setNodeSelected( bool yes )
+void Node::setNodeSelected( bool selected )
 {
-	if ( isSelected() == yes )
+	if ( isSelected() == selected )
 		return;
 
-	KtlQCanvasItem::setSelected(yes);
+	KtlQCanvasItem::setSelected(selected);
 
-	setPen(   yes ? m_selectedColor : Qt::black );
-	setBrush( yes ? m_selectedColor : Qt::black );
+	const auto color = selected ? m_selectedColor : Qt::black;
+	setPen(color);
+	setBrush(color);
 }
 
 void Node::initPainter( QPainter & p )
@@ -173,4 +170,4 @@ void Node::deinitPainter( QPainter & p )
 	p.translate( -int(x()), -int(y()) );
 }
 
-#include "node.moc"
+#include "moc_node.cpp"

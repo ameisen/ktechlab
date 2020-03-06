@@ -17,19 +17,19 @@
 @short Provides an alternating voltage source
 @author David Saxton
 */
-class ECVoltageSignal : public Component
+class ECVoltageSignal final : public Component
 {
 public:
 	ECVoltageSignal( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECVoltageSignal() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 
 protected:
 	void drawShape( QPainter &p ) override;
 	void dataChanged() override;
-	
+
 	VoltageSignal *m_voltageSignal;
 };
 

@@ -389,8 +389,9 @@ bool Item::mouseDoubleClickEvent( const EventInfo & eventInfo )
 
 void Item::setSelected( bool yes )
 {
-	if ( isSelected() == yes )
+	if (isSelected() == yes)
 		return;
+
 	KtlQCanvasPolygon::setSelected(yes);
 	emit selectionChanged();
 }
@@ -434,14 +435,14 @@ int Item::level() const
 }
 
 
-ItemList Item::children( bool includeGrandChildren ) const
+QPtrList<Item> Item::children( bool includeGrandChildren ) const
 {
 	if (!includeGrandChildren)
 		return m_children;
 
-	ItemList children = m_children;
-	ItemList::const_iterator end = m_children.end();
-	for ( ItemList::const_iterator it = m_children.begin(); it != end; ++it )
+	QPtrList<Item> children = m_children;
+	QPtrList<Item>::const_iterator end = m_children.end();
+	for ( QPtrList<Item>::const_iterator it = m_children.begin(); it != end; ++it )
 	{
 		if (!*it)
 			continue;
@@ -494,8 +495,8 @@ void Item::removeChild( Item *child )
 
 bool Item::contains( Item *item, bool direct ) const
 {
-	const ItemList::const_iterator end = m_children.end();
-	for ( ItemList::const_iterator it = m_children.begin(); it != end; ++it )
+	const QPtrList<Item>::const_iterator end = m_children.end();
+	for ( QPtrList<Item>::const_iterator it = m_children.begin(); it != end; ++it )
 	{
 		if ( (Item*)*it == item || ( !direct && (*it)->contains( item, false ) ) )
 			return true;
@@ -521,8 +522,8 @@ void Item::updateZ( int baseZ )
 
 	setZ(z);
 
-	const ItemList::const_iterator end = m_children.end();
-	for ( ItemList::const_iterator it = m_children.begin(); it != end; ++it )
+	const QPtrList<Item>::const_iterator end = m_children.end();
+	for ( QPtrList<Item>::const_iterator it = m_children.begin(); it != end; ++it )
 	{
 		if (*it)
 			(*it)->updateZ(baseZ+1);
@@ -621,6 +622,10 @@ Variant * Item::createProperty( const QString & id, Variant::Type::Value type )
 	return m_variantData[id];
 }
 
+Variant & Item::createPropertyRef(const QString &id, Variant::TypeValue type) {
+	return *createProperty(id, type);
+}
+
 
 Variant * Item::property( const QString & id ) const
 {
@@ -628,9 +633,14 @@ Variant * Item::property( const QString & id ) const
 		return m_variantData[id];
 
 	qCritical() << Q_FUNC_INFO << " No such property with id " << id << endl;
-	return 0l;
+	// TODO return something saner. Like a sentinel value.
+	return nullptr;
 }
 
+Variant & Item::propertyRef( const QString & id ) const
+{
+	return *property(id);
+}
 
 bool Item::hasProperty( const QString & id ) const
 {
@@ -655,4 +665,4 @@ void Item::propertyChangedInitial()
 }
 //END Data stuff
 
-#include "item.moc"
+#include "moc_item.cpp"

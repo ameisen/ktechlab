@@ -11,6 +11,8 @@
 #ifndef ICNDOCUMENT_H
 #define ICNDOCUMENT_H
 
+#include "pch.hpp"
+
 #include "itemdocument.h"
 
 #include <qmap.h>
@@ -25,9 +27,6 @@ class Node;
 class NodeGroup;
 
 typedef QMap< QString, Node* > NodeMap;
-typedef QList<QPointer<Connector> > ConnectorList;
-typedef QList<QPointer<Node> > NodeList;
-typedef QList<NodeGroup*> NodeGroupList;
 typedef QList<QPointer<NodeGroup> > GuardedNodeGroupList;
 
 /**
@@ -138,20 +137,20 @@ public:
 	bool isValidItem( const QString &itemId ) override = 0;
 
 	// TODO to document
-	virtual ConnectorList getCommonConnectors( const ItemList &list );
-	virtual NodeList getCommonNodes( const ItemList &list );
+	virtual QPtrList<Connector> getCommonConnectors( const QPtrList<Item> &list );
+	virtual QPtrList<Node> getCommonNodes( const QPtrList<Item> &list );
 
 	/**
 	 * returns all the nodes contained by the document. Note that this function is inefficient,
 	 * so don't use it in loops
 	 * @return all the nodes contained by the document
 	 */
-	virtual NodeList nodeList() const = 0;
+	virtual QPtrList<Node> nodeList() const = 0;
 
 	/**
 	 * @return all the connectors from the document
 	 */
-	const ConnectorList & connectorList() const { return m_connectorList; }
+	const QPtrList<Connector> & connectorList() const { return m_connectorList; }
 
 	/**
 	 * @return all the nodegroups from the document
@@ -162,31 +161,31 @@ public:
 	 * @return the selected items from the document
 	 */
 	ItemGroup *selectList() const override;
-	
+
 	/**
 	 * Creates a connector between two nodes, and returns a pointer to it
 	 * and adds the operation to the undo list
 	 */
-	virtual Connector* createConnector( const QString &startNodeId, const QString &endNodeId, QPointList *pointList = 0L ) = 0;
+	virtual Connector* createConnector( const QString &startNodeId, const QString &endNodeId, QList<QPoint> *pointList = 0L ) = 0;
 	/**
 	 * Creates a connector from node1 to node2. If pointList is non-null, then the
 	 * connector will be assigned those points
 	 */
 	//virtual
 
-	Connector *createConnector( Node *node1, Node *node2, QPointList *pointList = 0);
+	Connector *createConnector( Node *node1, Node *node2, QList<QPoint> *pointList = 0);
 	/**
 	 * Splits Connector con into two connectors at point pos2, and creates a connector from the node
 	 * to the intersection of the two new connectors. If pointList is non-null, then the new connector
 	 * from the node will be assigned those points
 	 */
-	virtual Connector * createConnector( Node *node, Connector *con, const QPoint &pos2, QPointList *pointList = 0L ) = 0;
+	virtual Connector * createConnector( Node *node, Connector *con, const QPoint &pos2, QList<QPoint> *pointList = 0L ) = 0;
 	/**
 	 * Splits con1 and con2 into two new connectors each at points pos1 and pos2, and creates a new connector
 	 * between the two points of intersection given by pos1 and pos2. If pointList is non-null, then the new
 	 * connector between the two points will be assigned those points
 	 */
-	virtual Connector * createConnector( Connector *con1, Connector *con2, const QPoint &pos1, const QPoint &pos2, QPointList *pointList = 0L ) = 0;
+	virtual Connector * createConnector( Connector *con1, Connector *con2, const QPoint &pos1, const QPoint &pos2, QList<QPoint> *pointList = 0L ) = 0;
 	/**
 	 * Returns the flowcontainer at the given position at the highest level that
 	 * is not in the current select list, or 0l if there isn't one
@@ -197,7 +196,7 @@ public:
 	 */
 	void setItemResizeCursor( int cornerType );
 
-	void getTranslatable( const ItemList & itemList, ConnectorList * fixedConnectors = 0l, ConnectorList * translatableConnectors = 0l, NodeGroupList * translatableNodeGroups = 0l );
+	void getTranslatable( const QPtrList<Item> & itemList, QPtrList<Connector> * fixedConnectors = 0l, QPtrList<Connector> * translatableConnectors = 0l, QPtrList<NodeGroup> * translatableNodeGroups = 0l );
 
 	/**
 	 * Reroutes invalidated directors. You shouldn't call this function
@@ -250,7 +249,7 @@ protected:
 	 * This only needs to be called when connector(s) need routing.
 	 */
 	void addAllItemConnectorPoints();
-	
+
 	void fillContextMenu( const QPoint &pos ) override;
 	/**
 	 * Creates a new NodeGroup to control the node, if there does not already
@@ -278,7 +277,7 @@ protected:
 	virtual void selectAllNodes() = 0;
 
 	// this should be overridden in {Flow|Circuit}ICNDocument
-	ConnectorList m_connectorList;
+	QPtrList<Connector> m_connectorList;
 	CNItemGroup *m_selectList; // Selected objects
 
 	// OVERLOADED

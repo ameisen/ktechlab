@@ -21,12 +21,13 @@ class Gpdasm;
 class Gplib;
 class Gplink;
 class KTechlab;
+class Language;
 class Microbe;
 class PicProgrammer;
-class ProcesOptions;
+class ProcessOptions;
 class SDCC;
 
-typedef QList<ProcessOptions> ProcessOptionsList;
+using ProcessOptionsList = QList<ProcessOptions>;
 
 /**
 @author Daniel Clarke
@@ -38,9 +39,9 @@ class ProcessChain : public QObject
 	public:
 		ProcessChain( ProcessOptions options, const char *name = 0l );
 		~ProcessChain() override;
-		
-		void setProcessOptions( ProcessOptions options ) { m_processOptions = options; }
-	
+
+		void setProcessOptions( ProcessOptions options ) { processOptions_ = options; }
+
 	public slots:
 		/**
 		 * Adds the output file to project if requested in the options, and opens
@@ -54,7 +55,7 @@ class ProcessChain : public QObject
 		 * later in setProcessOptions.
 		 */
 		void compile();
-		
+
 	signals:
 		/**
 		 * Emitted when compiling has successfully gone all the way through to the
@@ -81,10 +82,10 @@ class ProcessChain : public QObject
 		Microbe * microbe();
 		PicProgrammer * picProgrammer();
 		SDCC * sdcc();
-		
+
 		int m_errorCount;
-		ProcessOptions m_processOptions;
-	
+		ProcessOptions processOptions_;
+
 	private:
 		FlowCode * m_pFlowCode;
 		Microbe * m_pMicrobe;
@@ -100,10 +101,10 @@ class ProcessChain : public QObject
 class ProcessListChain : public QObject
 {
 	Q_OBJECT
-			
+
 	public:
 		ProcessListChain( ProcessOptionsList pol, const char *name = 0l );
-		
+
 	signals:
 		/**
 		 * Emitted if successful
@@ -113,11 +114,11 @@ class ProcessListChain : public QObject
 		 * Emitted if not successful
 		 */
 		void failed();
-		
+
 	protected slots:
 		void slotProcessChainSuccessful();
 		void slotProcessChainFailed();
-		
+
 	protected:
 		ProcessOptionsList m_processOptionsList;
 };

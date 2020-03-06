@@ -680,7 +680,7 @@ void ItemLibrary::loadItemDescriptions()
 //     KLocale * locale = KLocale::global();
 // 	m_itemDescriptions[ locale->defaultLanguage() ];
 // 	m_itemDescriptions[ locale->language() ];
-	
+
 	m_itemDescriptions[ QLocale::languageToString(QLocale().language()) ];
 
 	const QStringList languages = descriptionLanguages();
@@ -731,5 +731,4 @@ void ItemLibrary::loadItemDescriptions()
 	}
 }
 
-#include "itemlibrary.moc"
-
+#include "moc_itemlibrary.cpp"

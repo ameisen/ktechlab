@@ -32,12 +32,12 @@ is taken from. On most schematics, the connections are numbered and labeled.
 
 const double maxVoltageOut = 50.0;
 
-class VoltageRegulator : public Component
+class VoltageRegulator final : public Component
 {
 	public:
 		VoltageRegulator( ICNDocument* icnDocument, bool newItem, const QString& id = 0L );
 		~VoltageRegulator() override;
-		
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
 

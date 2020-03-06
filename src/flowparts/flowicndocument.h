@@ -44,18 +44,18 @@ public:
 	 * to the intersection of the two new connectors. If pointList is non-null, then the new connector
 	 * from the node will be assigned those points
 	 */
-	Connector *createConnector( Node *node, Connector *con, const QPoint &pos2, QPointList *pointList = 0) override;
+	Connector *createConnector( Node *node, Connector *con, const QPoint &pos2, QList<QPoint> *pointList = 0) override;
 	/**
 	 * Splits con1 and con2 into two new connectors each at points pos1 and pos2, and creates a new connector
 	 * between the two points of intersection given by pos1 and pos2. If pointList is non-null, then the new
 	 * connector between the two points will be assigned those points
 	 */
-	Connector *createConnector( Connector *con1, Connector *con2, const QPoint &pos1, const QPoint &pos2, QPointList *pointList = 0L ) override;
+	Connector *createConnector( Connector *con1, Connector *con2, const QPoint &pos1, const QPoint &pos2, QList<QPoint> *pointList = 0L ) override;
 	/**
 	 * Creates a connector between two nodes, and returns a pointer to it
 	 * and adds the operation to the undo list
 	 */
-	Connector *createConnector( const QString &startNodeId, const QString &endNodeId, QPointList *pointList = 0) override;
+	Connector *createConnector( const QString &startNodeId, const QString &endNodeId, QList<QPoint> *pointList = 0) override;
 
 
 	/**
@@ -68,7 +68,7 @@ public:
 	 * Assigns the orphan nodes into NodeGroups. You shouldn't call this
 	 * function directly - instead use ItemDocument::requestEvent.
 	 */
-	void slotAssignNodeGroups() override;	
+	void slotAssignNodeGroups() override;
 
 	/**
 	 * Permantly deletes all items that have been added to the delete list with
@@ -83,7 +83,7 @@ public:
 	 */
 	bool registerItem( KtlQCanvasItem *qcanvasItem ) override;
 	void unregisterUID( const QString & uid ) override;
-	NodeList nodeList() const override;
+	QPtrList<Node> nodeList() const override;
 protected:
 
 	/**
@@ -96,7 +96,7 @@ protected:
 	/**
 	 *        Selects all nodes on the document. Should be overridden.
 	 */
-	void selectAllNodes() override;	
+	void selectAllNodes() override;
 
 	/**
 	 *        deletes all the elements containde in the nodeList. Should be overridden.

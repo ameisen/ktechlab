@@ -62,17 +62,17 @@ private:
 @short Boolean logic input
 @author David Saxton
 */
-class ECLogicInput : public Component
+class ECLogicInput final : public Component
 {
 public:
 	ECLogicInput( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECLogicInput() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
-	
+
 	void buttonStateChanged( const QString &id, bool state ) override;
-	
+
 private:
 	void dataChanged() override;
 	void drawShape( QPainter &p ) override;
@@ -90,14 +90,14 @@ class ECLogicOutput : public CallbackClass, public Component
 	public:
 		ECLogicOutput( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~ECLogicOutput() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
 
 	protected:
 		void inStateChanged( bool newState );
 		void drawShape( QPainter &p ) override;
-		
+
 		unsigned long long m_lastDrawTime;
 		unsigned long long m_lastSwitchTime;
 		unsigned long long m_highTime;

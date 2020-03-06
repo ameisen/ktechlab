@@ -21,17 +21,17 @@ class QSlider;
 @author William Hillerby
 */
 
-class VariableCapacitor : public Component
+class VariableCapacitor final : public Component
 {
 	public:
     	VariableCapacitor( ICNDocument* icnDocument, bool newItem, const QString& id = 0L );
     	~VariableCapacitor() override;
-		
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-	
+
 		void sliderValueChanged( const QString &id, int newValue ) override;
-		
+
 	private:
 		void dataChanged() override;
 		void drawShape( QPainter &p ) override;

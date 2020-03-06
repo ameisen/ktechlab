@@ -187,6 +187,7 @@ void ItemSelector::writeOpenStates()
             qWarning() << Q_FUNC_INFO << " too many items " << itemsFound.size()
                 << " for category '" << *it << "'";
         }
+		if (itemsFound.isEmpty()) continue;
 		QTreeWidgetItem *item = itemsFound.first() /* findItem( *it, 0 ) */ ;
 		if (item) {
 			configGroup.writeEntry( *it+"IsOpen", item->isExpanded() /* isOpen() */ );
@@ -221,6 +222,7 @@ QMimeData * ItemSelector::mimeData(const QList<QTreeWidgetItem *> items) const {
     if (items.size() > 1) {
         qWarning() << Q_FUNC_INFO << "expected 1 item, got " << items.size();
     }
+		if (items.isEmpty()) return nullptr;
     QTreeWidgetItem *theItem = items.first();
     if (!theItem) {
         qWarning() << Q_FUNC_INFO << "unexpected null item";
@@ -503,4 +505,4 @@ MechanicsSelector::MechanicsSelector( QWidget *parent )
 //END class MechanicsSelector
 
 
-#include "itemselector.moc"
+#include "moc_itemselector.cpp"

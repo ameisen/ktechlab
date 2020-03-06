@@ -106,7 +106,7 @@ void QSVChildRec::hideOrShow(KtlQ3ScrollView* sv, QWidget* clipped_viewport)
 }
 
 // QT_BEGIN_INCLUDE_NAMESPACE
-// #include "ktlq3scrollview.moc"
+// #include "ktlq3scrollview.cpp"
 // QT_END_INCLUDE_NAMESPACE
 
 class KtlQ3ScrollViewData {
@@ -689,7 +689,7 @@ bool KtlQ3ScrollView::isVerticalSliderPressed()
 /*!
     \internal
 */
-void KtlQ3ScrollView::styleChange(QStyle& old)
+void KtlQ3ScrollView::styleChange([[maybe_unused]] QStyle& old)
 {
     //QWidget::styleChange(old); // 2019.04.14
     updateScrollBars();
@@ -699,7 +699,7 @@ void KtlQ3ScrollView::styleChange(QStyle& old)
 /*!
     \internal
 */
-void KtlQ3ScrollView::fontChange(const QFont &old)
+void KtlQ3ScrollView::fontChange([[maybe_unused]] const QFont &old)
 {
     //QWidget::fontChange(old); // 2019.04.14
     updateScrollBars();
@@ -1119,7 +1119,7 @@ void KtlQ3ScrollView::resize(const QSize& s)
 /*!
     \reimp
 */
-void KtlQ3ScrollView::resizeEvent(QResizeEvent* event)
+void KtlQ3ScrollView::resizeEvent([[maybe_unused]] QResizeEvent* event)
 {
     //KtlQ3Frame::resizeEvent();
 
@@ -2856,4 +2856,4 @@ QSize KtlQ3ScrollView::cachedSizeHint() const
 
 // QT_END_NAMESPACE
 
-// #include "ktlq3scrollview.moc"
+// #include "ktlq3scrollview.cpp"

@@ -1,33 +1,8 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke <daniel.jc@gmail.com>        *
- *                      2005 by David Saxton <david@bluehaze.org>          *
- *									   *
- *   24-04-2007                                                            *
- *   Modified to add pic 16f877,16f627 and 16f628 			   *
- *   by george john george@space-kerala.org 				   *
- *   supported by SPACE www.space-kerala.org		 		   *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
 #include "instruction.h"
 #include "optimizer.h"
 #include "pic14.h"
-#include <qdebug.h>
-#include <qstringlist.h>
+#include <QDebug>
+#include <QStringList>
 #include <cassert>
 #include <iostream>
 using namespace std;
@@ -3613,4 +3588,3 @@ QString Instr_raw::code() const
 	return m_raw;
 }
 //END Microbe (non-assembly) Operations
-

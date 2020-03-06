@@ -454,4 +454,4 @@ RichTextEditorDlg::RichTextEditorDlg( QWidget * parent, const QString & caption 
 }
 //END class RichTextEditorDlg
 
-#include "richtexteditor.moc"
+#include "moc_richtexteditor.cpp"

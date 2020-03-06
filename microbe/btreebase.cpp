@@ -1,52 +1,22 @@
-/***************************************************************************
- *   Copyright (C) 2004-2005 by Daniel Clarke                              *
- *   daniel.jc@gmail.com                                               *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
-
 #include "btreebase.h"
 #include "traverser.h"
 #include "parser.h"
 #include "pic14.h"
 
-BTreeBase::BTreeBase()
-{
-	m_root = 0L;
+BTreeBase::~BTreeBase() {
+	if (m_root) {
+		m_root->deleteChildren();
+		delete m_root;
+	}
 }
 
-void BTreeBase::deleteTree()
-{
-	if(m_root) m_root->deleteChildren();
-	delete m_root;
-	m_root = 0L;
-}
-
-BTreeBase::~BTreeBase()
-{
-	deleteTree();
-}
- 
 
 void BTreeBase::addNode(BTreeNode *parent, BTreeNode *node, bool left)
 {
 	// Debugging lines, remove when expression parsing has been completed.
 	//if(!parent) cerr<<"Null parent pointer!\n";
 	//if(!node) cerr<<"Null node pointer!\n");
-	
+
 	if(left) parent->setLeft(node);
 	else parent->setRight(node);
 }
@@ -54,7 +24,7 @@ void BTreeBase::addNode(BTreeNode *parent, BTreeNode *node, bool left)
 void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 {
 	Traverser t(root);
-	
+
 	t.descendLeftwardToTerminal();
 	bool done = false;
 	while(!done)
@@ -64,7 +34,7 @@ void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 	{
 		if( t.oppositeNode()->hasChildren() ) pruneTree(t.oppositeNode());
 	}
-	
+
 	t.moveToParent();
 	if( !t.current()->hasChildren() )
 	{
@@ -77,13 +47,13 @@ void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 	BTreeNode *r = t.current()->right();
 	BTreeNode *n = 0;
 	BTreeNode *z = 0;
-	
+
 
 	// Deal with situations where there are two constants so we want
 	// to evaluate at compile time
 	if( (l->type() == number && r->type() == number) ) // && !(t.current()==root&&conditionalRoot) )
 	{
-		if(t.current()->childOp() == Expression::division && r->value() == "0" ) 
+		if(t.current()->childOp() == Expression::division && r->value() == "0" )
 		{
 			t.current()->setChildOp(Expression::divbyzero);
 			return;
@@ -94,7 +64,7 @@ void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 		t.current()->setType(number);
 		t.current()->setValue(value);
 	}
-	
+
 	// Addition and subtraction
 	else if(t.current()->childOp() == Expression::addition || t.current()->childOp() == Expression::subtraction)
 	{
@@ -125,7 +95,7 @@ void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 		delete z;
 	}
 	}
-	
+
 	// Multiplication and division
 	else if(t.current()->childOp() == Expression::multiplication || t.current()->childOp() == Expression::division)
 	{
@@ -153,7 +123,7 @@ void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 	}
 	else if( r->value() == "0" )
 	{
-		
+
 		// since we can't call compileError from in this class, we have a special way of handling it:
 		// Leave the children as they are, and set childOp to divbyzero
 		if( t.current()->childOp() == Expression::division )
@@ -182,7 +152,7 @@ void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 		p->setChildOp(Expression::noop);
 		p->setType(number);
 		p->setValue("0");
-		
+
 	}
 	}
 	else if( t.current()->childOp() == Expression::bwand || t.current()->childOp() == Expression::bwor || t.current()->childOp() == Expression::bwxor )
@@ -225,7 +195,7 @@ void BTreeBase::pruneTree(BTreeNode *root, bool /*conditionalRoot*/)
 		p->setValue(value);
 	}
 	}
-	
+
 	if(!t.current()->parent() || t.current() == root) done = true;
 	else
 	{

@@ -24,9 +24,7 @@ class NodeGroup;
 
 class QTimer;
 
-typedef QList<int> IntList;
-typedef QList<NodeGroup*> NodeGroupList;
-typedef QList<QPointer<Node> > NodeList;
+using IntList = QList<int>;
 
 /**
 Controls a group of nodes who are not attached to any CNItems (poor things!)
@@ -37,7 +35,7 @@ class NodeGroup : public QObject
 {
 Q_OBJECT
 public:
-	NodeGroup( ICNDocument *icnDocument, const char *name = 0);
+	NodeGroup( ICNDocument *icnDocument, const char *name = nullptr);
 	~NodeGroup() override;
 	/**
 	 * Adds a node to the group (this checks to make sure that the node is not
@@ -48,15 +46,15 @@ public:
 	/**
 	 * Returns the list of internal nodes
 	 */
-	NodeList internalNodeList() const { return m_nodeList; }
+	const QPtrList<Node> & internalNodeList() const { return m_nodeList; }
 	/**
 	 * Returns the list of external nodes
 	 */
-	NodeList externalNodeList() const { return m_extNodeList; }
+	const QPtrList<Node> & externalNodeList() const { return m_extNodeList; }
 	/**
 	 * Returns the list of connectors
 	 */
-	ConnectorList connectorList() const { return m_conList; }
+	const QPtrList<Connector> & connectorList() const { return m_conList; }
 	/**
 	 * Translates the routes by the given amount
 	 */
@@ -76,7 +74,7 @@ public:
 	 * Sets the visibility of all nodes in the group.
 	 */
 	void setVisible( bool visible );
-	
+
 public slots:
 	/**
 	 * Called when an internal or external node is deleted
@@ -86,8 +84,8 @@ public slots:
 	 * Called when a connector is removed
 	 */
 	void connectorRemoved( Connector *connector );
-	
-	
+
+
 protected:
 	void clearConList();
 	/**
@@ -100,29 +98,29 @@ protected:
 	 * or vertically), or otherwise the closest such pair. The two nodes will be
 	 * returned in n1 and n2.
 	 */
-	void findBestPair( NodeList *list, Node **n1, Node **n2 );
+	void findBestPair( const QPtrList<Node> &list, Node **n1, Node **n2 );
 	/**
 	 * Finds the nodes along the route with the given start and end nodes (which
 	 * will be unique). The end nodes are not included in the returned list.
 	 */
-	NodeList findRoute( Node *startNode, Node *endNode );
-	
-	ConnectorList m_conList;
-	NodeList m_nodeList;
-	NodeList m_extNodeList;
-	ICNDocument *p_icnDocument;
+	QPtrList<Node> findRoute( Node *startNode, Node *endNode );
+
+	QPtrList<Connector> m_conList;
+	QPtrList<Node> m_nodeList;
+	QPtrList<Node> m_extNodeList;
 	QBitArray b_routedMap; // Routes between different nodes
-	bool b_visible;
-	
+	ICNDocument *p_icnDocument;
+	bool b_visible = true;
+
 private:
-	IntList findRoute( IntList used, int currentNode, int endNode, bool *success = 0l );
+	IntList findRoute( IntList used, int currentNode, int endNode, bool *success = nullptr );
 	void resetRoutedMap();
 	/**
 	 * Looks at b_routedMap as well as the connectors coming out of nodes, and
 	 * removes the nodes from the given list that have all of their connectors
 	 * routed.
 	 */
-	void removeRoutedNodes( NodeList *nodes, Node *n1, Node *n2 );
+	void removeRoutedNodes( QPtrList<Node> *nodes, Node *n1, Node *n2 );
 	void addExtNode( Node *node );
 	/**
 	 * Looks at b_mappedRoute to see if there is a completely unrouted set of

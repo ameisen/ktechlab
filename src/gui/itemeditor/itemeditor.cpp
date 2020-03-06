@@ -60,7 +60,7 @@ ItemEditor::ItemEditor( KateMDI::ToolView * parent )
 	m_pNameLabel = new QLabel( /* this, */ "" );
     m_pNameLabel->setBuddy( this );
 	m_pNameLabel->setTextFormat( Qt::RichText );
-	
+
 	QFont font;
 	font.setBold( true );
 	if ( font.pointSize() != 0 )
@@ -69,16 +69,16 @@ ItemEditor::ItemEditor( KateMDI::ToolView * parent )
 	//END Create Name Label
 
 	m_pPropertyEditor = new PropertyEditor(this);
-	m_pPropertyEditor->setWhatsThis(i18n("<p>Shows properties associated with the currently selected item(s).<br/>Select a property to change its value. If multiple items are selected with different values then the property will appear greyed out, use \"Merge Properties\" to make them the same.<br/>Select \"Defaults\" to set all properties to their default values")); 
-	
+	m_pPropertyEditor->setWhatsThis(i18n("<p>Shows properties associated with the currently selected item(s).<br/>Select a property to change its value. If multiple items are selected with different values then the property will appear greyed out, use \"Merge Properties\" to make them the same.<br/>Select \"Defaults\" to set all properties to their default values"));
+
 	m_pComponentModelWidget = new ComponentModelWidget( this );
-	
-	
+
+
 	vlayout->addWidget( m_pNameLabel );
 	vlayout->addWidget( m_pPropertyEditor, 3 );
 	vlayout->addWidget( m_pComponentModelWidget, 5 );
-	
-	
+
+
 	// Orientation widget stuff
 	QHBoxLayout *h2Layout = new QHBoxLayout( /* vlayout , 6 */ );
     vlayout->addLayout(h2Layout);
@@ -88,7 +88,7 @@ ItemEditor::ItemEditor( KateMDI::ToolView * parent )
 	h2Layout->addWidget(m_pOrientationWidget);
 	m_pOrientationWidget->setWhatsThis(i18n("Change the orientation of the selected item by selecting the appropriate button"));
 	h2Layout->addItem( new QSpacerItem( 1, 1 ) );
-	
+
 	slotClear();
 }
 
@@ -121,10 +121,10 @@ void ItemEditor::slotUpdate( ItemGroup * itemGroup )
 		slotClear();
 		return;
 	}
-	
+
 	m_pPropertyEditor->create(itemGroup);
 	updateNameLabel(itemGroup->activeItem());
-	
+
 	m_pOrientationWidget->slotUpdate( dynamic_cast<CNItemGroup *>(itemGroup) );
 }
 
@@ -146,10 +146,10 @@ void ItemEditor::updateNameLabel( Item *item )
 {
 	if (item)
 		m_pNameLabel->setText( item->name() );
-	
+
 	else
 		m_pNameLabel->setText( i18n("No Item Selected") );
 }
 
 
-#include "itemeditor.moc"
+#include "moc_itemeditor.cpp"

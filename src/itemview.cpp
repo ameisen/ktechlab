@@ -128,12 +128,13 @@ ItemView::ItemView( ItemDocument * itemDocument, ViewContainer *viewContainer, u
 	QMenu * m = pa->menu();
 	m->setTitle( i18n("Draw") );
 
-	m->addAction( QIcon::fromTheme( "draw-text" ), i18n("Text"))->setData(DrawPart::da_text );
-	m->addAction( QIcon::fromTheme( "draw-line" ), i18n("Line"))->setData(DrawPart::da_line );
-	m->addAction( QIcon::fromTheme( "draw-arrow"  ), i18n("Arrow"))->setData(DrawPart::da_arrow );
-	m->addAction( QIcon::fromTheme( "draw-ellipse" ), i18n("Ellipse"))->setData(DrawPart::da_ellipse );
-	m->addAction( QIcon::fromTheme( "draw-rectangle" ), i18n("Rectangle"))->setData(DrawPart::da_rectangle );
-	m->addAction( QIcon::fromTheme( "insert-image" ), i18n("Image"))->setData(DrawPart::da_image );
+	// TODO : make DrawAction 'Variant-safe'
+	m->addAction( QIcon::fromTheme( "draw-text" ), i18n("Text"))->setData(int(DrawAction::text));
+	m->addAction( QIcon::fromTheme( "draw-line" ), i18n("Line"))->setData(int(DrawAction::line));
+	m->addAction( QIcon::fromTheme( "draw-arrow"  ), i18n("Arrow"))->setData(int(DrawAction::arrow));
+	m->addAction( QIcon::fromTheme( "draw-ellipse" ), i18n("Ellipse"))->setData(int(DrawAction::ellipse));
+	m->addAction( QIcon::fromTheme( "draw-rectangle" ), i18n("Rectangle"))->setData(int(DrawAction::rectangle));
+	m->addAction( QIcon::fromTheme( "insert-image" ), i18n("Image"))->setData(int(DrawAction::image));
 	connect( m, SIGNAL(triggered(QAction*)), itemDocument, SLOT(slotSetDrawAction(QAction*)) );
 	//END Draw actions
 
@@ -643,7 +644,7 @@ void ItemView::updateStatus()
 				break;
 			case CanvasManipulator::ManualConnector:
 				statusbar = i18n("Right click to cancel the connector");
-				// no break
+				_fallthrough;
 			case CanvasManipulator::AutoConnector:
 				cursor = Qt::CrossCursor;
 				break;
@@ -845,4 +846,4 @@ void CVBEditor::viewportResizeEvent( QResizeEvent * e )
 }
 //END class CVBEditor
 
-#include "itemview.moc"
+#include "moc_itemview.cpp"

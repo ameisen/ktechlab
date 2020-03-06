@@ -1,17 +1,7 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include "instruction.h"
 #include "optimizer.h"
 
-#include <qdebug.h>
+#include <QDebug>
 #include <klocalizedstring.h>
 
 #include <cassert>
@@ -521,4 +511,3 @@ bool Optimizer::canRemove( Instruction * ins, const Register & reg, uchar bitMas
 
 	return true;
 }
-

@@ -1,7 +1,7 @@
 //
 // C++ Implementation: flowicndocument
 //
-// Description: 
+// Description:
 //
 //
 // Author: Zoltan P <zoltan.padrah@gmail.com>, (C) 2008
@@ -35,18 +35,18 @@ FlowICNDocument::~FlowICNDocument()
 	const KtlQCanvasItemList::Iterator end = all.end();
 	for ( KtlQCanvasItemList::Iterator it= all.begin(); it != end; ++it )
 		(*it)->setCanvas(0l);
-	
+
 	// Remove all items from the canvas
 	selectAll();
 	deleteSelection();
-	
+
 	// Delete anything that got through the above couple of lines
-	ConnectorList connectorsToDelete = m_connectorList;
+	QPtrList<Connector> connectorsToDelete = m_connectorList;
 	connectorsToDelete.clear();
-	const ConnectorList::iterator connectorListEnd = connectorsToDelete.end();
-	for ( ConnectorList::iterator it = connectorsToDelete.begin(); it != connectorListEnd; ++it )
+	const QPtrList<Connector>::iterator connectorListEnd = connectorsToDelete.end();
+	for ( QPtrList<Connector>::iterator it = connectorsToDelete.begin(); it != connectorListEnd; ++it )
 		delete *it;
-		
+
 	deleteAllNodes();
 }
 
@@ -55,7 +55,7 @@ void FlowICNDocument::deleteAllNodes() {
 	m_flowNodeList.clear();
 	const FPNodeMap::iterator nodeListEnd = nodesToDelete.end();
 	for ( FPNodeMap::iterator it = nodesToDelete.begin(); it != nodeListEnd; ++it )
-		delete *it;	
+		delete *it;
 }
 
 
@@ -68,22 +68,22 @@ bool FlowICNDocument::canConnect( KtlQCanvasItem *qcanvasItem1, KtlQCanvasItem *
 	// * Can't have more than one route between any two nodes
 	// * In all connections between nodes, must have at least one input and one
 	//   output node at the ends.
-	
+
 	FPNode *startNode = dynamic_cast<FPNode*>(qcanvasItem1);
 	FPNode *endNode = dynamic_cast<FPNode*>(qcanvasItem2);
-	
+
 	if ( (startNode && startNode->numCon( true, false ) > 2) || (endNode && endNode->numCon( true, false ) > 2) )
 		return false;
-	
-	
+
+
 	Connector *startConnector = dynamic_cast<Connector*>(qcanvasItem1);
 	Connector *endConnector = dynamic_cast<Connector*>(qcanvasItem2);
-	
+
 	// Can't have I-junction in flowcode document
 	if ( startConnector && endConnector )
 		return false;
-	
-	
+
+
 	//BEGIN Change connectors to nodes
 	FPNode * startNode1 = 0l;
 	FPNode * startNode2 = 0l;
@@ -91,29 +91,29 @@ bool FlowICNDocument::canConnect( KtlQCanvasItem *qcanvasItem1, KtlQCanvasItem *
 	{
 		startNode1 = dynamic_cast<FPNode*> ( startConnector->startNode() );
 		startNode2 = dynamic_cast<FPNode*> ( startConnector->endNode() );
-		
+
 		if ( !startNode1 || !startNode2 )
 			return false;
 	}
 	else if (!startNode)
 		return false;
-	
+
 	FPNode * endNode1 = 0l;
 	FPNode * endNode2 = 0l;
 	if (endConnector)
 	{
 		endNode1 = dynamic_cast<FPNode*> ( endConnector->startNode() );
 		endNode2 = dynamic_cast<FPNode*> ( endConnector->endNode() );
-		
+
 		if ( !endNode1 || !endNode2 )
 			return false;
 	}
 	else if ( !endNode )
 		return false;
-	
+
 	//END Change connectors to nodes
-	
-	
+
+
 	//BEGIN Check we have appropriate input and output allowance
 	if ( type() == Document::dt_flowcode ) // this is obviouse
 	{
@@ -122,18 +122,18 @@ bool FlowICNDocument::canConnect( KtlQCanvasItem *qcanvasItem1, KtlQCanvasItem *
 			// Can't have I-configuration
 			return false;
 		}
-		
+
 		if ( startNode && endNode )
 		{
 			// Nice and easy straight line to check
-			
+
 			if ( !startNode->acceptInput() && !endNode->acceptInput() )
 				return false;
-	
+
 			if ( !startNode->acceptOutput() && !endNode->acceptOutput() )
 				return false;
 		}
-		
+
 		else
 		{
 			// We're in a T-configuration, we can only make this if the base of
@@ -150,57 +150,57 @@ bool FlowICNDocument::canConnect( KtlQCanvasItem *qcanvasItem1, KtlQCanvasItem *
 }
 
 
-Connector *FlowICNDocument::createConnector( Connector *con1, Connector *con2, const QPoint & /*pos1*/, const QPoint & /*pos2*/, QPointList * /*pointList*/ )
+Connector *FlowICNDocument::createConnector( Connector *con1, Connector *con2, const QPoint & /*pos1*/, const QPoint & /*pos2*/, QList<QPoint> * /*pointList*/ )
 {
 	// FIXME isn't all this dead code?
 	/*
 	if ( !canConnect( con1, con2 ) )
 		return 0l;
-	
-	
+
+
 	const bool con1UsedManual = con1->usesManualPoints();
 	const bool con2UsedManual = con2->usesManualPoints();
-	
-	QList<QPointList> oldCon1Points = con1->splitConnectorPoints(pos1);
-	QList<QPointList> oldCon2Points = con2->splitConnectorPoints(pos2);
-	
-	
+
+	QList<QList<QPoint>> oldCon1Points = con1->splitConnectorPoints(pos1);
+	QList<QList<QPoint>> oldCon2Points = con2->splitConnectorPoints(pos2);
+
+
 	// FIXME dynamic_cast used because Connector doesn't know about FPNode
-	
+
 	FPNode *node1a = dynamic_cast<FPNode*> ( con1->startNode() );
 	FPNode *node1b = dynamic_cast<FPNode*> ( con1->endNode() );
-	
+
 	FPNode *node2a = dynamic_cast<FPNode*> ( con2->startNode() );
 	FPNode *node2b = dynamic_cast<FPNode*> ( con2->endNode() );
-	
+
 	if ( !node1a || !node1b || !node2a || !node2b )
 		return 0l;
 	*/
-	con1->hide();	
+	con1->hide();
 	con2->hide();
-	
+
 	// if ( type() != Document::dt_circuit )
 	return 0;
 }
 
 
-Connector * FlowICNDocument::createConnector( Node *node, Connector *con, const QPoint &pos2, QPointList *pointList )
+Connector * FlowICNDocument::createConnector( Node *node, Connector *con, const QPoint &pos2, QList<QPoint> *pointList )
 {
 	if ( !canConnect( node, con ) )
 		return 0l;
-	
+
 	// FIXME dynamic_cast used, fix it in Connector class
-	
+
 	FPNode *conStartNode = dynamic_cast<FPNode *> ( con->startNode() );
 	FPNode *conEndNode = dynamic_cast<FPNode *> ( con->endNode() );
-	
+
 	FPNode *fpNode = dynamic_cast<FPNode *> ( node );
-	
+
 	const bool usedManual = con->usesManualPoints();
-	
+
 	FPNode *newNode = new JunctionFlowNode( this, 0, pos2 );
-	
-	QPointList autoPoints;
+
+	QList<QPoint> autoPoints;
 	if (!pointList)
 	{
 		addAllItemConnectorPoints();
@@ -209,55 +209,55 @@ Connector * FlowICNDocument::createConnector( Node *node, Connector *con, const 
 		autoPoints = cr.pointList(false);
 		pointList = &autoPoints;
 	}
-	
-	QList<QPointList> oldConPoints = con->splitConnectorPoints(pos2);
+
+	QList<QList<QPoint>> oldConPoints = con->splitConnectorPoints(pos2);
 	con->hide();
-	
+
 	// The actual new connector
 	Connector *new1 = newNode->createInputConnector(node);
 	fpNode->addOutputConnector(new1);
 	new1->setRoutePoints(*pointList,usedManual);
-	
+
 	// The two connectors formed from the original one when split
 	Connector *new2 = newNode->createInputConnector(conStartNode);
 	conStartNode->addOutputConnector(new2);
 	new2->setRoutePoints( oldConPoints.at(0), usedManual );
-	
+
 	Connector *new3 = conEndNode->createInputConnector(newNode);
 	newNode->addOutputConnector(new3);
 	new3->setRoutePoints( oldConPoints.at(1), usedManual );
-	
+
 	// Avoid flicker: tell them to update their draw lists now
 	con->updateConnectorPoints(false);
 	new1->updateDrawList();
 	new2->updateDrawList();
 	new3->updateDrawList();
-	
+
 	// Now it's safe to remove the connector...
 	con->removeConnector();
 	flushDeleteList();
-	
+
 	deleteNodeGroup(conStartNode);
 	deleteNodeGroup(conEndNode);
 	createNodeGroup(newNode)->init();
-	
+
 	return new1;
 }
 
-Connector* FlowICNDocument::createConnector( const QString &startNodeId, const QString &endNodeId, QPointList *pointList )
+Connector* FlowICNDocument::createConnector( const QString &startNodeId, const QString &endNodeId, QList<QPoint> *pointList )
 {
 	FPNode *startNode = getFPnodeWithID(startNodeId);
 	FPNode *endNode = getFPnodeWithID(endNodeId);
-	
+
 	if ( !startNode || !endNode )
 	{
 		qDebug() << "Either/both the connector start node and end node could not be found" << endl;
 		return 0L;
 	}
-	
+
 	if ( !canConnect( startNode, endNode ) )
-		return 0l;	
-	
+		return 0l;
+
 	Connector *connector = endNode->createInputConnector(startNode);
 	if (!connector)
 	{
@@ -266,17 +266,17 @@ Connector* FlowICNDocument::createConnector( const QString &startNodeId, const Q
 	}
 	startNode->addOutputConnector(connector);
 	flushDeleteList(); // Delete any connectors that might have been removed by the nodes
-	
+
 	// Set the route to the manual created one if the user created such a route
 	if (pointList)
 		connector->setRoutePoints(*pointList,true);
-	
+
 	// FIXME WTF is going on here? Redundant/meaningless code?
-	ConnectorList connectorList;
+	QPtrList<Connector> connectorList;
 	connectorList.append(connector);
-	
+
 	setModified(true);
-	
+
 	requestRerouteInvalidatedConnectors();
 	return connector;
 }
@@ -319,7 +319,7 @@ void FlowICNDocument::slotAssignNodeGroups()
 	}
 }
 
-	
+
 void FlowICNDocument::flushDeleteList()
 {
 	// Remove duplicate items in the delete list
@@ -381,7 +381,7 @@ bool FlowICNDocument::registerItem( KtlQCanvasItem *qcanvasItem )
 {
 	if (!qcanvasItem)
 		return false;
-	
+
 	if ( !ItemDocument::registerItem(qcanvasItem) )
 	{
 		if ( FPNode * node = dynamic_cast<FPNode*>(qcanvasItem) )
@@ -400,9 +400,9 @@ bool FlowICNDocument::registerItem( KtlQCanvasItem *qcanvasItem )
 			return false;
 		}
 	}
-	
+
 	requestRerouteInvalidatedConnectors();
-	
+
 	return true;
 }
 
@@ -412,14 +412,14 @@ void FlowICNDocument::unregisterUID( const QString & uid )
 	ICNDocument::unregisterUID( uid );
 }
 
-NodeList FlowICNDocument::nodeList( ) const
+QPtrList<Node> FlowICNDocument::nodeList( ) const
 {
-	NodeList l;
-	
+	QPtrList<Node> l;
+
 	FPNodeMap::const_iterator end = m_flowNodeList.end();
 	for ( FPNodeMap::const_iterator it = m_flowNodeList.begin(); it != end; ++it )
 		l << it.value();
-	
+
 	return l;
 }
 
@@ -437,18 +437,18 @@ bool FlowICNDocument::joinConnectors( FPNode *node )
 	// We don't want to destroy the node if it has a parent
 	if ( node->parentItem() )
 		return false;
-	
+
 	node->removeNullConnectors();
-	
+
 	int conCount = node->getAllConnectors().count();
 	if ( conCount != 2 )
 		return false;
-	
+
 	Connector *con1, *con2;
 	Node *startNode, *endNode;
-	QPointList conPoints;
-	
-	
+	QList<QPoint> conPoints;
+
+
 	if ( node->inputConnectorList().count() == 0 )
 	{
 		// Both connectors emerge from node - output - i.e. node is pure start node
@@ -457,7 +457,7 @@ bool FlowICNDocument::joinConnectors( FPNode *node )
 		if ( con1 == con2 ) {
 			return false;
 		}
-		
+
 		startNode = con1->endNode();
 		endNode = con2->endNode();
 		conPoints = con1->connectorPoints(true) + con2->connectorPoints(false);
@@ -470,7 +470,7 @@ bool FlowICNDocument::joinConnectors( FPNode *node )
 		if ( con1 == con2 ) {
 			return false;
 		}
-		
+
 		startNode = con1->startNode();
 		endNode = con2->endNode();
 		conPoints = con1->connectorPoints(false) + con2->connectorPoints(false);
@@ -483,37 +483,37 @@ bool FlowICNDocument::joinConnectors( FPNode *node )
 		if ( con1 == con2 ) {
 			return false;
 		}
-		
+
 		startNode = con1->startNode();
 		endNode = con2->startNode();
 		conPoints = con1->connectorPoints(false) + con2->connectorPoints(true);
 	}
-	
+
 	if ( !startNode || !endNode )
 		return false;
-	
+
 	// HACK // FIXME // dynamic_cast used
 	FPNode 	*startFpNode, *endFpNode;
 	startFpNode = dynamic_cast<FPNode *> (startNode);
  	endFpNode = dynamic_cast<FPNode *> (endNode);
-	
+
 	Connector *newCon = endFpNode->createInputConnector(startFpNode);
 	if (!newCon)
 		return false;
-	
+
 	startFpNode->addOutputConnector(newCon);
 	newCon->setRoutePoints( conPoints, con1->usesManualPoints() || con2->usesManualPoints() );
-	
+
 	// Avoid flicker: update draw lists now
 	con1->updateConnectorPoints(false);
 	con2->updateConnectorPoints(false);
 	newCon->updateDrawList();
-	
+
 	node->removeNode();
 	con1->removeConnector();
 	con2->removeConnector();
-	
+
 	return true;
 }
 
-#include "flowicndocument.moc"
+#include "moc_flowicndocument.cpp"

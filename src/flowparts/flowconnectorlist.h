@@ -1,7 +1,7 @@
 //
 // C++ Interface: flowconnectorlist
 //
-// Description: 
+// Description:
 //
 //
 // Author: David Saxton, Alan Grimes, Zoltan Padrah <zoltan.padrah@gmail.com>, (C) 2009
@@ -12,16 +12,14 @@
 #ifndef FLOWCONNECTORLIST_H
 #define FLOWCONNECTORLIST_H
 
+#include "pch.hpp"
+
 #include "flowconnector.h"
 
 #include <qlist.h>
 
 class Connector;
 class FlowConnector;
-
-// these typedef's shoud go in a separate header one day
-typedef QList< QPointer<Connector> > ConnectorList;
-
 
 /**
  * @short a list of connector between FlowNodes
@@ -30,32 +28,32 @@ typedef QList< QPointer<Connector> > ConnectorList;
  * This class implements a list of FlowConnector objects; this class fulfills two
  * requirements:
  * 1. it provides type safety for classes related to flowparts
- * 2. can be cast to a generic ConnectorList, to be used in other contexts
- * 
+ * 2. can be cast to a generic QPtrList<Connector>, to be used in other contexts
+ *
  * For QList interface see http://doc.trolltech.com/3.3/qlist.html
  */
 
 /*
 	Notations used in the source code:
 	 O(n) : the method has this complexitiy
-	 assert ? : in that method some assertions could be made, considering 
+	 assert ? : in that method some assertions could be made, considering
 			that the two list should have the same contents
  */
- 
+
 class FlowConnectorList {
-	
+
 public :
-	
-	// cast operator, for casting it to ConnectorList
-	operator ConnectorList() {
+
+	// cast operator, for casting it to QPtrList<Connector>
+	operator QPtrList<Connector>() {
 		return list;
 	}
-	
+
 	// QList's interface
 	typedef QPointer<FlowConnector> T;
-	
+
 #define CAST_POINTER 	(QPointer<Connector>)(Connector *)(FlowConnector *)
-	
+
 	typedef QList<T>::iterator iterator;
 	typedef QList<T>::const_iterator const_iterator;
 	typedef T value_type;
@@ -64,7 +62,7 @@ public :
 	typedef value_type & reference;
 	typedef const value_type & const_reference;
 	typedef size_t size_type;
-	
+
 	FlowConnectorList () : list(), flowList() { }
 
 	FlowConnectorList ( const QList<T> & l ) ; /* : flowList(l) { // O(n)
@@ -96,7 +94,7 @@ public :
 		FlowConnectorList::iterator it, end = flowList.end();
 		for( it = flowList.begin(); it != end; it++)
 			list.append( CAST_POINTER *it);
-	
+
 		return flowList;
 	} */
 
@@ -117,7 +115,7 @@ public :
 	}
 
 	const_iterator begin () const {
-		return flowList.begin(); // ? 
+		return flowList.begin(); // ?
 	}
 
 	const_iterator constBegin () const {
@@ -211,7 +209,7 @@ public :
 	}
 
 	/* void insert ( iterator pos, size_type n, const T & x ) ; */ /* { 	// O(n)
-		list.insert( convertIterator(pos) ,n, CAST_POINTER x); 
+		list.insert( convertIterator(pos) ,n, CAST_POINTER x);
 		flowList.insert(pos,n,x);
 	} */
 
@@ -315,8 +313,8 @@ public :
         int i = flowList.indexOf(x, it - flowList.begin());
         return i == -1 ? flowList.end() : flowList.begin()+i;
 	}
- 
-	const_iterator find ( const_iterator it, const T & x ) const {	// assert ?	
+
+	const_iterator find ( const_iterator it, const T & x ) const {	// assert ?
 		//return flowList.find(it, x); // 2018.11.30
         int i = flowList.indexOf(x, it - flowList.begin());
         return i == -1 ? flowList.end() : flowList.begin()+i;
@@ -340,22 +338,22 @@ public :
 		return flowList += x;
 	} */
 
-private: 
-	ConnectorList list;
+private:
+	QPtrList<Connector> list;
 	QList< T > flowList;
-	
+
 	/**
 	 *    Converts an iterator from FlowConnector list to Connector list. Complexity: O(n) !
 	 * @param orig original iterator from FlowConnector list
 	 * @return iterator converted to Connector list
 	 */
-	ConnectorList::iterator convertIterator(QList< T >::iterator orig){
-		ConnectorList::iterator it2 = list.begin();
+	QPtrList<Connector>::iterator convertIterator(QList< T >::iterator orig){
+		QPtrList<Connector>::iterator it2 = list.begin();
 		for(QList< T >::iterator it = flowList.begin(); it != orig; it++)
 			it2++;
 		return it2;
 	}
-	
+
 };
 
 #endif

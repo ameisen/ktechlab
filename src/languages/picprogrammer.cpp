@@ -361,12 +361,14 @@ bool PicProgrammerSettings::isPredefined( const QString & name ) const
 
 
 //BEGIN class PicProgrammer
-PicProgrammer::PicProgrammer( ProcessChain *processChain )
-	: ExternalLanguage( processChain, "PicProgrammer" )
-{
-	m_successfulMessage = i18n("*** Programming successful ***");
-	m_failedMessage = i18n("*** Programming failed ***");
-}
+PicProgrammer::PicProgrammer(ProcessChain *processChain) :
+	ExternalLanguage(
+		processChain,
+		"PicProgrammer",
+		"*** Programming successful ***",
+		"*** Programming failed ***"
+	)
+{}
 
 
 PicProgrammer::~PicProgrammer()
@@ -374,10 +376,10 @@ PicProgrammer::~PicProgrammer()
 }
 
 
-void PicProgrammer::processInput( ProcessOptions options )
+void PicProgrammer::processInput(const ProcessOptions &options)
 {
 	resetLanguageProcess();
-	m_processOptions = options;
+	processOptions_ = options;
 
 	PicProgrammerSettings settings;
 	//settings.load( kapp->config() );
@@ -388,7 +390,7 @@ void PicProgrammer::processInput( ProcessOptions options )
 	if ( !settings.configNames( true ).contains( program.toLower() ) )
 	{
 		qCritical() << Q_FUNC_INFO << "Invalid program" << endl;
-		finish( false );
+		finish(Result::Failure);
 		return;
 	}
 
@@ -424,44 +426,18 @@ bool PicProgrammer::isWarning( const QString &message ) const
 }
 
 
-ProcessOptions::ProcessPath::Path PicProgrammer::outputPath( ProcessOptions::ProcessPath::Path inputPath ) const
+ProcessOptions::Path PicProgrammer::outputPath( ProcessOptions::Path inputPath ) const
 {
 	switch (inputPath)
 	{
-		case ProcessOptions::ProcessPath::PIC_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Program_PIC:
-			return ProcessOptions::ProcessPath::None;
+		case ProcessOptions::Path::PIC_AssemblyAbsolute:
+		case ProcessOptions::Path::Program_PIC:
+			return ProcessOptions::Path::None;
 
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_PIC:
-		case ProcessOptions::ProcessPath::AssemblyAbsolute_Program:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Library:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Object:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_PIC:
-		case ProcessOptions::ProcessPath::AssemblyRelocatable_Program:
-		case ProcessOptions::ProcessPath::C_AssemblyRelocatable:
-		case ProcessOptions::ProcessPath::C_Library:
-		case ProcessOptions::ProcessPath::C_Object:
-		case ProcessOptions::ProcessPath::C_PIC:
-		case ProcessOptions::ProcessPath::C_Program:
-		case ProcessOptions::ProcessPath::FlowCode_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::FlowCode_Microbe:
-		case ProcessOptions::ProcessPath::FlowCode_PIC:
-		case ProcessOptions::ProcessPath::FlowCode_Program:
-		case ProcessOptions::ProcessPath::Microbe_AssemblyAbsolute:
-		case ProcessOptions::ProcessPath::Microbe_PIC:
-		case ProcessOptions::ProcessPath::Microbe_Program:
-		case ProcessOptions::ProcessPath::Object_Disassembly:
-		case ProcessOptions::ProcessPath::Object_Library:
-		case ProcessOptions::ProcessPath::Object_PIC:
-		case ProcessOptions::ProcessPath::Object_Program:
-		case ProcessOptions::ProcessPath::Program_Disassembly:
-		case ProcessOptions::ProcessPath::Invalid:
-		case ProcessOptions::ProcessPath::None:
-			return ProcessOptions::ProcessPath::Invalid;
+		default:
+			return ProcessOptions::Path::Invalid;
 	}
 
-	return ProcessOptions::ProcessPath::Invalid;
+	return ProcessOptions::Path::Invalid;
 }
 //END class PicProgrammer
-
-

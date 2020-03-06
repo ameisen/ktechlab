@@ -62,6 +62,8 @@ public:
 	 */
 	bool calculateCurrent();
 
+	Component * getComponent() const { return m_pComponent; }
+
 protected slots:
 	/**
 	 * Called from a QTimer timeout - our bouncing period has come to an

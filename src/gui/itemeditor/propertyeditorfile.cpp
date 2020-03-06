@@ -55,7 +55,7 @@ void PropertyEditorFile::selectFile()
         qDebug() << Q_FUNC_INFO << "url is not valid, not setting it";
 		return;
     }
-	
+
 	m_property->setValue( url.path() );
 	ItemInterface::self()->setProperty( m_property );
 }
@@ -83,5 +83,4 @@ bool PropertyEditorFile::eventFilter(QObject* watched, QEvent* e)
 }
 
 
-#include "propertyeditorfile.moc"
-
+#include "moc_propertyeditorfile.cpp"

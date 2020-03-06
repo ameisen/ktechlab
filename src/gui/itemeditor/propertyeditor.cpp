@@ -811,4 +811,4 @@ PropertyEditorItem *PropertyEditor::selectedItem() {
     return itemProp;
 }
 
-#include "propertyeditor.moc"
+#include "moc_propertyeditor.cpp"

@@ -24,7 +24,7 @@ class Demultiplexer : public CallbackClass,  public Component
 public:
 	Demultiplexer( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~Demultiplexer() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 
@@ -33,7 +33,7 @@ protected:
 	/**
 	 * Add / remove pins according to the number of inputs the user has requested
 	 */
-	void initPins( unsigned addressSize );
+	void initPins( int addressSize );
 
 	void inStateChanged( bool newState );
 

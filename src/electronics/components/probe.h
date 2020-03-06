@@ -25,7 +25,7 @@ class Probe : public Component
 	public:
 		Probe( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~Probe() override;
-	
+
 	protected:
 		void dataChanged() override;
 
@@ -41,9 +41,9 @@ class FloatingProbe : public Probe
 	public:
 		FloatingProbe( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~FloatingProbe() override;
-	
+
 		bool doesStepNonLogic() const override { return true; }
-		
+
 	protected:
 		void dataChanged() override;
 		void drawShape( QPainter &p ) override;
@@ -54,15 +54,15 @@ class FloatingProbe : public Probe
 /**
 @author David Saxton
  */
-class VoltageProbe : public FloatingProbe
+class VoltageProbe final : public FloatingProbe
 {
 	public:
 		VoltageProbe( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~VoltageProbe() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-		
+
 		void stepNonLogic() override;
 
 	protected:
@@ -73,15 +73,15 @@ class VoltageProbe : public FloatingProbe
 /**
 @author David Saxton
  */
-class CurrentProbe : public FloatingProbe
+class CurrentProbe final : public FloatingProbe
 {
 	public:
 		CurrentProbe( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 		~CurrentProbe() override;
-	
+
 		static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 		static LibraryItem *libraryItem();
-		
+
 		void stepNonLogic() override;
 
 	protected:
@@ -91,7 +91,7 @@ class CurrentProbe : public FloatingProbe
 /**
 @author David Saxton
  */
-class LogicProbe : public CallbackClass, public Probe
+class LogicProbe final : public CallbackClass, public Probe
 {
 	public:
 		LogicProbe( ICNDocument *icnDocument, bool newItem, const char *id = 0L );

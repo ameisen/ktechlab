@@ -17,12 +17,12 @@
 @short Fixed voltage source
 @author David Saxton
 */
-class ECGround : public Component
+class ECGround final : public Component
 {
 public:
 	ECGround( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
 	~ECGround() override;
-	
+
 	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
 	static LibraryItem *libraryItem();
 
