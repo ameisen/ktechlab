@@ -45,72 +45,72 @@ SerialPortComponent::SerialPortComponent( ICNDocument *icnDocument, bool newItem
 	: Component( icnDocument, newItem, id ? id : "serial_port" )
 {
 	m_name = i18n("Serial Port");
-	
+
 	QPolygon pa( 4 );
 	pa[0] = QPoint( -32, -48 );
 	pa[1] = QPoint( 32, -40 );
 	pa[2] = QPoint( 32, 40 );
 	pa[3] = QPoint( -32, 48 );
-	
+
 	setItemPoints( pa );
-	
+
 	m_pSerialPort = new SerialPort();
-	
+
 	ECNode * pin = 0;
-	
+
 	// Works
 	pin = createPin( -40,  32,   0, "CD" );
 	addDisplayText( "CD", QRect( -28, 24, 28, 16 ), "CD", true, Qt::AlignLeft | Qt::AlignVCenter );
 	m_pCD = createLogicOut( pin, false  );
-	
+
 	// Doesn't work
 // 	pin = createPin( -40,  16,   0, "RD" );
 	addDisplayText( "RD", QRect( -28, 8, 28, 16 ), "RD", true, Qt::AlignLeft | Qt::AlignVCenter );
 // 	m_pRD = createLogicOut( pin, false  );
-	
+
 	// Works
 	pin = createPin( -40,   0,   0, "TD" );
 	addDisplayText( "TD", QRect( -28, -8, 28, 16 ), "TD", true, Qt::AlignLeft | Qt::AlignVCenter );
 	m_pTD = createLogicIn( pin);
 	m_pTD->setCallback( this, (CallbackPtr)(&SerialPortComponent::tdCallback) );
-	
+
 	// Works
 	pin = createPin( -40, -16,   0, "DTR" );
 	addDisplayText( "DTR", QRect( -28, -24, 28, 16 ), "DTR", true, Qt::AlignLeft | Qt::AlignVCenter );
 	m_pDTR = createLogicIn( pin );
 	m_pDTR->setCallback( this, (CallbackPtr)(&SerialPortComponent::dtrCallback) );
-	
+
 	// N/A
 	pin = createPin( -40, -32,   0, "GND" );
 	addDisplayText( "GND", QRect( -28, -40, 28, 16 ), "GND", true, Qt::AlignLeft | Qt::AlignVCenter );
-	pin->pin()->setGroundType( Pin::gt_always );
-	
+	pin->pin()->setGroundType( Pin::GroundType::Always );
+
 	// Doesn't work
 // 	pin = createPin(  40,  24, 180, "DSR" );
 	addDisplayText( "DSR", QRect( 0, 16, 28, 16 ), "DSR", true, Qt::AlignRight | Qt::AlignVCenter );
 // 	m_pDSR = createLogicIn( pin );
 // 	m_pDSR->setCallback( this, (CallbackPtr)(&SerialPortComponent::dsrCallback) );
-	
+
 	// Doesn't work
 // 	pin = createPin(  40,   8, 180, "RTS" );
 	addDisplayText( "RTS", QRect( 0, 0, 28, 16 ), "RTS", true, Qt::AlignRight | Qt::AlignVCenter );
 // 	m_pRTS = createLogicIn( pin );
 // 	m_pRTS->setCallback( this, (CallbackPtr)(&SerialPortComponent::rtsCallback) );
-	
+
 	// Works
 	pin = createPin(  40,  -8, 180, "CTS" );
 	addDisplayText( "CTS", QRect( 0, -16, 28, 16 ), "CTS", true, Qt::AlignRight | Qt::AlignVCenter );
 	m_pCTS = createLogicOut( pin, false  );
-	
+
 	// Works
 	pin = createPin(  40, -24, 180, "RI" );
 	addDisplayText( "RI", QRect( 0, -32, 28, 16 ), "RI", true, Qt::AlignRight | Qt::AlignVCenter );
 	m_pRI = createLogicOut( pin, false  );
-	
+
 	Variant * v = createProperty( "port", Variant::Type::Combo );
 	v->setAllowed( SerialPort::ports( Port::ExistsAndRW ) );
 	v->setCaption( i18n("Port") );
-	
+
 // 	v = createProperty( "baudRate", Variant::Type::Select );
 // 	v->setAllowed( QStringList::split( ",", "B0,B50,B75,B110,B134,B150,B200,B300,B600,B1200,B1800,B2400,B4800,B9600,B19200,B38400" ) );
 // 	v->setCaption( i18n("Baud rate") );
@@ -129,7 +129,7 @@ void SerialPortComponent::dataChanged()
 #if 0
 	QString baudString = dataString("baudRate");
 	unsigned baudRate = 0;
-	
+
 	if ( baudString == "B0" )
 		baudRate = B0;
 	else if ( baudString == "B50" )
@@ -167,7 +167,7 @@ void SerialPortComponent::dataChanged()
 		qCritical() << Q_FUNC_INFO << "Unknown baud rate = \""<<baudString<<"\""<<endl;
 		return;
 	}
-	
+
 	initPort( dataString("port"), baudRate );
 #endif
 
@@ -182,7 +182,7 @@ void SerialPortComponent::initPort( const QString & port, unsigned baudRate )
 		m_pSerialPort->closePort();
 		return;
 	}
-	
+
 	if ( ! m_pSerialPort->openPort( port, baudRate ) )
 	{
 		p_itemDocument->canvas()->setMessage( i18n("Could not open port %1", port ) );

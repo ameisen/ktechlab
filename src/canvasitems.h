@@ -9,8 +9,6 @@
 
 #pragma once
 
-#include "canvasitemlist.h"
-
 #include <qbrush.h>
 #include <qobject.h>
 #include <qpen.h>
@@ -50,7 +48,7 @@ class KtlQCanvasItem : public QObject
 
         virtual bool collidesWith( const KtlQCanvasItem* ) const = 0;
 
-        KtlQCanvasItemList collisions(const bool exact /* NO DEFAULT */ ) const;
+        QList<KtlQCanvasItem *> collisions(const bool exact /* NO DEFAULT */ ) const;
 
         virtual void setCanvas(KtlQCanvas *);
 

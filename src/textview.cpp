@@ -159,7 +159,7 @@ TextView::TextView( TextDocument * textDocument, ViewContainer *viewContainer, u
 
 	setAcceptDrops(true);
 
-	m_statusBar->insertItem( "", ViewStatusBar::LineCol );
+	m_statusBar->insertItem( "", int(ViewStatusBar::InfoId::LineCol) );
 
 	//m_view->installPopup( static_cast<Q3PopupMenu*>( KTechlab::self()->factory()->container( "ktexteditor_popup", KTechlab::self() ) ) );
     m_view->setContextMenu( static_cast<QMenu*>( KTechlab::self()->factory()->container( "ktexteditor_popup", KTechlab::self() ) ) );
@@ -469,7 +469,7 @@ void TextView::slotCursorPositionChanged()
 	line = curs.line();
     column = curs.column();
 
-	m_statusBar->changeItem( i18n(" Line: %1 Col: %2 ", QString::number(line+1), QString::number(column+1)), ViewStatusBar::LineCol );
+	m_statusBar->changeItem( i18n(" Line: %1 Col: %2 ", QString::number(line+1), QString::number(column+1)), int(ViewStatusBar::InfoId::LineCol) );
 
 	slotUpdateMarksInfo();
 }

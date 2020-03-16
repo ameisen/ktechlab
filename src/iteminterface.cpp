@@ -274,7 +274,7 @@ QWidget * ItemInterface::configWidget()
 		if ( vait.value()->isHidden() || vait.value()->isAdvanced() )
 			continue;
 
-		const Variant::Type::Value type = vait.value()->type();
+		const Variant::Type type = vait.value()->type();
 
 		// common to all types apart from bool
 		QString toolbarCaption = vait.value()->toolbarCaption();

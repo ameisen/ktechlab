@@ -41,12 +41,12 @@ SetPin::SetPin( ICNDocument *icnDocument, bool newItem, const char *id )
 	initIOSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "state", Variant::Type::Select );
 	property("state")->setCaption( i18n("State") );
 	property("state")->setAllowed( (QStringList("high") << "low" ) );
 	property("state")->setValue("high");
-	
+
 	createProperty( "pin", Variant::Type::Pin );
 	property("pin")->setCaption( i18n("Pin") );
 	property("pin")->setValue("RA0");
@@ -68,13 +68,13 @@ void SetPin::generateMicrobe( FlowCode *code )
 	const QString bit = (QChar)pin[2];
 	code->addCode( port+"."+bit+" = "+dataString("state") );
 	code->addCodeBranch( outputPart("stdoutput") );
-	
+
 #if 0
 	const QString pin = dataString("pin");
 	const bool isHigh = (dataString("state") == "High");
 	const QString port = "PORT" + QString((QChar)pin[1]);
 	const QString bit = (QChar)pin[2];
-	
+
 	QString newCode;
 	if (isHigh)
 	{
@@ -84,7 +84,7 @@ void SetPin::generateMicrobe( FlowCode *code )
 	{
 		newCode += "bcf " + port + "," + bit + " ; Set bit low\n";
 	}
-	
+
 	code->addCodeBlock( id(), newCode );
 #endif
 }

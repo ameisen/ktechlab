@@ -100,20 +100,20 @@ ECMOSFET::ECMOSFET( int MOSFET_type, ICNDocument * icnDocument, bool newItem, co
 			m_name = i18n("N-Channel Enhancement MOSFET");
 			break;
 		}
-		
+
 		case MOSFET::peMOSFET:
 		{
 			m_name = i18n("P-Channel Enhancement MOSFET");
 			break;
 		}
-		
+
 #if 0
 		case MOSFET::ndMOSFET:
 		{
 			m_name = i18n("N-Channel Depletion MOSFET");
 			break;
 		}
-		
+
 		case MOSFET::pdMOSFET:
 		{
 			m_name = i18n("P-Channel Depletion MOSFET");
@@ -121,16 +121,16 @@ ECMOSFET::ECMOSFET( int MOSFET_type, ICNDocument * icnDocument, bool newItem, co
 		}
 #endif
 	}
-	
+
 	setSize( -8, -16, 16, 32 );
 	ECNode * NodeS = createPin( 8, 24, 270, "s" );
 	m_pMOSFET = createMOSFET( createPin( 8, -24, 90, "d" ), createPin( -16, 8, 0, "g" ), NodeS, NodeS, m_MOSFET_type );
 	m_bHaveBodyPin = false;
-	
+
 	Variant * v = createProperty( "bodyPin", Variant::Type::Bool );
 	v->setCaption( i18nc( "mosfet body/bulk pin", "Body Pin") );
 	v->setValue( false );
-	
+
 #if 0
 	MOSFETSettings s; // will be created with the default settings
 	v = createProperty( "I_S", Variant::Type::Double );
@@ -140,28 +140,28 @@ ECMOSFET::ECMOSFET( int MOSFET_type, ICNDocument * icnDocument, bool newItem, co
 	v->setMaxValue(1e-0);
 	v->setValue( s.I_S );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "N_F", Variant::Type::Double );
 	v->setCaption( i18n("Forward Coefficient") );
 	v->setMinValue(1e0);
 	v->setMaxValue(1e1);
 	v->setValue( s.N_F );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "N_R", Variant::Type::Double );
 	v->setCaption( i18n("Reverse Coefficient") );
 	v->setMinValue(1e0);
 	v->setMaxValue(1e1);
 	v->setValue( s.N_R );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "B_F", Variant::Type::Double );
 	v->setCaption( i18n("Forward Beta") );
 	v->setMinValue(1e-1);
 	v->setMaxValue(1e3);
 	v->setValue( s.B_F );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "B_R", Variant::Type::Double );
 	v->setCaption( i18n("Reverse Beta") );
 	v->setMinValue(1e-1);
@@ -197,7 +197,7 @@ void ECMOSFET::dataChanged()
 			m_pMOSFET = createMOSFET( ecNodeWithID( "d" ), ecNodeWithID( "g" ), ecNodeWithID( "s" ), ecNodeWithID( "s" ), m_MOSFET_type );
 		}
 	}
-	
+
 #if 0
 	MOSFETSettings s;
 	s.I_S = dataDouble( "I_S" );
@@ -205,7 +205,7 @@ void ECMOSFET::dataChanged()
 	s.N_R = dataDouble( "N_R" );
 	s.B_F = dataDouble( "B_F" );
 	s.B_R = dataDouble( "B_R" );
-	
+
 	m_pMOSFET->setMOSFETSettings( s );
 #endif
 }
@@ -215,30 +215,30 @@ void ECMOSFET::drawShape( QPainter & p )
 {
 	const int _x = int(x());
 	const int _y = int(y());
-	
+
 	initPainter(p);
-	
+
 	// Middle three horizontal lines
 	p.drawLine( _x-3, _y-11, _x+8, _y-11 );
 	p.drawLine( _x-3, _y, _x+8, _y );
 	p.drawLine( _x-3, _y+11, _x+8, _y+11 );
-	
+
 	// Right middle vertical line
 	if ( m_bHaveBodyPin )
 		p.drawLine( _x+8, _y+11, _x+8, _y+16 );
 	else
 		p.drawLine( _x+8, _y, _x+8, _y+16 );
-	
+
 	// Right top vertical line
 	p.drawLine( _x+8, _y-11, _x+8, _y-16 );
-	
+
 	QPen pen = p.pen();
 	pen.setWidth( 2 );
 	p.setPen( pen );
-	
+
 	// Back line
 	p.drawLine( _x-7, _y-10, _x-7, _y+11 );
-	
+
 	if ( m_MOSFET_type == MOSFET::neMOSFET ||
 			m_MOSFET_type == MOSFET::peMOSFET )
 	{
@@ -252,7 +252,7 @@ void ECMOSFET::drawShape( QPainter & p )
 		// Middle vertical line
 		p.drawLine( _x-3, _y-14, _x-3, _y+15 );
 	}
-	
+
 	QPolygon pa(3);
 	if ( m_MOSFET_type == MOSFET::neMOSFET /*||
 			m_MOSFET_type == MOSFET::ndMOSFET*/ )
@@ -269,11 +269,11 @@ void ECMOSFET::drawShape( QPainter & p )
 		pa[1] = QPoint( 7, 0 );
 		pa[2] = QPoint( 2, 3 );
 	}
-	
+
 	pa.translate( _x, _y );
 	p.setPen( p.pen().color() );
 	p.setBrush( p.pen().color() );
 	p.drawPolygon( pa );
-	
+
 	deinitPainter(p);
 }

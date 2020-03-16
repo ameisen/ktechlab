@@ -528,7 +528,7 @@ void FlowPart::handleIfElse( FlowCode *code, const QString &case1Statement, cons
 }
 
 
-Variant * FlowPart::createProperty( const QString & id, Variant::Type::Value type )
+Variant * FlowPart::createProperty( const QString & id, Variant::Type type )
 {
 	if ( type != Variant::Type::Port
 			&& type != Variant::Type::Pin

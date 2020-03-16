@@ -31,20 +31,20 @@ LibraryItem* VoltageRegulator::libraryItem()
 	i18n("Passive"),
 	"voltage_regulator.png",
 	LibraryItem::lit_component,
-	VoltageRegulator::construct 
+	VoltageRegulator::construct
 						  );
 }
 
 VoltageRegulator::VoltageRegulator( ICNDocument* icnDocument, bool newItem, const QString& id )
 	: Component( icnDocument, newItem, (!id.isEmpty()) ? id : "voltageregulator" )
 {
-	
+
 	createProperty( "voltageout",  Variant::Type::Double );
 	property("voltageout")->setCaption( i18n( "Voltage Out" ) );
 	property("voltageout")->setMinValue( 2 );
 	property("voltageout")->setMaxValue( maxVoltageOut );
 	property("voltageout")->setValue( 5 );
-	
+
 }
 
 VoltageRegulator::~VoltageRegulator()
@@ -54,16 +54,14 @@ VoltageRegulator::~VoltageRegulator()
 void VoltageRegulator::dataChanged()
 {
 }
-	
+
 void VoltageRegulator::drawShape( QPainter &p )
 {
 	initPainter(p);
-	
+
 	// Get centre point of component.
 	//int _y = (int)y();
 	//int _x = (int)x();
-	
+
 	deinitPainter(p);
 }
-
-

@@ -39,28 +39,28 @@ ECCurrentSignal::ECCurrentSignal( ICNDocument *icnDocument, bool newItem, const 
 {
 	m_name = i18n("Current Signal");
 	setSize( -8, -8, 16, 16 );
-	
+
 	init1PinLeft();
 	init1PinRight();
-	
-	m_pNNode[0]->pin()->setGroundType( Pin::gt_low );
+
+	m_pNNode[0]->pin()->setGroundType( Pin::GroundType::Low );
 	m_currentSignal = createCurrentSignal( m_pNNode[0], m_pPNode[0], 0. );
 	m_currentSignal->setStep(ElementSignal::st_sinusoidal, 50. );
-	
+
 	createProperty( "1-frequency", Variant::Type::Double );
 	property("1-frequency")->setCaption( i18n("Frequency") );
 	property("1-frequency")->setUnit("Hz");
 	property("1-frequency")->setMinValue(1e-9);
 	property("1-frequency")->setMaxValue(1e3);
 	property("1-frequency")->setValue(50.0);
-	
+
 	createProperty( "1-current", Variant::Type::Double );
 	property("1-current")->setCaption( i18n("Current Range") );
 	property("1-current")->setUnit("A");
 	property("1-current")->setMinValue(-1e12);
 	property("1-current")->setMaxValue(1e12);
 	property("1-current")->setValue(0.02);
-	
+
 	addDisplayText( "~", QRect( -8, -8, 16, 16 ), "~" );
 	addDisplayText( "current", QRect( -16, -24, 32, 16 ), "" );
 }
@@ -74,10 +74,10 @@ void ECCurrentSignal::dataChanged()
 {
 	const double current = dataDouble("1-current");
 	const double frequency = dataDouble("1-frequency");
-	
+
 	QString display = QString::number( current / getMultiplier(current), 'g', 3 ) + getNumberMag(current) + "A";
 	setDisplayText( "current", display );
-	
+
 	m_currentSignal->setStep(ElementSignal::st_sinusoidal, frequency );
 	m_currentSignal->setCurrent(current);
 }
@@ -88,4 +88,3 @@ void ECCurrentSignal::drawShape( QPainter &p )
 	p.drawEllipse( (int)x()-8, (int)y()-8, width(), height() );
 	deinitPainter(p);
 }
-

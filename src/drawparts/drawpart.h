@@ -30,7 +30,7 @@ class DrawPart : public Item {
 
 		bool canResize() const override { return true; }
 
-		Variant * createProperty( const QString &id, Variant::TypeValue type ) override;
+		Variant * createProperty( const QString &id, Variant::Type type ) override;
 
 		Qt::PenStyle getDataPenStyle( const QString &id );
 		Qt::PenCapStyle getDataPenCapStyle( const QString &id );

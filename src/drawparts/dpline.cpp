@@ -151,7 +151,7 @@ LibraryItem* DPArrow::libraryItem() {
 
 DPArrow::DPArrow( ItemDocument *itemDocument, bool newItem, const char *id ) :
 	Super( itemDocument, newItem, id ? id : "arrow" ),
-	m_HeadAngle(createPropertyRef("HeadAngle", Variant::TypeValue::Double))
+	m_HeadAngle(createPropertyRef("HeadAngle", Variant::Type::Double))
 {
 	m_name = i18n("Arrow");
 

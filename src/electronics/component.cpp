@@ -100,6 +100,7 @@ void Component::removeElements( bool setPinsInterIndependent )
         {
             emit elementDestroyed(e);
             e->componentDeleted();
+            delete e;
         }
     }
     m_elementMapList.clear();
@@ -914,7 +915,7 @@ Switch* Component::createSwitch( Pin *n0, Pin *n1, bool open )
     // Note that a Switch is not really an element (although in many cases it
     // behaves very much like one).
 
-    Switch * e = new Switch( this, n0, n1, open ? Switch::Open : Switch::Closed );
+    Switch * e = new Switch( this, n0, n1, open ? Switch::State::Open : Switch::State::Closed );
     m_switchList.append(e);
     n0->addSwitch( e );
     n1->addSwitch( e );

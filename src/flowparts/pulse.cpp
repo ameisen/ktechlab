@@ -38,22 +38,22 @@ Pulse::Pulse( ICNDocument *icnDocument, bool newItem, const char *id )
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "0-duration", Variant::Type::Double );
 	property("0-duration")->setCaption( i18n("Duration") );
 	property("0-duration")->setUnit("sec");
 	property("0-duration")->setValue(2.0);
-	
+
 	createProperty( "1-high", Variant::Type::Double );
 	property("1-high")->setCaption( i18n("High Time") );
 	property("1-high")->setUnit("sec");
 	property("1-high")->setValue(0.5);
-	
+
 	createProperty( "2-low", Variant::Type::Double );
 	property("2-low")->setCaption( i18n("Low Time") );
 	property("2-low")->setUnit("sec");
 	property("2-low")->setValue(0.5);
-	
+
 	createProperty( "3-pin", Variant::Type::Pin );
 	property("3-pin")->setCaption( i18n("Pin") );
 	property("3-pin")->setValue("RA0");
@@ -76,9 +76,8 @@ void Pulse::generateMicrobe( FlowCode *code )
 	const double high_ms = dataDouble("1-high")*1e3;
 	const double low_ms = dataDouble("2-low")*1e3;
 	const QString pin = dataString("3-pin");
-	
+
 	// TODO Do we want to change the format for pulsing?
 	code->addCode( "pulse "+pin+" "+QString::number(duration_ms)+" "+QString::number(high_ms)+" "+QString::number(low_ms) );
 	code->addCodeBranch( outputPart("stdoutput") );
 }
-

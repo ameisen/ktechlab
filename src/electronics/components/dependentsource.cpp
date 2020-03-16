@@ -26,17 +26,17 @@ DependentSource::DependentSource( ICNDocument *icnDocument, bool newItem, const 
 	: Component( icnDocument, newItem, id )
 {
 	setSize( -16, -16, 32, 32 );
-	
+
 	init2PinLeft();
 	init2PinRight();
-	
+
 	m_pNNode[1]->setLength( 13 );
 	m_pPNode[1]->setLength( 13 );
-	
+
 	createProperty( "gain", Variant::Type::Double );
 	property("gain")->setCaption( i18n("Gain") );
 	property("gain")->setValue(1.0);
-	
+
 	addDisplayText( "gain", QRect( -16, -32, 32, 16 ), "" );
 }
 
@@ -50,26 +50,26 @@ void DependentSource::drawOutline( QPainter & p )
 {
 	const int _x = (int)x()-16;
 	const int _y = (int)y()-32;
-	
+
 	// Top rectangle
 	p.drawRect( _x, _y+19, width(), 11 );
-	
+
 #if 0
 	p.save();
 	bool canSetCol = (p.pen().color() != Qt::color0) && (p.pen().color() != Qt::color1);
-	
+
 	// Bottom lines
 	if (canSetCol)
 		p.setPen( m_pNNode[1]->isSelected() ? m_selectedCol : Qt::black );
 	p.drawLine( _x, _y+40, _x+8, _y+40 ); // Left inny
-	
+
 	if (canSetCol)
 		p.setPen( m_pPNode[1]->isSelected() ? m_selectedCol : Qt::black );
 	p.drawLine( _x+width(), _y+40, _x+24, _y+40 ); // Right inny
-	
+
 	p.restore();
 #endif
-	
+
 	// Bottom diamond
 	QPolygon pa4(4);
 	pa4[0] = QPoint( _x+6, _y+40 );
@@ -87,12 +87,12 @@ void DependentSource::drawTopArrow( QPainter & p )
 
 	if ( p.pen().color() == m_selectedCol )
 		p.setPen(Qt::black);
-	
+
 	if ( p.brush().color() == m_brushCol )
 		p.setBrush(Qt::black);
-	
+
 	p.drawLine( _x+8, _y+24, _x+24, _y+24 );
-	
+
 	QPolygon pa3(3);
 	pa3[0] = QPoint( _x+24, _y+24 );
 	pa3[1] = QPoint( _x+19, _y+21 );
@@ -108,12 +108,12 @@ void DependentSource::drawBottomArrow( QPainter & p )
 
 	if ( p.pen().color() == m_selectedCol )
 		p.setPen(Qt::black);
-	
+
 	if ( p.brush().color() == m_brushCol )
 		p.setBrush(Qt::black);
-	
+
 	p.drawLine( _x+11, _y+40, _x+21, _y+40 );
-	
+
 	QPolygon pa3(3);
 	pa3[0] = QPoint( _x+21, _y+40 );
 	pa3[1] = QPoint( _x+16, _y+37 );
@@ -145,7 +145,7 @@ ECCCCS::ECCCCS( ICNDocument *icnDocument, bool newItem, const char *id )
 {
 	m_name = i18n("Current Controlled Current Source");
 	m_cccs = createCCCS( m_pNNode[0], m_pPNode[0], m_pNNode[1], m_pPNode[1], 1. );
-	m_pNNode[1]->pin()->setGroundType( Pin::gt_medium );
+	m_pNNode[1]->pin()->setGroundType( Pin::GroundType::Medium );
 }
 
 ECCCCS::~ECCCCS()
@@ -155,10 +155,10 @@ ECCCCS::~ECCCCS()
 void ECCCCS::dataChanged()
 {
 	double gain = dataDouble("gain");
-	
+
 	QString display = QString::number( gain / getMultiplier(gain), 'g', 3 ) + getNumberMag(gain) + QChar(' ');
 	setDisplayText( "gain", display );
-	
+
 	m_cccs->setGain(gain);
 }
 
@@ -195,7 +195,7 @@ ECCCVS::ECCCVS( ICNDocument *icnDocument, bool newItem, const char *id )
 {
 	m_name = i18n("Current Controlled Voltage Source");
 	m_ccvs = createCCVS( m_pNNode[0], m_pPNode[0], m_pNNode[1], m_pPNode[1], 1. );
-	m_pNNode[1]->pin()->setGroundType( Pin::gt_medium );
+	m_pNNode[1]->pin()->setGroundType( Pin::GroundType::Medium );
 }
 
 ECCCVS::~ECCCVS()
@@ -205,10 +205,10 @@ ECCCVS::~ECCCVS()
 void ECCCVS::dataChanged()
 {
 	double gain = dataDouble("gain");
-	
+
 	QString display = QString::number( gain / getMultiplier(gain), 'g', 3 ) + getNumberMag(gain) + QChar(' ');
 	setDisplayText( "gain", display );
-	
+
 	m_ccvs->setGain(gain);
 }
 
@@ -244,7 +244,7 @@ ECVCCS::ECVCCS( ICNDocument *icnDocument, bool newItem, const char *id )
 {
 	m_name = i18n("Voltage Controlled Current Source");
 	m_vccs = createVCCS( m_pNNode[0], m_pPNode[0], m_pNNode[1], m_pPNode[1], 1. );
-	m_pNNode[1]->pin()->setGroundType( Pin::gt_medium );
+	m_pNNode[1]->pin()->setGroundType( Pin::GroundType::Medium );
 }
 
 ECVCCS::~ECVCCS()
@@ -254,10 +254,10 @@ ECVCCS::~ECVCCS()
 void ECVCCS::dataChanged()
 {
 	double gain = dataDouble("gain");
-	
+
 	QString display = QString::number( gain / getMultiplier(gain), 'g', 3 ) + getNumberMag(gain) + QChar(' ');
 	setDisplayText( "gain", display );
-	
+
 	m_vccs->setGain(gain);
 }
 
@@ -293,7 +293,7 @@ ECVCVS::ECVCVS( ICNDocument *icnDocument, bool newItem, const char *id )
 {
 	m_name = i18n("Voltage Controlled Voltage Source");
 	m_vcvs = createVCVS( m_pNNode[0], m_pPNode[0], m_pNNode[1], m_pPNode[1], 1. );
-	m_pNNode[1]->pin()->setGroundType( Pin::gt_medium );
+	m_pNNode[1]->pin()->setGroundType( Pin::GroundType::Medium );
 }
 
 ECVCVS::~ECVCVS()
@@ -303,10 +303,10 @@ ECVCVS::~ECVCVS()
 void ECVCVS::dataChanged()
 {
 	double gain = dataDouble("gain");
-	
+
 	QString display = QString::number( gain / getMultiplier(gain), 'g', 3 ) + getNumberMag(gain) + QChar(' ');
 	setDisplayText( "gain", display );
-	
+
 	m_vcvs->setGain(gain);
 }
 

@@ -1,18 +1,7 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
+#pragma once
 
-#ifndef VIEWIFACE_H
-#define VIEWIFACE_H
+#include "pch.hpp"
 
-// #include <dcopobject.h>
-// #include <dcopref.h>
 #include "dcop_stub.h"
 
 class CircuitView;
@@ -26,99 +15,73 @@ class View;
 /**
 @author David Saxton
 */
-class ViewIface : public DCOPObject
-{
+class ViewIface : public DCOPObject {
 	K_DCOP
 
 	public:
-		ViewIface( View * view );
-		virtual ~ViewIface();
-		
+		ViewIface(View *view) :
+			DCOPObject(),
+			m_pView(view)
+		{}
+		virtual ~ViewIface() = default;
+
 	k_dcop:
-		DCOPRef document();
-		bool hasFocus();
+		DCOPRef document() const;
+		bool hasFocus() const;
 		bool close();
 		void zoomIn();
 		void zoomOut();
-		bool canZoomIn();
-		bool canZoomOut();
+		bool canZoomIn() const;
+		bool canZoomOut() const;
 		void actualSize();
-		
+
 	protected:
-		View * m_pView;
+		View * const m_pView = nullptr;
+
+		// hack until I figure out a better way to do this.
+		double zoomLevelItemView() const;
 };
 
-class TextViewIface : public ViewIface
-{
+template <typename T = View>
+class ViewIfaceT : public ViewIface {
 	K_DCOP
 
 	public:
-		TextViewIface( TextView * view );
-		
+		ViewIfaceT(T *view) : ViewIface(reinterpret_cast<View *>(view)) {}
+
+	protected:
+		T * getView() { return reinterpret_cast<T *>(m_pView); }
+		const T * getView() const { return reinterpret_cast<const T *>(m_pView); }
+};
+
+class TextViewIface final : public ViewIfaceT<TextView> {
+	K_DCOP
+
+	public:
+		TextViewIface(TextView *view) : ViewIfaceT(view) {}
+
 	k_dcop:
 		void toggleBreakpoint();
-		bool gotoLine( const int line );
-	
-	protected:
-		TextView * m_pTextView;
+		bool gotoLine(const int line);
 };
 
-class ItemViewIface : public ViewIface
-{
+template <typename T = ItemView>
+class ItemViewIface : public ViewIfaceT<T> {
 	K_DCOP
 
 	public:
-		ItemViewIface( ItemView * view );
-		
+		ItemViewIface(T *view) : ViewIfaceT<T>(view) {}
+
 	k_dcop:
-		double zoomLevel();
-		
-	protected:
-		ItemView * m_pItemView;
+		double zoomLevel() const {
+			return ViewIface::zoomLevelItemView();
+		}
 };
 
-class MechanicsViewIface : public ItemViewIface
-{
-	K_DCOP
-			
-	public:
-		MechanicsViewIface( MechanicsView * view );
-		
-	protected:
-		MechanicsView * m_pMechanicsView;
-};
+using MechanicsViewIface = ItemViewIface<MechanicsView>;
 
-class ICNViewIface : public ItemViewIface
-{
-	K_DCOP
+template <typename T = ICNView>
+using ICNViewIface = ItemViewIface<T>;
 
-	public:
-		ICNViewIface( ICNView * view );
-		
-	protected:
-		ICNView * m_pICNView;
-};
-
-class CircuitViewIface : public ICNViewIface
-{
-	K_DCOP
-
-	public:
-		CircuitViewIface( CircuitView * view );
-		
-	protected:
-		CircuitView * m_pCircuitView;
-};
-
-class FlowCodeViewIface : public ICNViewIface
-{
-	K_DCOP
-
-	public:
-		FlowCodeViewIface( FlowCodeView * view );
-		
-	protected:
-		FlowCodeView * m_pFlowCodeView;
-};
-
-#endif
+using CircuitViewIface = ICNViewIface<CircuitView>;
+using FlowCodeViewIface = ICNViewIface<FlowCodeView>;

@@ -1,47 +1,38 @@
-/***************************************************************************
- *   Copyright (C) 1999-2005 Trolltech AS                                  *
- *   Copyright (C) 2006 David Saxton <david@bluehaze.org>                  *
- *                                                                         *
- *   This file may be distributed and/or modified under the terms of the   *
- *   GNU General Public License version 2 as published by the Free         *
- *   Software Foundation                                                   *
- ***************************************************************************/
+#pragma once
 
-#ifndef QCANVAS_H
-#define QCANVAS_H
+#include "pch.hpp"
 
 #include <map>
+#include <memory>
 
 #include "ktlqt3support/ktlq3scrollview.h"
-#include "qpixmap.h"
-// #include "q3ptrlist.h"
-#include "qbrush.h"
-#include "qpen.h"
-#include "qlist.h"
-// #include "q3pointarray.h" // 2018.08.14
+#include <QPixmap>
+#include <QBrush>
+#include <QPen>
+#include <QList>
 
 #include "canvasitemlist.h"
 
 class KtlQCanvasView;
 class KtlQCanvasChunk;
 
-class KtlQCanvas : public QObject
-{
+class KtlQCanvas : public QObject {
 	Q_OBJECT
 	public:
-		KtlQCanvas( QObject *parent = nullptr, const char *name = nullptr );
-		KtlQCanvas( const int w, const int h );
-		KtlQCanvas( QPixmap p, int h, int v, int tilewidth, int tileheight );
+		KtlQCanvas(QObject *parent = nullptr, const char *name = nullptr);
+		KtlQCanvas(int w, int h, int chunksze = 16, int maxclust = 100);
+		KtlQCanvas(const QPixmap &p, int h, int v, int tilewidth, int tileheight);
 
 		~KtlQCanvas() override;
 
 		virtual void setTiles(
-			QPixmap tiles,
+			const QPixmap &tiles,
 			int h,
 			int v,
 			int tilewidth,
 			int tileheight
 		);
+
 		virtual void setBackgroundPixmap( const QPixmap &p );
 		const QPixmap & backgroundPixmap() const;
 
@@ -49,7 +40,7 @@ class KtlQCanvas : public QObject
 		const QColor & backgroundColor() const;
 
 		virtual void setTile( int x, int y, int tilenum );
-		int tile( int x, int y ) const { return grid[ x + (y * htiles)]; }
+		int tile( int x, int y ) const { return grid.get()[ x + (y * htiles)]; }
 
 		int tilesHorizontally() const { return htiles; }
 		int tilesVertically() const { return vtiles; }
@@ -81,10 +72,10 @@ class KtlQCanvas : public QObject
 		void addItemToChunkContaining(KtlQCanvasItem *, int x, int y);
 		void removeItemFromChunkContaining(KtlQCanvasItem *, int x, int y);
 
-		KtlQCanvasItemList allItems();
-		KtlQCanvasItemList collisions( const QPoint & ) /* const */ ;
-		KtlQCanvasItemList collisions( const QRect & ) /* const */;
-		KtlQCanvasItemList collisions(
+		KtlQCanvasItemList allItems() const;
+		QList<KtlQCanvasItem *> collisions( const QPoint & ) /* const */ ;
+		QList<KtlQCanvasItem *> collisions( const QRect & ) /* const */;
+		QList<KtlQCanvasItem *> collisions(
 			const QPolygon &pa,
 			const KtlQCanvasItem *item,
 			bool exact
@@ -95,15 +86,18 @@ class KtlQCanvas : public QObject
 		// These are for KtlQCanvasView to call
 		virtual void addView(KtlQCanvasView *);
 		virtual void removeView(KtlQCanvasView *);
-		void drawCanvasArea(const QRect &, QPainter *p, bool double_buffer);
-		void drawViewArea( KtlQCanvasView *view, QPainter *p, const QRect &r, bool dbuf );
+		void drawCanvasArea(const QRect &, QPainter *p);
+		void drawViewArea( KtlQCanvasView *view, QPainter *p, const QRect &r );
 
 		// These are for KtlQCanvasItem to call
 		virtual void addItem(KtlQCanvasItem *);
 		virtual void removeItem(const KtlQCanvasItem *);
 
 		virtual void setUpdatePeriod(int ms);
-		int toChunkScaling( int x ) const;
+		int toChunkScaling(int x) const {
+			return toChunkScaling(x, chunksize);
+		}
+		static int toChunkScaling(int x, int chunkSize);
 
 	signals:
 		void resized();
@@ -117,9 +111,10 @@ class KtlQCanvas : public QObject
 		virtual void drawForeground(QPainter &, const QRect &area);
 
 	private:
-		void init(int w, int h, int chunksze = 16, int maxclust = 100);
-		void init(const QRect &r, int chunksze = 16, int maxclust = 100);
-		void initChunkSize( const QRect &s );
+		QRect getChunkSize(const QRect &s) const {
+			return getChunkSize(s, chunksize);
+		}
+		static QRect getChunkSize(const QRect &s, int chunkSize);
 
 		KtlQCanvasChunk & chunk(int i, int j) const;
 		KtlQCanvasChunk & chunkContaining(int x, int y) const;
@@ -137,33 +132,31 @@ class KtlQCanvas : public QObject
 		QPixmap pm;
 		QRect m_size;
 		QRect m_chunkSize;
-		KtlQCanvasChunk *chunks;
-		QTimer *update_timer;
-		ushort *grid;
-		QColor bgcolor;
-		int chunksize;
-		int maxclusters;
+		std::unique_ptr<KtlQCanvasChunk[]> chunks;
+		QTimer *update_timer = nullptr;
+		std::unique_ptr<ushort[]> grid;
+		QColor bgcolor = Qt::white;
+		int chunksize = 0;
+		int maxclusters = 0;
 
-		ushort htiles;
-		ushort vtiles;
-		ushort tilew;
-		ushort tileh;
-		bool oneone;
-		bool debug_redraw_areas;
+		ushort htiles = 0;
+		ushort vtiles = 0;
+		ushort tilew = 0;
+		ushort tileh = 0;
+		bool oneone = false;
+		bool debug_redraw_areas = false;
 
 		friend void qt_unview(KtlQCanvas *c);
 
-		KtlQCanvas( const KtlQCanvas & );
-		KtlQCanvas &operator = ( const KtlQCanvas & );
+		KtlQCanvas(const KtlQCanvas &) = delete;
+		KtlQCanvas &operator = (const KtlQCanvas &) = delete;
 };
 
 class KtlQCanvasViewData;
 
-class KtlQCanvasView : public KtlQ3ScrollView
-{
+class KtlQCanvasView : public KtlQ3ScrollView {
 	Q_OBJECT
 	public:
-
 		KtlQCanvasView(QWidget *parent = nullptr, const char *name = nullptr, Qt::WFlags f = 0); // 2018.08.15 - unused?
 		KtlQCanvasView(KtlQCanvas *viewing, QWidget *parent = nullptr, const char *name = nullptr, Qt::WFlags f = 0);
 		~KtlQCanvasView() override;
@@ -183,17 +176,12 @@ class KtlQCanvasView : public KtlQ3ScrollView
 	private:
 		void drawContents( QPainter * ) override;
 		friend void qt_unview(KtlQCanvas* c);
-		KtlQCanvasView( const KtlQCanvasView & );
-		KtlQCanvasView & operator = ( const KtlQCanvasView & );
-		KtlQCanvas *viewing;
-		KtlQCanvasViewData *d;
+		KtlQCanvasView( const KtlQCanvasView & ) = delete;
+		KtlQCanvasView & operator = ( const KtlQCanvasView & ) = delete;
+		KtlQCanvas *viewing = nullptr;
+		KtlQCanvasViewData *d = nullptr;
 
 	private slots:
 		void cMoving(int, int);
 		void updateContentsSize();
-
 };
-
-
-
-#endif // QCANVAS_H

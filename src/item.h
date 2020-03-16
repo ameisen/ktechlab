@@ -112,8 +112,8 @@ public:
 	QString dataString( const QString & id ) const;
 	QColor dataColor( const QString & id ) const;
 
-	virtual Property * createProperty( const QString & id, Variant::Type::Value type );
-	Property & createPropertyRef( const QString & id, Variant::Type::Value type );
+	virtual Property * createProperty( const QString & id, Variant::Type type );
+	Property & createPropertyRef( const QString & id, Variant::Type type );
 	Property * property( const QString & id ) const;
 	Property & propertyRef( const QString & id ) const;
 	bool hasProperty( const QString & id ) const;

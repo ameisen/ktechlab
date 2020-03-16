@@ -118,6 +118,7 @@ ItemDocument::~ItemDocument()
 	delete m_cmManager;
 	delete m_currentState;
 	delete m_canvasTip;
+	delete m_canvas;
 }
 
 void ItemDocument::handleNewView( View * view )
@@ -134,15 +135,23 @@ bool ItemDocument::registerItem(KtlQCanvasItem *qcanvasItem)
 
 	if(Item *item = dynamic_cast<Item*>(qcanvasItem) )
 	{
-		m_itemList[ item->id() ] = item;
-		connect( item, SIGNAL(selectionChanged()), this, SIGNAL(selectionChanged()) );
-		itemAdded(item);
-		return true;
+		return registerItem(item);
 	}
 
 	return false;
 }
 
+bool ItemDocument::registerItem(Item *item)
+{
+	if (!item) return false;
+
+	requestEvent( ItemDocument::ItemDocumentEvent::ResizeCanvasToItems );
+
+	m_itemList[ item->id() ] = item;
+	connect( item, SIGNAL(selectionChanged()), this, SIGNAL(selectionChanged()) );
+	itemAdded(item);
+	return true;
+}
 
 void ItemDocument::slotSetDrawAction(QAction *selected)
 {
@@ -505,9 +514,9 @@ void ItemDocument::slotUpdateConfiguration()
 
 KtlQCanvasItem* ItemDocument::itemAtTop( const QPoint &pos ) const
 {
-	KtlQCanvasItemList list = m_canvas->collisions( QRect( pos.x()-1, pos.y()-1, 3, 3 ) ); // note: m_canvas is actually modified here
-	KtlQCanvasItemList::const_iterator it = list.begin();
-	const KtlQCanvasItemList::const_iterator end = list.end();
+	auto list = m_canvas->collisions( QRect( pos.x()-1, pos.y()-1, 3, 3 ) ); // note: m_canvas is actually modified here
+	auto it = list.begin();
+	const auto end = list.end();
 
 	while ( it != end ) {
 		KtlQCanvasItem *item = *it;
@@ -814,23 +823,25 @@ QRect ItemDocument::canvasBoundingRect() const
 
 	for ( KtlQCanvasItemList::const_iterator it = allItems.begin(); it != end; ++it )
 	{
-		if( !(*it)->isVisible() ) continue;
+		if (!*it) continue;
+		KtlQCanvasItem *item = *it;
+		if( !item->isVisible() ) continue;
 
 		if(dragItem ) {
-			if(*it == dragItem ) continue;
+			if(item == dragItem ) continue;
 
-			if(Node *n = dynamic_cast<Node*>(*it) ) {
+			if(Node *n = dynamic_cast<Node*>(item) ) {
 				if ( n->parentItem() == dragItem )
 					continue;
 			}
 
-			if(GuiPart *gp = dynamic_cast<GuiPart*>(*it) ) {
+			if(GuiPart *gp = dynamic_cast<GuiPart*>(item) ) {
 				if ( gp->parent() == dragItem )
 					continue;
 			}
 		}
 
-		bound |= (*it)->boundingRect();
+		bound |= item->boundingRect();
 	}
 
 	if ( !bound.isNull() )
@@ -1023,7 +1034,9 @@ void ItemDocument::setSVGExport( bool svgExport )
 	const KtlQCanvasItemList::iterator end = items.end();
 	for ( KtlQCanvasItemList::Iterator it = items.begin(); it != end; ++it )
 	{
-		if ( CNItem * cnItem = dynamic_cast<CNItem*>(*it) )
+		if (!*it) continue;
+		KtlQCanvasItem *item = *it;
+		if ( CNItem * cnItem = dynamic_cast<CNItem*>(item) )
 			cnItem->setDrawWidgets(!svgExport);
 	}
 }
@@ -1160,10 +1173,9 @@ QPtrList<Item> ItemDocument::itemList( ) const
 
 //BEGIN class CanvasTip
 CanvasTip::CanvasTip( ItemDocument *itemDocument, KtlQCanvas *qcanvas )
-	: KtlQCanvasRectangle( qcanvas )
+	: KtlQCanvasRectangle( qcanvas ),
+	p_itemDocument(itemDocument)
 {
-	p_itemDocument = itemDocument;
-
 	setZ( ICNDocument::Z::Tip );
 }
 
@@ -1219,7 +1231,10 @@ void CanvasTip::displayVI( Connector *connector, const QPoint &pos )
 
 bool CanvasTip::updateVI()
 {
-	CircuitDocument *circuitDocument = dynamic_cast<CircuitDocument*>(p_itemDocument);
+	if (!p_itemDocument) {
+		return false;
+	}
+	CircuitDocument *circuitDocument = dynamic_cast<CircuitDocument*>(p_itemDocument.data());
 	if ( !circuitDocument || !Simulator::self()->isSimulating() )
 		return false;
 
@@ -1270,7 +1285,10 @@ QString CanvasTip::displayText( unsigned num ) const
 
 void CanvasTip::draw( QPainter &p )
 {
-	CircuitDocument *circuitDocument = dynamic_cast<CircuitDocument*>(p_itemDocument);
+	if (!p_itemDocument) {
+		return;
+	}
+	CircuitDocument *circuitDocument = dynamic_cast<CircuitDocument*>(p_itemDocument.data());
 	if ( !circuitDocument || !Simulator::self()->isSimulating() )
 		return;
 
@@ -1298,9 +1316,9 @@ void CanvasTip::setText( const QString & text )
 
 //BEGIN class Canvas
 Canvas::Canvas( ItemDocument *itemDocument, const char * name )
-	: KtlQCanvas( itemDocument, name )
+	: KtlQCanvas( itemDocument, name ),
+	p_itemDocument(itemDocument)
 {
-	p_itemDocument = itemDocument;
 	m_pMessageTimeout = new QTimer(this);
 	connect( m_pMessageTimeout, SIGNAL(timeout()), this, SLOT(slotSetAllChanged()) );
 }
@@ -1334,43 +1352,16 @@ void Canvas::setMessage( const QString & message )
 void Canvas::drawBackground ( QPainter &p, const QRect & clip )
 {
 	KtlQCanvas::drawBackground( p, clip );
-#if 0
-	const int scx = (int)((clip.left()-4)/8);
-	const int ecx = (int)((clip.right()+4)/8);
-	const int scy = (int)((clip.top()-4)/8);
-	const int ecy = (int)((clip.bottom()+4)/8);
-
-	ICNDocument * icnd = dynamic_cast<ICNDocument*>(p_itemDocument);
-	if ( !icnd )
-		return;
-
-	Cells * c = icnd->cells();
-
-	if ( !c->haveCell( scx, scy ) || !c->haveCell( ecx, ecy ) )
-		return;
-
-	for ( int x=scx; x<=ecx; x++ )
-	{
-		for ( int y=scy; y<=ecy; y++ )
-		{
-			const double score = c->cell( x, y ).CIpenalty + c->cell( x, y ).Cpenalty;
-			int value = (int)std::log(score)*20;
-			if ( value>255 )
-				value=255;
-			else if (value<0 )
-				value=0;
-			p.setBrush( QColor( 255, (255-value), (255-value) ) );
-			p.setPen( Qt::NoPen );
-			p.drawRect( (x*8), (y*8), 8, 8 );
-		}
-	}
-#endif
 }
 
 
 void Canvas::drawForeground ( QPainter &p, const QRect & clip )
 {
 	KtlQCanvas::drawForeground( p, clip );
+
+	if (!p_itemDocument) {
+		return;
+	}
 
 	if ( !m_pMessageTimeout->isActive() )
 		return;
@@ -1433,7 +1424,9 @@ void Canvas::drawForeground ( QPainter &p, const QRect & clip )
 
 void Canvas::update()
 {
-	p_itemDocument->update();
+	if (p_itemDocument) {
+		p_itemDocument->update();
+	}
 	KtlQCanvas::update();
 }
 //END class Canvas

@@ -1,18 +1,12 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
+#pragma once
 
-#ifndef SWITCH_H
-#define SWITCH_H
+#include "pch.hpp"
 
-#include <qpointer.h>
-#include <qobject.h>
+#include <QPointer>
+#include <QObject>
+
+#include <memory>
+#include <random>
 
 class CircuitDocument;
 class Component;
@@ -26,10 +20,15 @@ class QTimer;
 
 class Switch : public QObject {
 	Q_OBJECT
+
+	using RandomEngine = std::default_random_engine;
 public:
-	enum State {
-		Open,
-		Closed
+	static constexpr const int DefaultBouncePeriodMS = 5;
+	static constexpr const resistance_t BounceResistance = 10000.0;
+
+	enum class State : bool {
+		Open = false,
+		Closed = true
 	};
 
 	Switch(Component *parent, Pin *p1, Pin *p2, State state);
@@ -39,20 +38,19 @@ public:
 	 * immediately to that given.
 	 */
 	void setState(State state);
-	State state() const {
-		return m_state;
-	}
+	State getState() const { return State_; }
+
+	bool isOpen() const { return State_ == State::Open; }
+	bool isClosed() const { return State_ == State::Closed; }
 
 	/**
 	 * Tell the switch whether to bounce or not, for the given duration,
 	 * when the state is changed.
 	 */
-	void setBounce(bool bounce, int msec = 5);
-	/**
-	 * Tell the switch to continue bouncing (updates the resistance value).
-	 * Called from the simulator.
-	 */
-	void bounce();
+	void setBounce(bool bounce, int msec = DefaultBouncePeriodMS);
+
+	bool isBouncing() const { return BouncingResistance_ != nullptr; }
+
 	/**
 	 * Attempts to calculate the current that is flowing through the switch.
 	 * (If all the connectors at one of the ends know their currents, then
@@ -62,7 +60,7 @@ public:
 	 */
 	bool calculateCurrent();
 
-	Component * getComponent() const { return m_pComponent; }
+	Component * getComponent() const { return Component_; }
 
 protected slots:
 	/**
@@ -74,16 +72,21 @@ protected slots:
 
 protected:
 	void startBouncing();
+	/**
+	 * Tell the switch to continue bouncing (updates the resistance value).
+	 * Called from the simulator.
+	 */
+	void bounce();
 
-	bool m_bBounce;
-	int m_bouncePeriod_ms;
-	unsigned long long m_bounceStart; // Simulator time that bouncing started
-	Resistance *m_pBounceResistance;
-	State m_state;
-	Component *m_pComponent;
-	QPointer<Pin> m_pP1;
-	QPointer<Pin> m_pP2;
-	QTimer *m_pStopBouncingTimer;
+	void reconnectAll();
+
+	llong BounceStart_ = 0ll; // Simulator time that bouncing started
+	Resistance *BouncingResistance_ = nullptr;
+	Component *Component_ = nullptr;
+	QTimer *StopBouncingTimer_ = nullptr;
+	std::unique_ptr<RandomEngine> RandomEngine_;
+	QPointer<Pin> Pins_[2];
+	int BouncePeriod_ = DefaultBouncePeriodMS;
+	State State_ = State::Open;
+	bool Bounce_ = false;
 };
-
-#endif

@@ -38,7 +38,7 @@ CallSub::CallSub( ICNDocument *icnDocument, bool newItem, const char *id )
 	initCallSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "sub", Variant::Type::Combo );
 	property("sub")->setCaption( i18n("Subroutine") );
 	property("sub")->setValue("MySub");
@@ -58,4 +58,3 @@ void CallSub::generateMicrobe( FlowCode *code )
 	code->addCode( "call " + dataString("sub") );
 	code->addCodeBranch( outputPart("stdoutput" ) );
 }
-

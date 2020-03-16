@@ -36,7 +36,7 @@ class LogicConfig
 
 
 class CallbackClass {};
-typedef void(CallbackClass::*CallbackPtr)( bool isHigh );
+using CallbackPtr = void(CallbackClass::*)(bool isHigh);
 
 /**
 Use this class for Logic Inputs - this will have infinite impedance.

@@ -176,7 +176,7 @@ void ElementSet::doNonLinear( int maxIterations, double maxErrorV, double maxErr
 
 bool ElementSet::doLinear( bool performLU )
 {
-	if ( b_containsNonLinear || (!p_b->isChanged() && ((performLU && !p_A->isChanged()) || !performLU)) )
+	if ( b_containsNonLinear || (!p_b->isChanged && ((performLU && !p_A->isChanged()) || !performLU)) )
 		return false;
 
 	if (performLU)
@@ -187,7 +187,7 @@ bool ElementSet::doLinear( bool performLU )
 
 	p_A->fbSub(p_x);
 	updateInfo();
-	p_b->setUnchanged();
+	p_b->isChanged = false;
 
 	return true;
 }

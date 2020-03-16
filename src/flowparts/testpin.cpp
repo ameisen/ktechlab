@@ -39,13 +39,13 @@ TestPin::TestPin( ICNDocument *icnDocument, bool newItem, const char *id )
 	createStdInput();
 	createStdOutput();
 	createAltOutput();
-	
+
 	createProperty( "pin", Variant::Type::Pin );
 	property("pin")->setCaption( i18n("Pin") );
 	property("pin")->setValue("RA0");
-	
+
 	addDisplayText( "output_false", QRect( offsetX()+width(), 2, 40, 20 ), "Low" );
-	addDisplayText( "output_true", QRect( 0, offsetY()+height(), 50, 20 ), "High" ); 
+	addDisplayText( "output_true", QRect( 0, offsetY()+height(), 50, 20 ), "High" );
 }
 
 
@@ -65,18 +65,16 @@ void TestPin::generateMicrobe( FlowCode *code )
 	const QString pin = dataString("pin");
 	const QString port = "PORT" + QString((QChar)pin[1]);
 	const QString bit = (QChar)pin[2];
-	
+
 	handleIfElse( code, port+"."+bit+" is high", port+"."+bit+" is low", "stdoutput", "altoutput" );
-	
+
 #if 0
 	QString newCode;
-	
+
 	newCode += "btfss "+port+","+bit+" ; Check if pin is clear\n";
 	newCode += gotoCode("altoutput") + " ; Pin is low\n";
 	newCode += gotoCode("stdoutput") + " ; Pin is high, continue on from this point\n";
-	
+
 	code->addCodeBlock( id(), newCode );
 #endif
 }
-
-

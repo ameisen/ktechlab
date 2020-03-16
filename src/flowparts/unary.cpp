@@ -38,11 +38,11 @@ Unary::Unary( ICNDocument *icnDocument, bool newItem, const char *id )
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "0-var", Variant::Type::VarName );
 	property("0-var")->setValue("x");
 	property("0-var")->setCaption( i18n("Variable") );
-	
+
 	createProperty( "1-op", Variant::Type::Select );
 	property("1-op")->setCaption( i18n("Operation") );
 	QStringMap allowed;
@@ -67,21 +67,21 @@ void Unary::generateMicrobe( FlowCode *code )
 {
 	const QString var = dataString("0-var");
 	const QString op = dataString("1-op");
-	
+
 	if		( op == "Rotate Left" )		code->addCode( "rotateleft "+var );
 	else if ( op == "Rotate Right" )	code->addCode( "rotateright "+var );
 	else if ( op == "Increment" )		code->addCode( "increment "+var );
 	else if ( op == "Decrement" )		code->addCode( "decrement "+var );
 //	else; // Hmm...
 	code->addCodeBranch( outputPart("stdoutput") );
-	
+
 #if 0
 	QString rot = dataString("1-rot");
-	
+
 	if ( FlowCode::isLiteral(var) ) return;
-	
+
 	QString newCode;
-	
+
 	code->addVariable(var);
 	if ( rot == "Left" ) newCode += "rlf " + var + ",1 ; Unary " + var + " left through Carry, place result back in " + var + "\n";
 	else newCode += "rrf " + var + ",1 ; Unary " + var + " right through Carry, place result back in " + var + "\n";
@@ -90,5 +90,3 @@ void Unary::generateMicrobe( FlowCode *code )
 	code->addCodeBlock( id(), newCode );
 #endif
 }
-
-

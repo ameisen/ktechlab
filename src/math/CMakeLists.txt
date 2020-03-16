@@ -1,6 +1,6 @@
 SET(math_STAT_SRCS
-#    qvector.cpp
-#    qmatrix.cpp
+#    quickvector.cpp
+#    quickmatrix.cpp
 )
 
 add_library(math STATIC ${math_STAT_SRCS})

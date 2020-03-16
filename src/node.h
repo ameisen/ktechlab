@@ -23,7 +23,7 @@ class ICNDocument;
 class ICNDocument;
 class Connector;
 class Node;
-class NodeData;
+struct NodeData;
 class NodeGroup;
 class QTimer;
 

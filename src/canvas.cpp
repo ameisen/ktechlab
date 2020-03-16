@@ -1,30 +1,19 @@
-/***************************************************************************
- *   Copyright (C) 1999-2005 Trolltech AS                                  *
- *   Copyright (C) 2006 David Saxton <david@bluehaze.org>                  *
- *                                                                         *
- *   This file may be distributed and/or modified under the terms of the   *
- *   GNU General Public License version 2 as published by the Free         *
- *   Software Foundation                                                   *
- ***************************************************************************/
-
 #include "utils.h"
 #include "canvas.h"
 #include "canvas_private.h"
 
-#include <qdebug.h>
+#include <QDebug>
+#include <QApplication>
+#include <QBitmap>
+#include <QPainter>
+#include <QTimer>
+#include <QDesktopWidget>
+#include <QSet>
 
-#include "qapplication.h"
-#include "qbitmap.h"
-#include "qpainter.h"
 #include "ktlq3polygonscanner.h"
-#include "qtimer.h"
 #include <ktlqt3support/ktlq3scrollview.h>
-#include <qdesktopwidget.h>
 
-
-#include <stdlib.h>
-
-using namespace std;
+#include <numeric>
 
 namespace {
 	static constexpr const bool isCanvasDebugEnabled = false;
@@ -32,601 +21,504 @@ namespace {
 
 //BEGIN class KtlQCanvasClusterizer
 
-static void include(QRect &r, const QRect &rect)
-{
-	if (rect.left() < r.left()) {
-		r.setLeft(rect.left());
-	}
-	if (rect.right() > r.right()) {
-		r.setRight(rect.right());
-	}
-	if (rect.top() < r.top()) {
-		r.setTop(rect.top());
-	}
-	if (rect.bottom() > r.bottom()) {
-		r.setBottom(rect.bottom());
-	}
-}
-
 /*
 A KtlQCanvasClusterizer groups rectangles (QRects) into non-overlapping rectangles
 by a merging heuristic.
 */
-KtlQCanvasClusterizer::KtlQCanvasClusterizer(int maxclusters) :
-	cluster(new QRect[maxclusters]),
-	count(0),
-	maxcl(maxclusters)
-{
+KtlQCanvasClusterizer::KtlQCanvasClusterizer(int maxClusters) :
+	clusters(std::make_unique<QRect[]>(maxClusters)),
+	capacity(maxClusters)
+{ }
+
+void KtlQCanvasClusterizer::clear() {
+	count_ = 0;
 }
 
-KtlQCanvasClusterizer::~KtlQCanvasClusterizer()
-{
-	delete [] cluster;
+void KtlQCanvasClusterizer::add(int x, int y) {
+	add(QPointRect{x, y});
 }
 
-
-void KtlQCanvasClusterizer::clear()
-{
-	count = 0;
+void KtlQCanvasClusterizer::add(const QPoint &point) {
+	add(QPointRect{point});
 }
 
-void KtlQCanvasClusterizer::add(int x, int y)
-{
-	add(QRect(x, y, 1, 1));
-}
-
-void KtlQCanvasClusterizer::add(int x, int y, int w, int h)
-{
+void KtlQCanvasClusterizer::add(int x, int y, int w, int h) {
 	add(QRect(x, y, w, h));
 }
 
-void KtlQCanvasClusterizer::add(const QRect &rect)
-{
-	QRect biggerrect(
-		rect.x() - 1,
-		rect.y() - 1,
-		rect.width() + 2,
-		rect.height() + 2
+namespace {
+	template <typename... Tt>
+	// TODO : Add enable_if to validate that it's a QRect
+	static int GetCost(const QRect &rect, const Tt &... rects) {
+		// This should end up being the area of rect - sum(area(rects))
+		// Which is cost - cost1 - cost2 - cost3...
+		int cost = GetArea(rect);
+		((cost -= GetArea(rects)), ...);
+		return cost;
+	}
+}
+
+void KtlQCanvasClusterizer::add(const QRect &rect) {
+	const auto biggerRect = rect.adjusted(
+		-1, -1,
+		2, 2
 	);
 
-    //assert(rect.width()>0 && rect.height()>0);
-
-	int cursor;
-
-	for (cursor=0; cursor<count; cursor++) {
-		if (cluster[cursor].contains(rect)) {
-	    // Wholly contained already.
+	for (int cursor : Times{count_}) {
+		if (clusters.get()[cursor].contains(rect)) {
+			// Already wholly contained.
 			return;
 		}
 	}
 
-	int lowestcost=9999999;
-	int cheapest=-1;
-	cursor = 0;
-	while( cursor<count ) {
-		if (cluster[cursor].intersects(biggerrect)) {
-			QRect larger=cluster[cursor];
-			include(larger,rect);
-			int cost = larger.width()*larger.height() -
-					cluster[cursor].width()*cluster[cursor].height();
+	const auto resetCosts = []() -> std::pair<int, int> {
+		return { MaxValue<int>, -1 };
+	};
 
-			if (cost < lowestcost) {
-				bool bad=false;
-				for (int c=0; c<count && !bad; c++) {
-					bad=cluster[c].intersects(larger) && c!=cursor;
-				}
+	{
+		auto [lowestCost, cheapest] = resetCosts();
 
-				if (!bad) {
-					cheapest=cursor;
-					lowestcost=cost;
-				}
+		for (int cursor : Times{count_}) {
+			if (!clusters.get()[cursor].intersects(biggerRect)) {
+				continue;
 			}
-		}
-		cursor++;
-	}
 
-	if (cheapest>=0) {
-		include(cluster[cheapest],rect);
-		return;
-	}
+			const auto &clusterRect = clusters.get()[cursor];
+			QRect larger = clusterRect | rect;
+			const int cost = GetCost(larger, clusterRect);
 
-	if (count < maxcl) {
-		cluster[count++]=rect;
-		return;
-	}
+			if (cost >= lowestCost) {
+				continue;
+			}
 
-    // Do cheapest of:
-    //     add to closest cluster
-    //     do cheapest cluster merge, add to new cluster
-
-	lowestcost=9999999;
-	cheapest=-1;
-	cursor=0;
-	while( cursor<count ) {
-		QRect larger=cluster[cursor];
-		include(larger,rect);
-		int cost=larger.width()*larger.height()
-				- cluster[cursor].width()*cluster[cursor].height();
-		if (cost < lowestcost) {
-			bool bad=false;
-			for (int c=0; c<count && !bad; c++) {
-				bad=cluster[c].intersects(larger) && c!=cursor;
+			bool bad = false;
+			for (int c : Times{count_}) {
+				if (c != cursor && clusters.get()[c].intersects(larger)) {
+					bad = true;
+					break;
+				}
 			}
 
 			if (!bad) {
-				cheapest=cursor;
-				lowestcost=cost;
+				cheapest = cursor;
+				lowestCost = cost;
 			}
 		}
-		cursor++;
+
+		if (cheapest >= 0) {
+			clusters.get()[cheapest] |= rect;
+			return;
+		}
+
+		if (count_ < capacity) {
+			clusters.get()[count_++] = rect;
+			return;
+		}
 	}
 
-    // ###
-    // could make an heuristic guess as to whether we need to bother
-    // looking for a cheap merge.
+  // Do cheapest of:
+  //     add to closest cluster
+	//     do cheapest cluster merge, add to new cluster
 
-	int cheapestmerge1 = -1;
-	int cheapestmerge2 = -1;
+	int lastCheapest = -1;
+	{
+		auto [lowestCost, cheapest] = resetCosts();
 
-	int merge1 = 0;
-	while( merge1 < count ) {
-		int merge2=0;
-		while( merge2 < count ) {
-			if( merge1!=merge2) {
-				QRect larger=cluster[merge1];
-				include(larger,cluster[merge2]);
-				int cost=larger.width()*larger.height()
-						- cluster[merge1].width()*cluster[merge1].height()
-						- cluster[merge2].width()*cluster[merge2].height();
-				if (cost < lowestcost) {
-					bool bad=false;
+		for (int cursor : Times{count_}) {
+			const auto &clusterRect = clusters.get()[cursor];
 
-					for (int c=0; c<count && !bad; c++) {
-						bad=cluster[c].intersects(larger) && c!=cursor;
-					}
+			QRect larger = clusterRect | rect;
+			const int cost = GetCost(larger, clusterRect);
 
-					if (!bad) {
-						cheapestmerge1=merge1;
-						cheapestmerge2=merge2;
-						lowestcost=cost;
-					}
+			if (cost >= lowestCost) {
+				continue;
+			}
+
+			bool bad = false;
+
+			for (int c : Times{count_}) {
+				if (c != cursor && clusters.get()[c].intersects(larger)) {
+					bad = true;
+					break;
 				}
 			}
-			merge2++;
+
+			if (!bad) {
+				cheapest = cursor;
+				lowestCost = cost;
+			}
 		}
-		merge1++;
+
+		lastCheapest = cheapest;
 	}
 
-	if (cheapestmerge1>=0) {
-		include(cluster[cheapestmerge1],cluster[cheapestmerge2]);
-		cluster[cheapestmerge2]=cluster[count--];
-	} else {
-	// if (!cheapest) debugRectangles(rect);
-		include(cluster[cheapest],rect);
+  // ###
+  // could make an heuristic guess as to whether we need to bother
+  // looking for a cheap merge.
+
+	int lowestCost = MaxValue<int>;
+	int cheapestMerge1 = -1;
+	int cheapestMerge2 = -1;
+
+	for (int merge1 : Times{count_}) {
+		const auto &clusterRect1 = clusters.get()[merge1];
+
+		for (int merge2 : Times{count_}) {
+			if (merge1 == merge2) continue;
+
+			const auto &clusterRect2 = clusters.get()[merge2];
+
+			QRect larger = clusterRect1 | clusterRect2;
+
+			const int cost = GetCost(larger, clusterRect1, clusterRect2);
+
+			if (cost >= lowestCost) {
+				continue;
+			}
+
+			bool bad = false;
+
+			for (int c : Times{count_}) {
+				if (c != merge1 && c != merge2 && clusters.get()[c].intersects(larger)) {
+					bad = true;
+					break;
+				}
+			}
+
+			if (!bad) {
+				cheapestMerge1 = merge1;
+				cheapestMerge2 = merge2;
+				lowestCost = cost;
+			}
+		}
 	}
 
-    // NB: clusters do not intersect (or intersection will
-    //     overwrite). This is a result of the above algorithm,
-    //     given the assumption that (x,y) are ordered topleft
-    //     to bottomright.
+	if (cheapestMerge1 >= 0) {
+		clusters.get()[cheapestMerge1] |= clusters.get()[cheapestMerge2];
+		clusters.get()[cheapestMerge2] = clusters.get()[count_--];
+	}
+	else {
+		clusters.get()[lastCheapest] |= rect;
+	}
 
-    // ###
-	//
-    // add explicit x/y ordering to that comment, move it to the top
-    // and rephrase it as pre-/post-conditions.
-}
-
-const QRect& KtlQCanvasClusterizer::operator[](int i)
-{
-	return cluster[i];
+	// NB: clusters do not intersect (or intersection will
+	//     overwrite). This is a result of the above algorithm,
+	//     given the assumption that (x,y) are ordered topleft
+	//     to bottomright.
+	// add explicit x/y ordering to that comment, move it to the top
+	// and rephrase it as pre-/post-conditions.
 }
 
 //END class KtlQCanvasClusterizer
 
+int KtlQCanvas::toChunkScaling(int x, int chunkSize) {
+	return roundDown(x, chunkSize);
+}
 
-static int gcd(int a, int b)
+QRect KtlQCanvas::getChunkSize(const QRect &s, int chunkSize) {
+	return QRect{
+		toChunkScaling(s.left(), chunkSize),
+		toChunkScaling(s.top(), chunkSize),
+		((s.width() - 1) / chunkSize) + 3,
+		((s.height() - 1) / chunkSize) + 3
+	};
+}
+
+KtlQCanvas::KtlQCanvas(int w, int h, int chunksze, int maxclust) :
+	QObject(),
+	m_size(QRect{0, 0, w, h}),
+	m_chunkSize(getChunkSize(m_size, chunksze)),
+	chunks(std::make_unique<KtlQCanvasChunk[]>(GetArea(m_chunkSize))),
+	chunksize(chunksze),
+	maxclusters(maxclust)
+{}
+
+KtlQCanvas::KtlQCanvas([[maybe_unused]] QObject *parent, const char *name) :
+	KtlQCanvas(0, 0)
 {
-	int r;
-	while ( (r = a%b) ) {
-		a=b;
-		b=r;
+	setObjectName(name);
+}
+
+KtlQCanvas::KtlQCanvas(const QPixmap &p, int h, int v, int tilewidth, int tileheight) :
+	KtlQCanvas(
+		h * tilewidth,
+		v * tileheight,
+		std::lcm(tilewidth, tileheight)
+	)
+{
+	setTiles(p, h, v, tilewidth, tileheight);
+}
+
+void qt_unview(KtlQCanvas *c) {
+	for (auto &view : c->m_viewList) {
+		view->viewing = nullptr;
 	}
-	return b;
 }
 
-static int scm(int a, int b)
-{
-	int g = gcd(a,b);
-	return a/g*b;
-}
-
-
-int KtlQCanvas::toChunkScaling( int x ) const
-{
-	return roundDown( x, chunksize );
-}
-
-
-void KtlQCanvas::initChunkSize( const QRect & s )
-{
-	m_chunkSize = QRect( toChunkScaling(s.left()),
-			 toChunkScaling(s.top()),
-			 ((s.width()-1)/chunksize)+3,
-			 ((s.height()-1)/chunksize)+3 );
-}
-
-
-void KtlQCanvas::init(int w, int h, int chunksze, int mxclusters)
-{
-	init( QRect( 0, 0, w, h ), chunksze, mxclusters );
-}
-
-void KtlQCanvas::init( const QRect & r, int chunksze, int mxclusters )
-{
-	m_size = r ;
-	chunksize=chunksze;
-	maxclusters=mxclusters;
-	initChunkSize( r );
-	chunks=new KtlQCanvasChunk[m_chunkSize.width()*m_chunkSize.height()];
-	update_timer = 0;
-	bgcolor = Qt::white;
-	grid = 0;
-	htiles = 0;
-	vtiles = 0;
-	debug_redraw_areas = false;
-}
-
-KtlQCanvas::KtlQCanvas( QObject* parent, const char* name )
-	: QObject( parent /*, name*/ )
-{
-    setObjectName( name );
-	init(0,0);
-}
-
-KtlQCanvas::KtlQCanvas(const int w, const int h)
-{
-	init(w,h);
-}
-
-KtlQCanvas::KtlQCanvas( QPixmap p, int h, int v, int tilewidth, int tileheight ) {
-
-	init(h*tilewidth, v*tileheight, scm(tilewidth,tileheight) );
-	setTiles( p, h, v, tilewidth, tileheight );
-}
-
-void qt_unview( KtlQCanvas * c )
-{
-	for (QList<KtlQCanvasView*>::iterator itView =c->m_viewList.begin(); itView != c->m_viewList.end(); ++itView) {
-        KtlQCanvasView* view = *itView;
-		view->viewing = 0;
-    }
-}
-
-KtlQCanvas::~KtlQCanvas()
-{
+KtlQCanvas::~KtlQCanvas() {
 	qt_unview(this);
-	KtlQCanvasItemList all = allItems();
-	for (KtlQCanvasItemList::Iterator it=all.begin(); it!=all.end(); ++it)
-		delete *it;
-	delete [] chunks;
-	delete [] grid;
+	for (auto &item : allItems()) {
+		if (!item) continue;
+		delete item;
+	}
+	delete update_timer;
 }
 
 /*!
 	\internal
 	Returns the chunk at a chunk position \a i, \a j.
  */
-KtlQCanvasChunk& KtlQCanvas::chunk(int i, int j) const
-{
+KtlQCanvasChunk& KtlQCanvas::chunk(int i, int j) const {
 	i -= m_chunkSize.left();
 	j -= m_chunkSize.top();
-    //return chunks[i+m_chunkSize.width()*j];
-    const int chunkOffset = i + m_chunkSize.width() * j;
-    if ((chunkOffset < 0) || (chunkOffset >= (m_chunkSize.width()*m_chunkSize.height())) ) {
-        qWarning() << Q_FUNC_INFO << " invalid chunk coordinates: " << i << " " << j;
-        return chunks[0]; // at least it should not crash
-    }
-    return chunks[chunkOffset];
+
+  const int chunkOffset = i + m_chunkSize.width() * j;
+  if (chunkOffset < 0 || chunkOffset >= GetArea(m_chunkSize)) {
+  	qWarning() << Q_FUNC_INFO << " invalid chunk coordinates: " << i << " " << j;
+    return chunks.get()[0]; // at least it should not crash
+  }
+	return chunks.get()[chunkOffset];
 }
 
 /*!
 	\internal
 	Returns the chunk at a pixel position \a x, \a y.
  */
-KtlQCanvasChunk& KtlQCanvas::chunkContaining(int x, int y) const
-{
-	return chunk( toChunkScaling(x), toChunkScaling(y) );
+KtlQCanvasChunk& KtlQCanvas::chunkContaining(int x, int y) const {
+	return chunk(
+		toChunkScaling(x),
+		toChunkScaling(y)
+	);
 }
 
-KtlQCanvasItemList KtlQCanvas::allItems()
-{
+// TODO : this is dumb
+KtlQCanvasItemList KtlQCanvas::allItems() const {
 	KtlQCanvasItemList list;
-	auto end = m_canvasItems.end();
-	for ( auto it = m_canvasItems.begin(); it != end; ++it )
-		list << it->second;
+	list.reserve(m_canvasItems.size());
+	for (auto &itemPair : m_canvasItems) {
+		auto &item = itemPair.second;
+		if (!item) continue;
+		list << item;
+	}
 	return list;
 }
 
-void KtlQCanvas::resize( const QRect & newSize )
-{
-	if ( newSize == m_size )
+void KtlQCanvas::resize(const QRect &newSize) {
+	if (newSize == m_size)
 		return;
 
-	QList<KtlQCanvasItem*> hidden;
-	auto end = m_canvasItems.end();
-	for ( auto it = m_canvasItems.begin(); it != end; ++it )
-	{
-		KtlQCanvasItem * i = it->second;
-		if ( i->isVisible() )
-		{
-			i->hide();
-			hidden.append( i );
-		}
+	QList<KtlQCanvasItem *> hidden;
+	hidden.reserve(m_canvasItems.size());
+	for (auto &itemPair : m_canvasItems) {
+		auto &item = itemPair.second;
+		if (!item) continue;
+		if (!item->isVisible()) continue;
+		item->hide();
+		hidden.append(item);
 	}
 
-	initChunkSize( newSize );
-	KtlQCanvasChunk* newchunks = new KtlQCanvasChunk[m_chunkSize.width()*m_chunkSize.height()];
+	m_chunkSize = getChunkSize(newSize);
+	chunks = std::make_unique<KtlQCanvasChunk[]>(GetArea(m_chunkSize));
 	m_size = newSize;
-	delete [] chunks;
-	chunks=newchunks;
 
-    for (QList<KtlQCanvasItem*>::iterator itItem = hidden.begin(); itItem != hidden.end(); ++itItem) {
-        KtlQCanvasItem* item = *itItem;
-        item->show();
-    }
-// 	for (item=hidden.first(); item != 0; item=hidden.next()) {  // 2018.08.14 - use QList
-// 		item->show();
-// 	}
+	for (auto *item : hidden) {
+		item->show();
+	}
 
 	setAllChanged();
 
 	emit resized();
 }
 
-void KtlQCanvas::retune(int chunksze, int mxclusters)
-{
-	maxclusters=mxclusters;
+void KtlQCanvas::retune(int chunksze, int mxclusters) {
+	maxclusters = mxclusters;
 
-	if ( chunksize!=chunksze )
-	{
-		QList<KtlQCanvasItem*> hidden;
-		auto end = m_canvasItems.end();
-		for ( auto it = m_canvasItems.begin(); it != end; ++it )
-		{
-			KtlQCanvasItem * i = it->second;
-			if ( i->isVisible() )
-			{
-				i->hide();
-				hidden.append( i );
-			}
+	if (chunksize == chunksze) {
+		return;
+	}
+
+	QList<KtlQCanvasItem *> hidden;
+	hidden.reserve(m_canvasItems.size());
+	for (auto &itemPair : m_canvasItems) {
+		auto &item = itemPair.second;
+		if (!item) continue;
+		if (!item->isVisible()) continue;
+		item->hide();
+		hidden.append(item);
+	}
+
+	chunksize = chunksze;
+
+	m_chunkSize = getChunkSize(m_size);
+	chunks = std::make_unique<KtlQCanvasChunk[]>(GetArea(m_chunkSize));
+
+	for (auto *item : hidden) {
+		item->show();
+	}
+}
+
+void KtlQCanvas::addItem(KtlQCanvasItem *item) {
+	m_canvasItems.insert({item->z(), item});
+}
+
+void KtlQCanvas::removeItem(const KtlQCanvasItem *item) {
+	for (auto it = m_canvasItems.begin(); it != m_canvasItems.end();) {
+		auto &itItem = it->second;
+		if (!itItem || itItem == item) {
+			it = m_canvasItems.erase(it);
 		}
-
-		chunksize=chunksze;
-
-		initChunkSize( m_size );
-		KtlQCanvasChunk* newchunks = new KtlQCanvasChunk[m_chunkSize.width()*m_chunkSize.height()];
-		delete [] chunks;
-		chunks=newchunks;
-
-		for (QList<KtlQCanvasItem*>::iterator itItem = hidden.begin(); itItem != hidden.end(); ++itItem) {
-            KtlQCanvasItem* item = *itItem;
-			item->show();
+		else {
+			++it;
 		}
 	}
 }
 
-void KtlQCanvas::addItem(KtlQCanvasItem* item)
-{
-	m_canvasItems.insert( make_pair( item->z(), item ) );
-}
-
-void KtlQCanvas::removeItem(const KtlQCanvasItem* item)
-{
-	auto end = m_canvasItems.end();
-	for ( auto it = m_canvasItems.begin(); it != end; ++it )
-	{
-		if ( it->second == item )
-		{
-			m_canvasItems.erase( it );
-			return;
-		}
-	}
-}
-
-void KtlQCanvas::addView(KtlQCanvasView* view)
-{
+void KtlQCanvas::addView(KtlQCanvasView *view) {
+	// TODO : Check if it already contains it?
 	m_viewList.append(view);
-	if ( htiles>1 || vtiles>1 || pm.isNull() ) {
-		//view->viewport()->setBackgroundColor(backgroundColor()); // 2018.11.21
-        QPalette palette;
-        palette.setColor(view->viewport()->backgroundRole(), backgroundColor());
-        view->viewport()->setPalette(palette);
-    }
+	if (htiles > 1 || vtiles > 1 || pm.isNull()) {
+  	QPalette palette;
+  	palette.setColor(view->viewport()->backgroundRole(), backgroundColor());
+  	view->viewport()->setPalette(palette);
+	}
 }
 
-void KtlQCanvas::removeView(KtlQCanvasView* view)
-{
-    m_viewList.removeAll(view);
+void KtlQCanvas::removeView(KtlQCanvasView *view) {
+  m_viewList.removeAll(view);
 }
 
-void KtlQCanvas::setUpdatePeriod(int ms)
-{
-	if ( ms<0 ) {
-		if ( update_timer )
+void KtlQCanvas::setUpdatePeriod(int ms) {
+	if (ms < 0) {
+		if (update_timer) {
 			update_timer->stop();
-	} else {
-		if ( update_timer )
-			delete update_timer;
+		}
+	}
+	else {
+		delete update_timer;
 		update_timer = new QTimer(this);
-		connect(update_timer,SIGNAL(timeout()),this,SLOT(update()));
+		connect(update_timer, SIGNAL(timeout()), this, SLOT(update()));
 		update_timer->start(ms);
 	}
 }
 
 // Don't call this unless you know what you're doing.
 // p is in the content's co-ordinate example.
-void KtlQCanvas::drawViewArea( KtlQCanvasView* view, QPainter* p, const QRect& vr, [[maybe_unused]] bool dbuf /* always false */)
-{
-	QPoint tl = view->contentsToViewport(QPoint(0,0));
+void KtlQCanvas::drawViewArea(KtlQCanvasView *view, QPainter *p, const QRect &vr) {
+	QPoint tl = view->contentsToViewport(QPoint{0, 0});
 
 	QMatrix wm = view->worldMatrix();
 	QMatrix iwm = wm.inverted();
     // ivr = covers all chunks in vr
 	QRect ivr = iwm.mapRect(vr);
 	QMatrix twm;
-	twm.translate(tl.x(),tl.y());
+	twm.translate(tl.x(), tl.y());
 
-// 	QRect all(0,0,width(),height());
-	QRect all(m_size);
+	QRect all = m_size;
 
-    if (!p->isActive()) {
-        qWarning() << Q_FUNC_INFO << " painter is not active";
-    }
+  if (!p->isActive()) {
+  	qWarning() << Q_FUNC_INFO << " painter is not active";
+  }
 
-	if ( !all.contains(ivr) )
-	{
+	if (!all.contains(ivr)) {
 		// Need to clip with edge of canvas.
 
 		// For translation-only transformation, it is safe to include the right
 		// and bottom edges, but otherwise, these must be excluded since they
 		// are not precisely defined (different bresenham paths).
 		QPolygon a;
-		if ( wm.m12()==0.0 && wm.m21()==0.0 && wm.m11() == 1.0 && wm.m22() == 1.0 )
-			a = QPolygon( QRect(all.x(),all.y(),all.width()+1,all.height()+1) );
-		else	a = QPolygon( all );
+		if (
+			wm.m12() == 0.0 &&
+			wm.m21() == 0.0 &&
+			wm.m11() == 1.0 &&
+			wm.m22() == 1.0
+		) {
+			a = QPolygon(QRect(
+				all.x(),
+				all.y(),
+				all.width() + 1,
+				all.height() + 1
+			));
+		}
+		else {
+			a = QPolygon(all);
+		}
 
-		a = (wm*twm).map(a);
+		a = (wm * twm).map(a);
 
-		//if ( view->viewport()->backgroundMode() == Qt::NoBackground ) // 2018.12.02
-        QWidget *vp = view->viewport();
-        if ( vp->palette().color( vp->backgroundRole() ) == QColor(Qt::transparent) )
-		{
-			QRect cvr = vr; cvr.translate(tl.x(),tl.y());
-			p->setClipRegion(QRegion(cvr)-QRegion(a));
-			p->fillRect(vr,view->viewport()->palette()
-					.brush(QPalette::Active, QPalette::Window));
+    QWidget *vp = view->viewport();
+    if (vp->palette().color(vp->backgroundRole()) == QColor(Qt::transparent)) {
+			QRect cvr = vr;
+			cvr.translate(tl.x(), tl.y());
+			p->setClipRegion(QRegion(cvr) - QRegion(a));
+			p->fillRect(
+				vr,
+				view->viewport()->palette().brush(QPalette::Active, QPalette::Window)
+			);
 		}
 		p->setClipRegion(a);
 	}
 
-#if 0 // 2018.03.11 - dbuf is always false
-	if ( dbuf ) {
-		offscr = QPixmap(vr.width(), vr.height());
-		offscr.x11SetScreen(p->device()->x11Screen());
-		//QPainter dbp(&offscr);
-        QPainter dbp;
-        const bool isSuccess = dbp.begin(&offscr);
-        if (!isSuccess) {
-            qWarning() << Q_FUNC_INFO << " painter not active";
-        }
+	p->setWorldMatrix(wm * twm);
 
-		twm.translate(-vr.x(),-vr.y());
-		twm.translate(-tl.x(),-tl.y());
-		dbp.setWorldMatrix( wm*twm, true );
-
-        // 2015.11.27 - do not clip, in order to fix drawing of garbage on the screen.
-		//dbp.setClipRect(0,0,vr.width(), vr.height());
-// 		dbp.setClipRect(v);
-		drawCanvasArea(ivr,&dbp,false);
-		dbp.end();
-		p->drawPixmap(vr.x(), vr.y(), offscr, 0, 0, vr.width(), vr.height());
-	} else
-#endif
-    {
-		QRect r = vr; r.translate(tl.x(),tl.y()); // move to untransformed co-ords
-		if ( !all.contains(ivr) )
-		{
-			QRegion inside = p->clipRegion() & r;
-	 	   //QRegion outside = p->clipRegion() - r;
-		    //p->setClipRegion(outside);
-		    //p->fillRect(outside.boundingRect(),red);
-            // 2015.11.27 - do not clip, in order to fix drawing of garbage on the screen.
-			//p->setClipRegion(inside);
-		} else {
-            // 2015.11.27 - do not clip, in order to fix drawing of garbage on the screen.
-			//p->setClipRect(r);
-		}
-		p->setWorldMatrix( wm*twm );
-
-		p->setBrushOrigin(tl.x(), tl.y());
-		drawCanvasArea(ivr,p,false);
-	}
+	p->setBrushOrigin(tl.x(), tl.y());
+	drawCanvasArea(ivr, p);
 }
 
-void KtlQCanvas::advance()
-{
-    qWarning() << "KtlQCanvas::advance: TODO"; // TODO
+void KtlQCanvas::advance() {
+  qWarning() << "KtlQCanvas::advance: TODO"; // TODO
 }
-
 
 /*!
 	Repaints changed areas in all views of the canvas.
  */
-void KtlQCanvas::update()
-{
+void KtlQCanvas::update() {
 	KtlQCanvasClusterizer clusterizer(m_viewList.count());
-	QList<QRect> doneareas;
+	QList<QRect> doneRects;
 
-	//Q3PtrListIterator<KtlQCanvasView> it(m_viewList);   // 2018.08.14 - see below
-	//KtlQCanvasView* view;
-	//while( (view=it.current()) != 0 ) {
-	//	++it;
-    //
-    for (QList<KtlQCanvasView*>::iterator itView = m_viewList.begin(); itView != m_viewList.end(); ++itView) {
-        KtlQCanvasView* view = *itView;
-
+	for (auto *view : m_viewList) {
 		QMatrix wm = view->worldMatrix();
 
-		QRect area(view->contentsX(),view->contentsY(),
-				   view->visibleWidth(),view->visibleHeight());
-		if (area.width()>0 && area.height()>0) {
+		// TODO : There's probably a better way to do this.
+		QRect area(
+			view->contentsX(),
+			view->contentsY(),
+			view->visibleWidth(),
+			view->visibleHeight()
+		);
 
-			if ( !wm.isIdentity() )
-			{
-				// r = Visible area of the canvas where there are changes
-				QRect r = changeBounds(view->inverseWorldMatrix().mapRect(area));
-				if ( !r.isEmpty() )
-				{
-                    // as of my testing, drawing below always fails, so just post for an update event to the widget
-                    view->viewport()->update();
+		if (area.width() <= 0 || area.height() <= 0) {
+			continue;
+		}
 
-#if 0
-                    //view->viewport()->setAttribute(Qt::WA_PaintOutsidePaintEvent, true); // note: remove this when possible
-					//QPainter p(view->viewport());
-                    QPainter p;
-                    const bool startSucces = p.begin( view->viewport() );
-                    if (!startSucces) {
-                        qWarning() << Q_FUNC_INFO << " painter is not active ";
-                    }
-		  		  // Translate to the coordinate system of drawViewArea().
-					QPoint tl = view->contentsToViewport(QPoint(0,0));
-					p.translate(tl.x(),tl.y());
-// 					drawViewArea( view, &p, wm.map(r), true );
-#endif
-					doneareas.append(r);
-				}
-			} else clusterizer.add(area);
+		if (!wm.isIdentity()) {
+			// r = Visible area of the canvas where there are changes
+			QRect r = changeBounds(view->inverseWorldMatrix().mapRect(area));
+			if (!r.isEmpty()) {
+				// as of my testing, drawing below always fails, so just post for an update event to the widget
+				view->viewport()->update();
+				doneRects.append(r);
+			}
+		}
+		else {
+			clusterizer.add(area);
 		}
 	}
 
-	for (int i=0; i<clusterizer.clusters(); i++)
+	for (int i : Times{clusterizer.count()}) {
 		drawChanges(clusterizer[i]);
+	}
 
-	//for ( QRect* r=doneareas.first(); r != 0; r=doneareas.next() )        // 2018.08.14 - use iterators
-	//	setUnchanged(*r);
-    for (QList<QRect>::iterator itDone = doneareas.begin(); itDone != doneareas.end(); ++itDone) {
-        setUnchanged( *itDone );
-    }
+	for (auto &doneRect : doneRects) {
+		setUnchanged(doneRect);
+	}
 }
-
 
 /*!
 	Marks the whole canvas as changed.
 	All views of the canvas will be entirely redrawn when
 	update() is called next.
  */
-void KtlQCanvas::setAllChanged()
-{
+void KtlQCanvas::setAllChanged() {
 	setChanged(m_size);
 }
 
@@ -634,25 +526,22 @@ void KtlQCanvas::setAllChanged()
 	Marks \a area as changed. This \a area will be redrawn in all
 	views that are showing it when update() is called next.
  */
-void KtlQCanvas::setChanged(const QRect& area)
-{
-	QRect thearea = area.intersect( m_size );
+void KtlQCanvas::setChanged(const QRect &area) {
+	const auto intersectedArea = area.intersect(m_size);
 
-	int mx = toChunkScaling(thearea.x()+thearea.width()+chunksize);
-	int my = toChunkScaling(thearea.y()+thearea.height()+chunksize);
-	if (mx > m_chunkSize.right())
-		mx=m_chunkSize.right();
-	if (my > m_chunkSize.bottom())
-		my=m_chunkSize.bottom();
+	const int mx = std::min(
+		toChunkScaling(intersectedArea.x() + intersectedArea.width() + chunksize),
+		m_chunkSize.right()
+	);
+	const int my = std::min(
+		toChunkScaling(intersectedArea.y() + intersectedArea.height() + chunksize),
+		m_chunkSize.bottom()
+	);
 
-	int x= toChunkScaling(thearea.x());
-	while( x<mx) {
-		int y = toChunkScaling(thearea.y());
-		while( y<my ) {
-			chunk(x,y).change();
-			y++;
+	for (int x = toChunkScaling(intersectedArea.x()); x < mx; ++x) {
+		for (int y = toChunkScaling(intersectedArea.y()); y < my; ++y) {
+			chunk(x, y).change();
 		}
-		x++;
 	}
 }
 
@@ -661,68 +550,56 @@ void KtlQCanvas::setChanged(const QRect& area)
 	the views for the next update(), unless it is marked or changed
 	again before the next call to update().
  */
-void KtlQCanvas::setUnchanged(const QRect& area)
-{
-	QRect thearea = area.intersect( m_size );
+void KtlQCanvas::setUnchanged(const QRect &area) {
+	const auto intersectedArea = area.intersect(m_size);
 
-	int mx = toChunkScaling(thearea.x()+thearea.width()+chunksize);
-	int my = toChunkScaling(thearea.y()+thearea.height()+chunksize);
-	if (mx > m_chunkSize.right())
-		mx=m_chunkSize.right();
-	if (my > m_chunkSize.bottom())
-		my=m_chunkSize.bottom();
+	const int mx = std::min(
+		toChunkScaling(intersectedArea.x() + intersectedArea.width() + chunksize),
+		m_chunkSize.right()
+	);
+	const int my = std::min(
+		toChunkScaling(intersectedArea.y() + intersectedArea.height() + chunksize),
+		m_chunkSize.bottom()
+	);
 
-	int x = toChunkScaling(thearea.x());
-	while( x<mx) {
-		int y = toChunkScaling(thearea.y());
-		while( y<my ) {
-			chunk(x,y).takeChange();
-			y++;
+	for (int x = toChunkScaling(intersectedArea.x()); x < mx; ++x) {
+		for (int y = toChunkScaling(intersectedArea.y()); y < my; ++y) {
+			chunk(x, y).takeChange();
 		}
-		x++;
 	}
 }
 
 
-QRect KtlQCanvas::changeBounds(const QRect& inarea)
-{
-	QRect area=inarea.intersect( m_size );
+QRect KtlQCanvas::changeBounds(const QRect &inarea) {
+	const auto intersectedArea = inarea.intersect(m_size);
 
-	int mx = toChunkScaling(area.x()+area.width()+chunksize);
-	int my = toChunkScaling(area.y()+area.height()+chunksize);
-	if (mx > m_chunkSize.right())
-		mx=m_chunkSize.right();
-	if (my > m_chunkSize.bottom())
-		my=m_chunkSize.bottom();
+	const int mx = std::min(
+		toChunkScaling(intersectedArea.x() + intersectedArea.width() + chunksize),
+		m_chunkSize.right()
+	);
+	const int my = std::min(
+		toChunkScaling(intersectedArea.y() + intersectedArea.height() + chunksize),
+		m_chunkSize.bottom()
+	);
 
 	QRect result;
 
-	int x = toChunkScaling(area.x());
-	while( x<mx ) {
-		int y = toChunkScaling(area.y());
-		while( y<my ) {
-			KtlQCanvasChunk& ch=chunk(x,y);
-			if ( ch.hasChanged() )
-				result |= QRect(x,y,1,1);
-			y++;
+	for (int x = toChunkScaling(intersectedArea.x()); x < mx; ++x) {
+		for (int y = toChunkScaling(intersectedArea.y()); y < my; ++y) {
+			if (chunk(x, y).hasChanged()) {
+				result |= QPointRect{x, y};
+			}
 		}
-		x++;
 	}
 
-	if ( !result.isEmpty() ) {
-		//result.rLeft() *= chunksize; // 2018.11.18
-		//result.rTop() *= chunksize;
-		//result.rRight() *= chunksize;
-		//result.rBottom() *= chunksize;
-		//result.rRight() += chunksize;
-		//result.rBottom() += chunksize;
-
-        result.setLeft( result.left() * chunksize );
-        result.setTop( result.top() * chunksize );
-        result.setRight( result.right() * chunksize );
-        result.setBottom( result.bottom() * chunksize );
-        result.setRight( result.right() + chunksize );
-        result.setBottom( result.bottom() + chunksize );
+	if (!result.isEmpty()) {
+		result.setLeft( result.left() * chunksize );
+		result.setTop( result.top() * chunksize );
+		result.setRight( result.right() * chunksize );
+		result.setBottom( result.bottom() * chunksize );
+		// TODO : err, is this right?
+		result.setRight( result.right() + chunksize );
+		result.setBottom( result.bottom() + chunksize );
 	}
 
 	return result;
@@ -731,41 +608,38 @@ QRect KtlQCanvas::changeBounds(const QRect& inarea)
 /*!
 	Redraws the area \a inarea of the KtlQCanvas.
  */
-void KtlQCanvas::drawChanges(const QRect& inarea)
-{
-	QRect area=inarea.intersect( m_size );
+void KtlQCanvas::drawChanges(const QRect &inarea) {
+	const auto intersectedArea = inarea.intersect(m_size);
 
-	KtlQCanvasClusterizer clusters(maxclusters);
+	const int mx = std::min(
+		toChunkScaling(intersectedArea.x() + intersectedArea.width() + chunksize),
+		m_chunkSize.right()
+	);
+	const int my = std::min(
+		toChunkScaling(intersectedArea.y() + intersectedArea.height() + chunksize),
+		m_chunkSize.bottom()
+	);
 
-	int mx = toChunkScaling(area.x()+area.width()+chunksize);
-	int my = toChunkScaling(area.y()+area.height()+chunksize);
-	if (mx > m_chunkSize.right())
-		mx=m_chunkSize.right();
-	if (my > m_chunkSize.bottom())
-		my=m_chunkSize.bottom();
+	KtlQCanvasClusterizer clusters = {maxclusters};
 
-	int x = toChunkScaling(area.x());
-	while( x<mx ) {
-		int y = toChunkScaling(area.y());
-		while( y<my ) {
-			KtlQCanvasChunk& ch=chunk(x,y);
-			if ( ch.hasChanged() )
-				clusters.add(x,y);
-			y++;
+	for (int x = toChunkScaling(intersectedArea.x()); x < mx; ++x) {
+		for (int y = toChunkScaling(intersectedArea.y()); y < my; ++y) {
+			if (chunk(x, y).hasChanged()) {
+				clusters.add(x, y);
+			}
 		}
-		x++;
 	}
 
-	for (int i=0; i<clusters.clusters(); i++)
-	{
-		QRect elarea=clusters[i];
+	for (int i : Times{clusters.count()}) {
+		QRect elarea = clusters[i];
 		elarea.setRect(
-				elarea.left()*chunksize,
-		elarea.top()*chunksize,
-		elarea.width()*chunksize,
-		elarea.height()*chunksize
-					  );
-		drawCanvasArea(elarea, NULL, /*true*/ false);
+			elarea.left() * chunksize,
+			elarea.top() * chunksize,
+			// TODO : err, is this right?
+			(elarea.width() * chunksize) + chunksize,
+			(elarea.height() * chunksize) + chunksize
+		);
+		drawCanvasArea(elarea, nullptr);
 	}
 }
 
@@ -782,175 +656,89 @@ void KtlQCanvas::drawChanges(const QRect& inarea)
 }
 	\endcode
  */
-void KtlQCanvas::drawArea(const QRect& clip, QPainter* painter)
-{
-	if ( painter )
-		drawCanvasArea( clip, painter, false );
+void KtlQCanvas::drawArea(const QRect &clip, QPainter *painter) {
+	if (painter) {
+		drawCanvasArea(clip, painter);
+	}
 }
 
-
-void KtlQCanvas::drawCanvasArea(const QRect& inarea, QPainter* p, [[maybe_unused]] bool double_buffer /* 2018.03.11 - always false */)
-{
-	QRect area=inarea.intersect( m_size );
-
+void KtlQCanvas::drawCanvasArea(const QRect &inarea, QPainter *p) {
 	if ((m_viewList.isEmpty() || !m_viewList.first()) && !p)
 		return; // Nothing to do.
 
-	int lx = toChunkScaling(area.x());
-	int ly = toChunkScaling(area.y());
-	int mx = toChunkScaling(area.right());
-	int my = toChunkScaling(area.bottom());
-	if (mx>=m_chunkSize.right())
-		mx=m_chunkSize.right()-1;
-	if (my>=m_chunkSize.bottom())
-		my=m_chunkSize.bottom()-1;
+	const auto intersectedArea = inarea.intersect(m_size);
 
-    // Stores the region within area that need to be drawn. It is relative
-    // to area.topLeft()  (so as to keep within bounds of 16-bit XRegions)
+	const int mx = std::min(
+		toChunkScaling(intersectedArea.x() + intersectedArea.width() + chunksize),
+		m_chunkSize.right()
+	);
+	const int my = std::min(
+		toChunkScaling(intersectedArea.y() + intersectedArea.height() + chunksize),
+		m_chunkSize.bottom()
+	);
+
+  // Stores the region within area that need to be drawn. It is relative
+  // to area.topLeft()  (so as to keep within bounds of 16-bit XRegions)
 	QRegion rgn;
 
-	for (int x=lx; x<=mx; x++) {
-		for (int y=ly; y<=my; y++) {
-	    	// Only reset change if all views updating, and
-	    	// wholy within area. (conservative:  ignore entire boundary)
-			//
-	  		// Disable this to help debugging.
-			//
+	for (int x = toChunkScaling(intersectedArea.x()); x < mx; ++x) {
+		for (int y = toChunkScaling(intersectedArea.y()); y < my; ++y) {
+			auto &currentChunk = chunk(x, y);
+
 			if (!p) {
-				if ( chunk(x,y).takeChange() )
-				{
-					// ### should at least make bands
-					rgn |= QRegion( x*chunksize-area.x(), y*chunksize-area.y(), chunksize,chunksize );
-// 					allvisible += *chunk(x,y).listPtr();
-					setNeedRedraw( chunk(x,y).listPtr() );
-// 					chunk(x,y).listPtr()->first()->m_bNeedRedraw = true;
+				if (currentChunk.takeChange()) {
+					rgn |= QRegion(
+						x * chunksize - intersectedArea.x(),
+						y * chunksize - intersectedArea.y(),
+						chunksize,
+						chunksize
+					);
+					setNeedRedraw(currentChunk.listPtr());
 				}
-			} else {
-// 				allvisible += *chunk(x,y).listPtr();
-				setNeedRedraw( chunk(x,y).listPtr() );
+			}
+			else {
+				setNeedRedraw(currentChunk.listPtr());
 			}
 		}
 	}
-// 	allvisible.sort();
 
-#if 0 // 2018.03.11 - double buffer is always false
-	if ( double_buffer ) {
-		offscr = QPixmap(area.width(), area.height());
-		if (p) offscr.x11SetScreen(p->device()->x11Screen());
-	}
-	if ( double_buffer && !offscr.isNull() ) {
-		QPainter painter;
-        const bool isSucces = painter.begin(&offscr);
-        if (!isSucces) {
-            qWarning() << Q_FUNC_INFO << " " << __LINE__ << " painter not active ";
-        }
-		painter.translate(-area.x(),-area.y());
-		painter.setBrushOrigin(-area.x(),-area.y());
-
-		if ( p ) {
-			painter.setClipRect(QRect(0,0,area.width(),area.height()));
-		} else {
-			painter.setClipRegion(rgn);
-		}
-        if (!painter.isActive()) {
-            qWarning() << Q_FUNC_INFO << " " << __LINE__ << " painter is not active";
-        }
-
-		drawBackground(painter,area);
-// 		allvisible.drawUnique(painter);
-		drawChangedItems( painter );
-		drawForeground(painter,area);
-		painter.end();
-
-		if ( p ) {
-			p->drawPixmap( area.x(), area.y(), offscr, 0, 0, area.width(), area.height() );
-			return;
-		}
-
-	} else
-#endif
-    if ( p ) {
-		drawBackground(*p,area);
-// 		allvisible.drawUnique(*p);
-		drawChangedItems( *p );
-		drawForeground(*p,area);
+	if (p) {
+		drawBackground(*p, intersectedArea);
+		drawChangedItems(*p);
+		drawForeground(*p, intersectedArea);
 		return;
 	}
 
 	QPoint trtr; // keeps track of total translation of rgn
 
-	trtr -= area.topLeft();
+	trtr -= intersectedArea.topLeft();
 
-	for ( QList<KtlQCanvasView*>::iterator itView = m_viewList.begin(); itView != m_viewList.end(); ++itView) {
-        KtlQCanvasView* view = *itView;
-
-		if ( !view->worldMatrix().isIdentity() )
+	for (auto *view : m_viewList) {
+		if (!view->worldMatrix().isIdentity())
 			continue; // Cannot paint those here (see callers).
 
-        // as of my testing, drawing below always fails, so just post for an update event to the widget
-        view->viewport()->update();
+		// as of my testing, drawing below always fails, so just post for an update event to the widget
+		view->viewport()->update();
+	}
+}
 
-#if 0
-        //view->viewport()->setAttribute(Qt::WA_PaintOutsidePaintEvent, true); // note: remove this when possible
-		//QPainter painter(view->viewport());
-		QPainter painter;
-        const bool isSuccess = painter.begin(view->viewport());
-        static int paintSuccessCount = 0;
-        static int paintFailCount = 0;
-        if (!isSuccess) {
-            //qWarning() << Q_FUNC_INFO << " on view " << view << " viewport " << view->viewport();
-            qWarning() << Q_FUNC_INFO << " " << __LINE__ << " painter not active, applying workaround";
-            // TODO fix this workaround for repainting: the painter would try to draw to the widget outside of a paint event,
-            //  which is not expected to work. Thus this code just sends an update() to the widget, ensuring correct painting
-            ++paintFailCount;
-            qWarning() << Q_FUNC_INFO << " paint success: " << paintSuccessCount << ", fail: " << paintFailCount;
-            view->viewport()->update();
-            continue;
-        } else {
-            ++paintSuccessCount;
-        }
-		QPoint tr = view->contentsToViewport(area.topLeft());
-		QPoint nrtr = view->contentsToViewport(QPoint(0,0)); // new translation
-		QPoint rtr = nrtr - trtr; // extra translation of rgn
-		trtr += rtr; // add to total
+void KtlQCanvas::setNeedRedraw(const KtlQCanvasItemList *list) {
+	if (!list) return;
 
-		if (double_buffer) {
-			rgn.translate(rtr.x(),rtr.y());
-			painter.setClipRegion(rgn);
-			painter.drawPixmap(tr,offscr, QRect(QPoint(0,0),area.size()));
-		} else {
-			painter.translate(nrtr.x(),nrtr.y());
-			rgn.translate(rtr.x(),rtr.y());
-			painter.setClipRegion(rgn);
-			drawBackground(painter,area);
-// 			allvisible.drawUnique(painter);
-			drawChangedItems( painter );
-			drawForeground(painter,area);
-			painter.translate(-nrtr.x(),-nrtr.y());
-		}
-#endif
-
+	for (auto &item : *list) {
+		if (!item) continue;
+		item->setNeedRedraw(true);
 	}
 }
 
 
-void KtlQCanvas::setNeedRedraw( const KtlQCanvasItemList * list )
-{
-	KtlQCanvasItemList::const_iterator end = list->end();
-	for ( KtlQCanvasItemList::const_iterator it = list->begin(); it != end; ++it )
-		(*it)->setNeedRedraw( true );
-}
-
-
-void KtlQCanvas::drawChangedItems( QPainter & painter )
-{
-	auto end = m_canvasItems.end();
-	for ( auto it = m_canvasItems.begin(); it != end; ++it ) {
-		KtlQCanvasItem * i = it->second;
-		if ( i->needRedraw() ) {
-			i->draw( painter );
-			i->setNeedRedraw( false );
-		}
+void KtlQCanvas::drawChangedItems(QPainter &painter) {
+	for (auto &itemPair : m_canvasItems) {
+		auto &item = itemPair.second;
+		if (!item) continue;
+		if (!item->needRedraw()) continue;
+		item->draw(painter);
+		item->setNeedRedraw(false);
 	}
 }
 
@@ -964,11 +752,9 @@ void KtlQCanvas::drawChangedItems( QPainter & painter )
 	The sprite classes call this. Any new derived class of KtlQCanvasItem
 	must do so too. SetChangedChunkContaining can be used instead.
  */
-void KtlQCanvas::setChangedChunk(int x, int y)
-{
+void KtlQCanvas::setChangedChunk(int x, int y) {
 	if (validChunk(x,y)) {
-		KtlQCanvasChunk& ch=chunk(x,y);
-		ch.change();
+		chunk(x, y).change();
 	}
 }
 
@@ -982,11 +768,9 @@ void KtlQCanvas::setChangedChunk(int x, int y)
 	The item classes call this. Any new derived class of KtlQCanvasItem must
 	do so too. SetChangedChunk can be used instead.
  */
-void KtlQCanvas::setChangedChunkContaining(int x, int y)
-{
-	if ( onCanvas(x, y) ) {
-		KtlQCanvasChunk& chunk=chunkContaining(x,y);
-		chunk.change();
+void KtlQCanvas::setChangedChunkContaining(int x, int y) {
+	if (onCanvas(x, y)) {
+		chunkContaining(x, y).change();
 	}
 }
 
@@ -997,10 +781,9 @@ void KtlQCanvas::setChangedChunkContaining(int x, int y)
 	SetChangedChunk and SetChangedChunkContaining, this method marks the
 	chunk as `dirty'.
  */
-void KtlQCanvas::addItemToChunk(KtlQCanvasItem* g, int x, int y)
-{
-	if (validChunk(x, y) ) {
-		chunk(x,y).add(g);
+void KtlQCanvas::addItemToChunk(KtlQCanvasItem *g, int x, int y) {
+	if (validChunk(x, y)) {
+		chunk(x, y).add(g);
 	}
 }
 
@@ -1011,10 +794,9 @@ void KtlQCanvas::addItemToChunk(KtlQCanvasItem* g, int x, int y)
 	SetChangedChunk and SetChangedChunkContaining, this method marks the chunk
 	as `dirty'.
  */
-void KtlQCanvas::removeItemFromChunk(KtlQCanvasItem* g, int x, int y)
-{
+void KtlQCanvas::removeItemFromChunk(KtlQCanvasItem *g, int x, int y) {
 	if (validChunk(x,y)) {
-		chunk(x,y).remove(g);
+		chunk(x, y).remove(g);
 	}
 }
 
@@ -1025,10 +807,9 @@ void KtlQCanvas::removeItemFromChunk(KtlQCanvasItem* g, int x, int y)
 	SetChangedChunk and SetChangedChunkContaining, this method marks the
 	chunk as `dirty'.
  */
-void KtlQCanvas::addItemToChunkContaining(KtlQCanvasItem* g, int x, int y)
-{
-	if ( onCanvas( x, y ) ) {
-		chunkContaining(x,y).add(g);
+void KtlQCanvas::addItemToChunkContaining(KtlQCanvasItem *g, int x, int y) {
+	if (onCanvas(x, y)) {
+		chunkContaining(x, y).add(g);
 	}
 }
 
@@ -1039,10 +820,9 @@ void KtlQCanvas::addItemToChunkContaining(KtlQCanvasItem* g, int x, int y)
 	Like SetChangedChunk and SetChangedChunkContaining, this method
 	marks the chunk as `dirty'.
  */
-void KtlQCanvas::removeItemFromChunkContaining(KtlQCanvasItem* g, int x, int y)
-{
-	if ( onCanvas( x, y ) ) {
-		chunkContaining(x,y).remove(g);
+void KtlQCanvas::removeItemFromChunkContaining(KtlQCanvasItem *g, int x, int y) {
+	if (onCanvas(x, y)) {
+		chunkContaining(x, y).remove(g);
 	}
 }
 
@@ -1057,8 +837,7 @@ void KtlQCanvas::removeItemFromChunkContaining(KtlQCanvasItem* g, int x, int y)
 
 	\sa setBackgroundColor(), backgroundPixmap()
  */
-const QColor & KtlQCanvas::backgroundColor() const
-{
+const QColor & KtlQCanvas::backgroundColor() const {
 	return bgcolor;
 }
 
@@ -1067,23 +846,21 @@ const QColor & KtlQCanvas::backgroundColor() const
 
 	\sa backgroundColor(), setBackgroundPixmap(), setTiles()
  */
-void KtlQCanvas::setBackgroundColor( const QColor& c )
-{
-	if ( bgcolor != c ) {
-		bgcolor = c;
-		for (QList<KtlQCanvasView*>::iterator itView = m_viewList.begin(); itView != m_viewList.end(); ++itView) {
-            KtlQCanvasView* view = *itView;
-
-            /* XXX this doesn't look right. Shouldn't this
-                be more like setBackgroundPixmap? : Ian */
-            //view->viewport()->setEraseColor( bgcolor ); // 2018.11.21
-            QWidget *viewportWidg = view->viewport();
-            QPalette palette;
-            palette.setColor(viewportWidg->backgroundRole(), bgcolor);
-            viewportWidg->setPalette(palette);
-		}
-		setAllChanged();
+void KtlQCanvas::setBackgroundColor( const QColor &c ) {
+	if (bgcolor == c) {
+		return;
 	}
+
+	bgcolor = c;
+	for (auto *view : m_viewList) {
+		/* XXX this doesn't look right. Shouldn't this
+				be more like setBackgroundPixmap? : Ian */
+		QWidget *viewportWidget = view->viewport();
+		QPalette palette;
+		palette.setColor(viewportWidget->backgroundRole(), bgcolor);
+		viewportWidget->setPalette(palette);
+	}
+	setAllChanged();
 }
 
 /*!
@@ -1092,8 +869,7 @@ void KtlQCanvas::setBackgroundColor( const QColor& c )
 
 	\sa setBackgroundPixmap(), backgroundColor()
  */
-const QPixmap & KtlQCanvas::backgroundPixmap() const
-{
+const QPixmap & KtlQCanvas::backgroundPixmap() const {
 	return pm;
 }
 
@@ -1103,18 +879,18 @@ const QPixmap & KtlQCanvas::backgroundPixmap() const
 
 	\sa backgroundPixmap(), setBackgroundColor(), setTiles()
  */
-void KtlQCanvas::setBackgroundPixmap( const QPixmap& p )
-{
-	setTiles(p, 1, 1, p.width(), p.height());
+void KtlQCanvas::setBackgroundPixmap(const QPixmap &p) {
+	setTiles(
+		p,
+		1,
+		1,
+		p.width(),
+		p.height()
+	);
 
-    for (QList<KtlQCanvasView*>::iterator itView = m_viewList.begin(); itView != m_viewList.end(); ++itView) {
-        (*itView)->updateContents();
-    }
-	//KtlQCanvasView* view = m_viewList.first();    // 2018.08.14 - see above
-	//while ( view != 0 ) {
-	//	view->updateContents();
-	//	view = m_viewList.next();
-	//}
+	for (auto *view : m_viewList) {
+		view->updateContents();
+	}
 }
 
 /*!
@@ -1130,265 +906,274 @@ void KtlQCanvas::setBackgroundPixmap( const QPixmap& p )
 
 	\sa setBackgroundColor(), setBackgroundPixmap(), setTiles()
  */
-void KtlQCanvas::drawBackground(QPainter& painter, const QRect& clip)
-{
-	painter.fillRect( clip, Qt::white );
+void KtlQCanvas::drawBackground(QPainter &painter, const QRect &clip) {
+	painter.fillRect(clip, Qt::white);
 
-	if ( pm.isNull() )
-		painter.fillRect(clip,bgcolor);
-
-	else if ( !grid ) {
-		for (int x=clip.x()/pm.width();
-				   x<(clip.x()+clip.width()+pm.width()-1)/pm.width(); x++)
-		{
-			for (int y=clip.y()/pm.height();
-						  y<(clip.y()+clip.height()+pm.height()-1)/pm.height(); y++)
-			{
-				painter.drawPixmap(x*pm.width(), y*pm.height(),pm);
+	if (pm.isNull()) {
+		painter.fillRect(clip, bgcolor);
+	}
+	else if (!grid) {
+		for (int x : Range{
+			clip.x() / pm.width(),
+			(clip.x() + clip.width() + pm.width() - 1) / pm.width()
+		}) {
+			for (int y : Range{
+				clip.y() / pm.height(),
+				(clip.y() + clip.height() + pm.height() - 1) / pm.height()
+			}) {
+				painter.drawPixmap(
+					x * pm.width(),
+					y * pm.height(),
+					pm
+				);
 			}
 		}
-	} else {
+	}
+	else {
 		const int x1 = roundDown( clip.left(), tilew );
-		int x2 = roundDown( clip.right(), tilew );
+		const int x2 = roundDown( clip.right(), tilew ) + 1;
 		const int y1 = roundDown( clip.top(), tileh );
-		int y2 = roundDown( clip.bottom(), tileh );
+		const int y2 = roundDown( clip.bottom(), tileh ) + 1;
 
-		const int roww = pm.width()/tilew;
+		const int roww = pm.width() / tilew;
 
-		for (int j=y1; j<=y2; j++) {
-			int tv = tilesVertically();
-			int jj = ((j%tv)+tv)%tv;
-			for (int i=x1; i<=x2; i++)
-			{
-				int th = tilesHorizontally();
-				int ii = ((i%th)+th)%th;
-				int t = tile(ii,jj);
-				int tx = t % roww;
-				int ty = t / roww;
-				painter.drawPixmap( i*tilew, j*tileh, pm,
-									tx*tilew, ty*tileh, tilew, tileh );
+		for (int j : Range{y1, y2}) {
+			const int tv = tilesVertically();
+			const int jj = ((j % tv) + tv) % tv;
+			for (int i : Range{x1, x2}) {
+				const int th = tilesHorizontally();
+				const int ii = ((i % th) + th) % th;
+				const int t = tile(ii, jj);
+				const int tx = t % roww;
+				const int ty = t / roww;
+				painter.drawPixmap(
+					i * tilew,
+					j * tileh,
+					pm,
+					tx * tilew,
+					ty * tileh,
+					tilew,
+					tileh
+				);
 			}
 		}
 	}
 }
 
-void KtlQCanvas::drawForeground(QPainter& painter, const QRect& clip)
-{
-	if ( debug_redraw_areas )
-	{
-		painter.setPen( Qt::red );
+void KtlQCanvas::drawForeground(QPainter &painter, const QRect &clip) {
+	if (debug_redraw_areas) {
+		painter.setPen(Qt::red);
 		painter.setBrush(Qt::NoBrush);
 		painter.drawRect(clip);
 	}
 }
 
-void KtlQCanvas::setTiles( QPixmap p, int h, int v, int tilewidth, int tileheight )
-{
-	if ( !p.isNull() && (!tilewidth || !tileheight ||
-			 p.width() % tilewidth != 0 || p.height() % tileheight != 0 ) )
+void KtlQCanvas::setTiles(const QPixmap &p, int h, int v, int tilewidth, int tileheight) {
+	if (
+		!p.isNull() &&
+		(
+			!tilewidth ||
+			!tileheight ||
+			(p.width() % tilewidth) != 0 ||
+			(p.height() % tileheight) != 0
+		)
+	) {
 		return;
+	}
 
 	htiles = h;
 	vtiles = v;
-	delete[] grid;
 	pm = p;
-	if ( h && v && !p.isNull() ) {
-		grid = new ushort[h*v];
-		memset( grid, 0, h*v*sizeof(ushort) );
+	if (h && v && !p.isNull()) {
+		grid = std::make_unique<ushort[]>(h * v);
+		memset(grid.get(), 0, h * v * sizeof(ushort));
 		tilew = tilewidth;
 		tileh = tileheight;
-	} else {
-		grid = 0;
 	}
-	if ( h + v > 10 ) {
-		int s = scm(tilewidth,tileheight);
-		retune( s < 128 ? s : qMax(tilewidth,tileheight) );
+	else {
+		grid = nullptr;
+	}
+	if (h + v > 10) {
+		const int s = std::lcm(tilewidth, tileheight);
+		retune(
+			(s < 128) ?
+			s :
+			qMax(tilewidth, tileheight)
+		);
 	}
 	setAllChanged();
 }
 
+void KtlQCanvas::setTile(int x, int y, int tilenum) {
+	assert(grid);
 
-void KtlQCanvas::setTile( int x, int y, int tilenum )
-{
-	ushort& t = grid[x+y*htiles];
-	if ( t != tilenum ) {
+	ushort &t = grid.get()[x + y * htiles];
+	if (t != tilenum) {
 		t = tilenum;
-		if ( tilew == tileh && tilew == chunksize )
-			setChangedChunk( x, y );	    // common case
-		else	setChanged( QRect(x*tilew,y*tileh,tilew,tileh) );
+		if (tilew == tileh && tilew == chunksize) {
+			setChangedChunk(x, y); // common case
+		}
+		else {
+			setChanged(QRect{
+				x * tilew,
+				y * tileh,
+				tilew,
+				tileh
+			});
+		}
 	}
 }
 
-
-
-
-KtlQCanvasItemList KtlQCanvas::collisions(const QPoint& p) /* const */
-{
-	return collisions(QRect(p,QSize(1,1)));
+QList<KtlQCanvasItem *> KtlQCanvas::collisions(const QPoint &p) /* const */ {
+	return collisions(QPointRect{p});
 }
 
-KtlQCanvasItemList KtlQCanvas::collisions(const QRect& r) /* const */
-{
-	KtlQCanvasRectangle *i = new KtlQCanvasRectangle(r, /*(KtlQCanvas*) */ this); // TODO verify here, why is crashing ?!
-	i->setPen( QPen( Qt::NoPen) );
-	i->show(); // doesn't actually show, since we destroy it
-	KtlQCanvasItemList l = i->collisions(true);
-    delete  i;
-	l.sort();
+QList<KtlQCanvasItem *> KtlQCanvas::collisions(const QRect &r) /* const */ {
+	auto i = KtlQCanvasRectangle{r, this}; // TODO verify here, why is crashing ?!
+	i.setPen(QPen(Qt::NoPen));
+	i.show(); // doesn't actually show, since we destroy it
+	auto l = i.collisions(true);
+	qSort(l);
 	return l;
 }
 
 
-KtlQCanvasItemList KtlQCanvas::collisions(const QPolygon& chunklist, const KtlQCanvasItem* item, bool exact) const
-{
-    if (isCanvasDebugEnabled) {
-        qDebug() << Q_FUNC_INFO << " test item: " << item;
-        for (auto itIt = m_canvasItems.begin(); itIt != m_canvasItems.end(); ++itIt) {
-            const KtlQCanvasItem *i = itIt->second;
-            qDebug() << "   in canvas item: " << i;
-        }
-        qDebug() << "end canvas item list";
-    }
+QList<KtlQCanvasItem *> KtlQCanvas::collisions(const QPolygon &chunklist, const KtlQCanvasItem *item, bool exact) const {
+	if constexpr (isCanvasDebugEnabled) {
+		qDebug() << Q_FUNC_INFO << " test item: " << item;
+		for (auto &canvasItemPair : m_canvasItems) {
+			auto &canvasItem = canvasItemPair.second;
+			if (!canvasItem) continue;
+			qDebug() << "   in canvas item: " << canvasItem;
+		}
+		qDebug() << "end canvas item list";
+	}
 
-	//Q3PtrDict<void> seen;
-    QHash<KtlQCanvasItem*, bool> seen;
-	KtlQCanvasItemList result;
-	for (int i=0; i<(int)chunklist.count(); i++) {
-		int x = chunklist[i].x();
-		int y = chunklist[i].y();
-		if ( validChunk(x,y) ) {
-			const KtlQCanvasItemList* l = chunk(x,y).listPtr();
-			for (KtlQCanvasItemList::ConstIterator it=l->begin(); it!=l->end(); ++it) {
-				KtlQCanvasItem *g=*it;
-				if ( g != item ) {
-					//if ( !seen.find(g) ) {
-                    if ( seen.find(g) == seen.end() ) {
-						//seen.replace(g,(void*)1);
-                        seen.take(g);
-                        seen.insert(g, true);
-						//if ( !exact || item->collidesWith(g) )
-						//	result.append(g);
-                        if (!exact) {
-                            result.append(g);
-                        }
-                        if (isCanvasDebugEnabled) {
-                            qDebug() <<"test collides " << item << " with " << g;
-                        }
-                        if (item->collidesWith(g)) {
-                            result.append(g);
-                        }
-					}
-				}
+  QSet<KtlQCanvasItem *> seen;
+	QList<KtlQCanvasItem *> result;
+
+	for (int i : Times{chunklist.count()}) {
+		const auto &currentChunk = chunklist[i];
+		const int x = currentChunk.x();
+		const int y = currentChunk.y();
+		if (!validChunk(x, y)) {
+			continue;
+		}
+		const auto &l = chunk(x, y).getList();
+
+		seen.reserve(seen.size() + l.size());
+		result.reserve(result.size() + l.size());
+
+		for (auto &canvasItem : l) {
+			if (!canvasItem) continue;
+			if (canvasItem == item) continue;
+
+			if (seen.insert(canvasItem) == seen.end()) {
+				continue;
+			}
+
+			if (!exact || item->collidesWith(canvasItem)) {
+				result.append(canvasItem);
+			}
+
+			if constexpr (isCanvasDebugEnabled) {
+				qDebug() <<"test collides " << item << " with " << canvasItem;
 			}
 		}
 	}
 	return result;
 }
 
-KtlQCanvasView::KtlQCanvasView(QWidget* parent, const char* name, Qt::WindowFlags f)
-	: KtlQ3ScrollView(parent,name,f /* |Qt::WResizeNoErase |Qt::WStaticContents */)
+KtlQCanvasView::KtlQCanvasView(QWidget *parent, const char *name, Qt::WindowFlags f) :
+	KtlQ3ScrollView(parent, name, f),
+	d(new KtlQCanvasViewData)
 {
-    setAttribute( Qt::WA_StaticContents );
-	d = new KtlQCanvasViewData;
-	viewing = 0;
-	setCanvas(0);
-	connect(this,SIGNAL(contentsMoving(int,int)),this,SLOT(cMoving(int,int)));
+	setAttribute(Qt::WA_StaticContents);
+	setCanvas(nullptr);
+	connect(this, SIGNAL(contentsMoving(int,int)), this, SLOT(cMoving(int, int)));
 }
 
-KtlQCanvasView::KtlQCanvasView(KtlQCanvas* canvas, QWidget* parent, const char* name, Qt::WindowFlags f)
-	: KtlQ3ScrollView(parent,name,f /* |Qt::WResizeNoErase |Qt::WA_StaticContents */)
+KtlQCanvasView::KtlQCanvasView(KtlQCanvas *canvas, QWidget *parent, const char *name, Qt::WindowFlags f) :
+	KtlQ3ScrollView(parent, name, f),
+	d(new KtlQCanvasViewData)
 {
-    setAttribute( Qt::WA_StaticContents );
-	d = new KtlQCanvasViewData;
-	viewing = 0;
+	setAttribute( Qt::WA_StaticContents );
 	setCanvas(canvas);
-
-	connect(this,SIGNAL(contentsMoving(int,int)),this,SLOT(cMoving(int,int)));
+	connect(this, SIGNAL(contentsMoving(int, int)), this, SLOT(cMoving(int, int)));
 }
 
-
-KtlQCanvasView::~KtlQCanvasView()
-{
+KtlQCanvasView::~KtlQCanvasView() {
 	delete d;
-    d = NULL;
-	setCanvas(0);
+	d = nullptr; // setCanvas checks this.
+	setCanvas(nullptr);
 }
 
-
-void KtlQCanvasView::setCanvas(KtlQCanvas* canvas)
-{
+void KtlQCanvasView::setCanvas(KtlQCanvas *canvas) {
 	if (viewing) {
 		disconnect(viewing);
 		viewing->removeView(this);
 	}
-	viewing=canvas;
+	viewing = canvas;
 	if (viewing) {
-		connect(viewing,SIGNAL(resized()), this, SLOT(updateContentsSize()));
+		connect(viewing, SIGNAL(resized()), this, SLOT(updateContentsSize()));
 		viewing->addView(this);
 	}
-	if ( d ) // called by d'tor
+	if (d) { // called by d'tor
 		updateContentsSize();
+	}
 }
 
-
-const QMatrix &KtlQCanvasView::worldMatrix() const
-{
+const QMatrix &KtlQCanvasView::worldMatrix() const {
 	return d->xform;
 }
 
-
-const QMatrix &KtlQCanvasView::inverseWorldMatrix() const
-{
+const QMatrix &KtlQCanvasView::inverseWorldMatrix() const {
 	return d->ixform;
 }
 
-
-bool KtlQCanvasView::setWorldMatrix( const QMatrix & wm )
-{
-	bool ok = wm.isInvertible();
-	if ( ok ) {
-		d->xform = wm;
-		d->ixform = wm.inverted();
-		updateContentsSize();
-		viewport()->update();
+bool KtlQCanvasView::setWorldMatrix(const QMatrix &wm) {
+	if (!wm.isInvertible()) {
+		return false;
 	}
-	return ok;
+	d->xform = wm;
+	d->ixform = wm.inverted();
+	updateContentsSize();
+	viewport()->update();
+	return true;
 }
 
-void KtlQCanvasView::updateContentsSize()
-{
-	if ( viewing ) {
-		QRect br;
-// 			br = d->xform.map(QRect(0,0,viewing->width(),viewing->height()));
-		br = d->xform.mapRect(viewing->rect());
-
-		if ( br.width() < contentsWidth() ) {
-			QRect r(contentsToViewport(QPoint(br.width(),0)),
-					QSize(contentsWidth()-br.width(),contentsHeight()));
-			//viewport()->erase(r); // 2015.11.25 - not recommended to directly repaint
-                        viewport()->update(r);
-		}
-		if ( br.height() < contentsHeight() ) {
-			QRect r(contentsToViewport(QPoint(0,br.height())),
-					QSize(contentsWidth(),contentsHeight()-br.height()));
-			//viewport()->erase(r);  // 2015.11.25 - not recommended to directly repaint
-                        viewport()->update(r);
-		}
-
-		resizeContents(br.width(),br.height());
-	} else {
-		//viewport()->erase();  // 2015.11.25 - not recommended to directly repaint
-                viewport()->update();
-		resizeContents(1,1);
+void KtlQCanvasView::updateContentsSize() {
+	if (!viewing) {
+    viewport()->update();
+		resizeContents(1, 1);
+		return;
 	}
+
+	QRect br = d->xform.mapRect(viewing->rect());
+
+	if (br.width() < contentsWidth()) {
+		QRect r(
+			contentsToViewport(QPoint(br.width(), 0)),
+			QSize(contentsWidth() - br.width(), contentsHeight())
+		);
+		viewport()->update(r);
+	}
+	if (br.height() < contentsHeight()) {
+		QRect r(
+			contentsToViewport(QPoint(0, br.height())),
+			QSize(contentsWidth(), contentsHeight() - br.height())
+		);
+		viewport()->update(r);
+	}
+
+	resizeContents(br.width(), br.height());
 }
 
-void KtlQCanvasView::cMoving(int x, int y)
-{
-    // A little kludge to smooth up repaints when scrolling
+void KtlQCanvasView::cMoving(int x, int y) {
+  // A little kludge to smooth up repaints when scrolling
 	int dx = x - contentsX();
 	int dy = y - contentsY();
-	d->repaint_from_moving = abs(dx) < width() / 8 && abs(dy) < height() / 8;
+	d->repaint_from_moving = (std::abs(dx) < (width() / 8)) && (std::abs(dy) < (height() / 8));
 }
 
 /*!
@@ -1405,16 +1190,19 @@ void KtlQCanvasView::cMoving(int x, int y)
 
 	\sa setDoubleBuffering()
  */
-void KtlQCanvasView::drawContents(QPainter *p, int cx, int cy, int cw, int ch)
-{
-	QRect r(cx,cy,cw,ch);
-	r = r.normalized();
+void KtlQCanvasView::drawContents(QPainter *p, int cx, int cy, int cw, int ch) {
+	QRect r = QRect{
+		cx,
+		cy,
+		cw,
+		ch
+	}.normalized();
 
 	if (viewing) {
-	//viewing->drawViewArea(this,p,r,true);
-		viewing->drawViewArea(this,p,r, /*!d->repaint_from_moving*/ false); /* 2018.03.11 - fix build for osx */
+		viewing->drawViewArea(this, p, r);
 		d->repaint_from_moving = false;
-	} else {
+	}
+	else {
 		p->eraseRect(r);
 	}
 }
@@ -1425,23 +1213,22 @@ void KtlQCanvasView::drawContents(QPainter *p, int cx, int cy, int cw, int ch)
 
 	(Implemented to get rid of a compiler warning.)
  */
-void KtlQCanvasView::drawContents( QPainter *p )
-{
-    qDebug() << Q_FUNC_INFO << " called unexpectedly";
-    drawContents(p, 0, 0, width(), height());
+void KtlQCanvasView::drawContents(QPainter *p) {
+  qDebug() << Q_FUNC_INFO << " called unexpectedly";
+  drawContents(p, 0, 0, width(), height());
 }
 
 /*!
 	Suggests a size sufficient to view the entire canvas.
  */
-QSize KtlQCanvasView::sizeHint() const
-{
-	if ( !canvas() )
-		return KtlQ3ScrollView::sizeHint();        // TODO QT3
-    // should maybe take transformations into account
-	return ( canvas()->size() + 2 * QSize(frameWidth(), frameWidth()) )
-			.boundedTo( 3 * QApplication::desktop()->size() / 4 );
+QSize KtlQCanvasView::sizeHint() const {
+	if (!canvas()) {
+		return KtlQ3ScrollView::sizeHint(); // TODO QT3
+	}
+  // should maybe take transformations into account
+	const auto canvasSize = canvas()->size() + 2 * QSize(frameWidth(), frameWidth());
+	const auto canvasBounds = 3 * QApplication::desktop()->size() / 4;
+	return canvasSize.boundedTo(canvasBounds);
 }
-
 
 #include "moc_canvas.cpp"

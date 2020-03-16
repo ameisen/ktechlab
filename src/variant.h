@@ -1,22 +1,12 @@
-/***************************************************************************
- *   Copyright (C) 2003-2004 by David Saxton                               *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #pragma once
 
 #include "pch.hpp"
 
 #include <utility>
 
-#include <qobject.h>
-#include <qvariant.h>
-#include <qstringlist.h>
+#include <QObject>
+#include <QVariant>
+#include <QStringList>
 
 /// \todo Replace "Variant" with "Property"
 class Variant;
@@ -34,52 +24,47 @@ contained. e.g. returns QVariant::Color or QVariant::Rect
 @author Daniel Clarke
 @author David Saxton
 */
-class Variant : public QObject
-{
+class Variant : public QObject {
 	Q_OBJECT
+	using Super = QObject;
 	public:
-	class Type
-	{
-		public:
-		enum Value : unsigned int
-		{
-			None,
-			Int,					// Integer
-			Raw,					// QByteArray
-			Double,				// Real number
-			String,				// Editable string
-			Multiline,		// String that may contain linebreaks
-			RichText,			// HTML formatted text
-			Select,				// Selection of strings
-			Combo,				// Editable combination of strings
-			FileName,			// Filename
-			Color,				// Color
-			Bool,					// Boolean
-			VarName,			// Variable name
-			Port,					// Port name
-			Pin,					// Pin name
-			PenStyle,			// Pen Style
-			PenCapStyle,	// Pen Cap Style
-			SevenSegment,	// Pin Map for Seven Segment Display
-			KeyPad				// Pin Map for Keypad
-		};
+	enum class Type : uint {
+		None,
+		Int,					// Integer
+		Raw,					// QByteArray
+		Double,				// Real number
+		Real = Double,
+		String,				// Editable string
+		Multiline,		// String that may contain linebreaks
+		RichText,			// HTML formatted text
+		Select,				// Selection of strings
+		Combo,				// Editable combination of strings
+		FileName,			// Filename
+		Color,				// Color
+		Bool,					// Boolean
+		VarName,			// Variable name
+		Port,					// Port name
+		Pin,					// Pin name
+		PenStyle,			// Pen Style
+		PenCapStyle,	// Pen Cap Style
+		SevenSegment,	// Pin Map for Seven Segment Display
+		KeyPad				// Pin Map for Keypad
 	};
-	using TypeValue = Type::Value;
 
-	Variant(const QString &id, TypeValue type);
-	Variant(QString &&id, TypeValue type);
-	~Variant() override;
+	Variant(const QString &id, Type type);
+	Variant(QString &&id, Type type);
+	~Variant() override = default;
 
 	const QString & id() const { return m_id; }
 
 	/**
-	 * Returns the type of Variant (see Variant::TypeValue)
+	 * Returns the type of Variant (see Variant::Type)
 	 */
-	TypeValue type() const { return m_type; }
+	Type type() const { return m_type; }
 	/**
 	 * Sets the variant type
 	 */
-	void setType(TypeValue type) { m_type = type; }
+	void setType(Type type) { m_type = type; }
 	/**
 	 * Returns the filter used for file dialogs (if this is of type Type::FileName)
 	 */
@@ -96,8 +81,7 @@ class Variant : public QObject
 	 * This function is for convenience; it sets both the toolbar and editor
 	 * caption.
 	 */
-	void setCaption(const QString &caption)
-	{
+	void setCaption(const QString &caption) {
 		setToolbarCaption(caption);
 		setEditorCaption(caption);
 	}
@@ -179,6 +163,8 @@ class Variant : public QObject
 	const QVariant & value() const { return m_value; }
 	template <typename T>
 	T get() const { return m_value.value<T>(); }
+	template <typename T>
+	void set(const T &value) { setValue(value); }
 	void setValue(const QVariant &val);
 	void setValue(QVariant &&val);
 
@@ -231,10 +217,10 @@ class Variant : public QObject
 	QString m_toolbarCaption;					// Short description shown in e.g. properties dialog
 	QString m_editorCaption;					// Text displayed before the data entry widget in the toolbar
 	QString m_filter;									// If type() == Type::FileName this is the filter used in file dialogs.
-	double m_minAbsValue = 1e-6;
-	double m_minValue = 1e-6;
-	double m_maxValue = 1e9;
-	TypeValue m_type;
+	double m_minAbsValue = 1.0e-6;
+	double m_minValue = 1.0e-6;
+	double m_maxValue = 1.0e9;
+	Type m_type = Type::None;
 	int m_colorScheme;
 	bool m_bAdvanced = false;					// If advanced, only display data in item editor
 	bool m_bHidden = false;						// If hidden, do not allow user to change data

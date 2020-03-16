@@ -18,7 +18,7 @@
 #include <qpointer.h>
 // #include <q3valuevector.h>
 
-class Cell;
+struct Cell;
 class ConnectorData;
 class ConnectorLine;
 class ConRouter;
@@ -28,8 +28,8 @@ class Node;
 class NodeGroup;
 class Wire;
 
-typedef QList<ConnectorLine*> ConnectorLineList;
-typedef QVector<QPointer<Wire> > WireVector;
+typedef QPtrVector<ConnectorLine> ConnectorLineVector;
+typedef QPtrVector<Wire> WireVector;
 
 /**
 @short Represents a connection between two Nodes on a ICNDocument
@@ -220,7 +220,7 @@ private:
 	QString           m_id;
 	QRect             m_oldBoundRect;
 
-	ConnectorLineList m_connectorLineList;
+	ConnectorLineVector m_connectorLineVector;
 };
 
 //BEGIN ConnectorLine things
@@ -233,15 +233,15 @@ public:
 	 * parent connector and the start of this wire. Used in current
 	 * animation.
 	 */
-	ConnectorLine(Connector *connector, int pixelOffset);
-	Connector *parent() const { return m_pConnector; }
+	ConnectorLine(const QPointer<Connector> &connector, int pixelOffset);
+	Connector *parent() const { return (!m_pConnector) ? nullptr : m_pConnector; }
 
 	void setAnimateCurrent(bool animateCurrent) { m_bAnimateCurrent = animateCurrent; }
 
 protected:
 	void drawShape(QPainter &p) override;
 
-	Connector *m_pConnector;
+	QPointer<Connector> m_pConnector;
 	int  m_pixelOffset;
 	bool m_bAnimateCurrent;
 };

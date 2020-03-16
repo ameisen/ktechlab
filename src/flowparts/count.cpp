@@ -38,12 +38,12 @@ Count::Count( ICNDocument *icnDocument, bool newItem, const char *id )
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "0-trigger", Variant::Type::Select );
 	property("0-trigger")->setAllowed( (QStringList("rising") << "falling") );
 	property("0-triger")->setValue("rising");
 	property("0-trigger")->setCaption( i18n("Trigger") );
-	
+
 	createProperty( "1-length", Variant::Type::Double );
 	property("1-length")->setUnit("sec");
 	property("1-length")->setValue(10.0);
@@ -66,4 +66,3 @@ void Count::generateMicrobe( FlowCode *code )
 	code->addCode( "count "+dataString("0-trigger")+" for "+QString::number(count_ms)+"ms" );
 	code->addCodeBranch( outputPart("stdoutput") );
 }
-

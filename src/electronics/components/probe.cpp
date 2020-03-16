@@ -290,5 +290,3 @@ void LogicProbe::drawShape( QPainter &p )
 	deinitPainter(p);
 }
 //END class LogicProbe
-
-

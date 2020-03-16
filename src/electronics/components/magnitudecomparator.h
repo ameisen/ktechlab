@@ -31,7 +31,7 @@ class MagnitudeComparator : public CallbackClass, public Component
 	protected:
 		void initPins();
 		void dataChanged() override;
-		void inStateChanged();
+		void inStateChanged(bool isHigh = false);
 
 		int m_oldABLogicCount;
 		int cascadingInputs;

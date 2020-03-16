@@ -39,7 +39,7 @@ class BiDirLED final : public Component
 		double avg_brightness[2];
 		uint last_brightness[2];
 		double lastUpdatePeriod;
-		Diode *m_pDiode[2];
+		Diode *m_pDiode[2] = {nullptr, nullptr};
 };
 
 #endif

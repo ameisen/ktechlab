@@ -1,97 +1,103 @@
-/***************************************************************************
- *   Copyright (C) 2003-2005 by David Saxton                               *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include "ecnode.h"
 #include "ecsignallamp.h"
 #include "element.h"
 #include "libraryitem.h"
 #include "pin.h"
 
-#include <klocalizedstring.h>
-#include <qpainter.h>
+#include <KLocalizedString>
+
+#include <QPainter>
+
 #include <cmath>
 
 // TODO: resistance and power rating should be user definable properties.
-#define RESISTANCE 100
-#define WATTAGE    0.5
+static constexpr const resistance_t Resistance = 100.0;
+static constexpr const power_t Wattage = 0.5;
 // minimal power to create glow. (looks low...)
-#define LIGHTUP   (WATTAGE / 20)
+static constexpr const power_t LightUp = Wattage / 20.0;
 
-Item* ECSignalLamp::construct( ItemDocument *itemDocument, bool newItem, const char *id )
-{
-	return new ECSignalLamp( (ICNDocument*)itemDocument, newItem, id );
+#define inputNode (*(m_pPNode[0]))
+#define outputNode (*(m_pNNode[0]))
+
+#define inputPin (*(inputNode.pin()))
+#define outputPin (*(outputNode.pin()))
+
+Item* ECSignalLamp::construct(ItemDocument *itemDocument, bool newItem, const char *id) {
+	return new ECSignalLamp(dynamic_cast<ICNDocument *>(itemDocument), newItem, id);
 }
 
-LibraryItem* ECSignalLamp::libraryItem()
-{
+LibraryItem* ECSignalLamp::libraryItem() {
+	static const auto libraryIDList = QStringList(QString(GetCategoryID(Category, ID).data()));
 	return new LibraryItem(
-		QStringList(QString("ec/signal_lamp")),
-		i18n("Signal Lamp"),
+		libraryIDList,
+		i18n(Name),
 		i18n("Outputs"),
 		"signal_lamp.png",
 		LibraryItem::lit_component,
-		ECSignalLamp::construct );
+		&ECSignalLamp::construct
+	);
 }
 
-ECSignalLamp::ECSignalLamp( ICNDocument *icnDocument, bool newItem, const char *id )
-	: Component( icnDocument, newItem, id ? id : "signal_lamp" )
+ECSignalLamp::ECSignalLamp(ICNDocument *icnDocument, bool newItem, const char *id) :
+	Super(icnDocument, newItem, id ?: ID)
 {
-	m_name = i18n("Signal Lamp");
-	setSize( -8, -8, 16, 16 );
-	
+	m_name = i18n(Name);
+
+	setSize(-8, -8, 16, 16);
+
 	init1PinLeft();
 	init1PinRight();
-	
-	createResistance( m_pPNode[0], m_pNNode[0], RESISTANCE );
-	
-	advanceSinceUpdate = 0;
-	avgPower = 0.;
+
+	resistance.reset(createResistance(inputNode, outputNode, Resistance));
+
 	m_bDynamicContent = true;
 }
 
-ECSignalLamp::~ECSignalLamp()
-{
+void ECSignalLamp::stepNonLogic() {
+	const voltage_t currentVoltage = isCurrentKnown() ? (inputPin.voltage() - outputPin.voltage()) : 0.0;
+	currentWattage = currentVoltage * (currentVoltage / Resistance);
+
+	// do not try to divide by 0
+	advanceSinceUpdate = std::max(advanceSinceUpdate, 1u);
+
+	avgPower = std::abs(
+		avgPower * advanceSinceUpdate +
+		(currentVoltage * currentVoltage / Resistance)
+	) / real(advanceSinceUpdate);
+
+	// Roll-over to zero shouldn't be a big deal in this situation.
+	++advanceSinceUpdate;
 }
 
-void ECSignalLamp::stepNonLogic()
-{
-	const double voltage = m_pPNode[0]->pin()->voltage()-m_pNNode[0]->pin()->voltage();
-    if (advanceSinceUpdate == 0) {
-        advanceSinceUpdate = 1; // do not try to divide by 0
-    }
-	avgPower = fabs(avgPower * advanceSinceUpdate +
-			(voltage * voltage / RESISTANCE)) /
-			advanceSinceUpdate;
-    ++advanceSinceUpdate;
+bool ECSignalLamp::isCurrentKnown() const {
+	return inputPin.currentIsKnown() && outputPin.currentIsKnown();
 }
 
-void ECSignalLamp::drawShape( QPainter &p )
-{
+void ECSignalLamp::drawShape(QPainter &p) {
 	initPainter(p);
 
-	int _x = int(x());
-	int _y = int(y());
+	const Point2<int> position = {
+		iround<int>(x()),
+		iround<int>(y())
+	};
 
-	// Calculate the brightness as a linear function of power, bounded below by
-	// 25 milliWatts and above by 500 milliWatts.
-	int brightness = (avgPower < LIGHTUP) ? 255 :
-			((avgPower > WATTAGE) ? 0 : (int)(255 * (1 - ((avgPower - LIGHTUP) / (WATTAGE - LIGHTUP)))));
+	// Calculate the brightness as a linear function of power
+	const auto brightness = iround<int>(255.0 * clamped_rlerp(currentWattage, LightUp, Wattage));
 	advanceSinceUpdate = 0;
-	
-	p.setBrush( QColor( 255, 255, brightness ) );
-	p.drawEllipse( _x-8, _y-8, 16, 16 );
-	
-	int pos = 8 - int(8 * M_SQRT1_2);
-	
-	p.drawLine( _x-8+pos, _y-8+pos, _x+8-pos, _y+8-pos );
-	p.drawLine( _x+8-pos, _y-8+pos, _x-8+pos, _y+8-pos );
-	
+
+	p.save();
+
+	p.translate(QPoint(position));
+
+	p.setBrush(QColor(255, 255 - brightness, 255 - brightness));
+	p.drawEllipse( -8, -8, 16, 16 );
+
+	const int pos = 8 - iround<int>(8.0 * M_SQRT1_2);
+
+	p.drawLine( -8 + pos, -8 + pos,  8 - pos, 8 - pos );
+	p.drawLine(  8 - pos, -8 + pos, -8 + pos, 8 - pos );
+
+	p.restore();
+
 	deinitPainter(p);
 }

@@ -61,12 +61,12 @@ ECBJT::ECBJT( bool isNPN, ICNDocument * icnDocument, bool newItem, const char * 
 		m_name = i18n("NPN Transistor");
 	else
 		m_name = i18n("PNP Transistor");
-	
+
 	setSize( -8, -8, 16, 16 );
 	m_pBJT = createBJT( createPin( 8, -16, 90, "c" ), createPin( -16, 0, 0, "b" ), createPin( 8, 16, 270, "e" ), m_bIsNPN );
-	
+
 	BJTSettings s; // will be created with the default settings
-	
+
 	Variant * v = createProperty( "I_S", Variant::Type::Double );
 	v->setCaption( i18n("Saturation Current") );
 	v->setUnit("A");
@@ -74,28 +74,28 @@ ECBJT::ECBJT( bool isNPN, ICNDocument * icnDocument, bool newItem, const char * 
 	v->setMaxValue(1e-0);
 	v->setValue( s.I_S );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "N_F", Variant::Type::Double );
 	v->setCaption( i18n("Forward Coefficient") );
 	v->setMinValue(1e0);
 	v->setMaxValue(1e1);
 	v->setValue( s.N_F );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "N_R", Variant::Type::Double );
 	v->setCaption( i18n("Reverse Coefficient") );
 	v->setMinValue(1e0);
 	v->setMaxValue(1e1);
 	v->setValue( s.N_R );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "B_F", Variant::Type::Double );
 	v->setCaption( i18n("Forward Beta") );
 	v->setMinValue(1e-1);
 	v->setMaxValue(1e3);
 	v->setValue( s.B_F );
 	v->setAdvanced(true);
-	
+
 	v = createProperty( "B_R", Variant::Type::Double );
 	v->setCaption( i18n("Reverse Beta") );
 	v->setMinValue(1e-1);
@@ -117,7 +117,7 @@ void ECBJT::dataChanged()
 	s.N_R = dataDouble( "N_R" );
 	s.B_F = dataDouble( "B_F" );
 	s.B_R = dataDouble( "B_R" );
-	
+
 	m_pBJT->setBJTSettings( s );
 }
 
@@ -126,13 +126,13 @@ void ECBJT::drawShape( QPainter &p )
 {
 	const int _x = int(x());
 	const int _y = int(y());
-	
+
 	initPainter(p);
-	
+
 	p.drawLine( _x-8, _y-8, _x-8, _y+8 );
 	p.drawLine( _x+8, _y-8, _x-8, _y );
 	p.drawLine( _x+8, _y+8, _x-8, _y );
-	
+
 	QPolygon pa(3);
 	if ( m_bIsNPN )
 	{
@@ -148,6 +148,6 @@ void ECBJT::drawShape( QPainter &p )
 	}
 	p.setBrush( p.pen().color() );
 	p.drawPolygon(pa);
-	
+
 	deinitPainter(p);
 }

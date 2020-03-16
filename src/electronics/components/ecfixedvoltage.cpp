@@ -37,13 +37,13 @@ ECFixedVoltage::ECFixedVoltage( ICNDocument *icnDocument, bool newItem, const ch
 {
 	m_name = i18n("Fixed Voltage");
 	setSize( -8, -8, 16, 16 );
-	
+
 	init1PinRight();
 	m_pPNode[0]->setLength( 11 );
 	m_voltagePoint = createVoltagePoint( m_pPNode[0], 5.0 );
-	
+
 	addDisplayText( "voltage", QRect( -24, -20, width()+32, 12 ), "" );
-	
+
 	createProperty( "voltage", Variant::Type::Double );
 	property("voltage")->setUnit("V");
 	property("voltage")->setCaption( i18n("Voltage") );
@@ -70,4 +70,3 @@ void ECFixedVoltage::drawShape( QPainter &p )
 	p.drawEllipse( int(x()-4), int(y()-4), 9, 9 );
 	deinitPainter( p );
 }
-

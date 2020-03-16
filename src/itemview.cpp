@@ -191,6 +191,7 @@ ItemView::ItemView( ItemDocument * itemDocument, ViewContainer *viewContainer, u
 
 ItemView::~ItemView()
 {
+	delete m_pDragItem;
 }
 
 
@@ -539,7 +540,8 @@ void ItemView::removeDragItem()
 
 	m_pDragItem->removeItem();
 	p_itemDocument->flushDeleteList();
-	m_pDragItem = 0l;
+	delete m_pDragItem;
+	m_pDragItem = nullptr;
 }
 
 

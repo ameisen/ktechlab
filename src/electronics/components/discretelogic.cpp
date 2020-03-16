@@ -46,10 +46,10 @@ Inverter::Inverter( ICNDocument *icnDocument, bool newItem, const char *id )
 
 	init1PinLeft();
 	init1PinRight();
-	
+
 	m_pIn = createLogicIn(m_pNNode[0]);
 	m_pOut = createLogicOut( m_pPNode[0], true );
-	
+
 	m_pIn->setCallback( this, (CallbackPtr)(&Inverter::inStateChanged) );
 	inStateChanged(false);
 }
@@ -108,10 +108,10 @@ Buffer::Buffer( ICNDocument *icnDocument, bool newItem, const char *id )
 
 	init1PinLeft();
 	init1PinRight();
-	
+
 	m_pIn = createLogicIn(m_pNNode[0]);
 	m_pOut = createLogicOut( m_pPNode[0], true );
-	
+
 	m_pIn->setCallback( this, (CallbackPtr)(&Buffer::inStateChanged) );
 	inStateChanged(false);
 }
@@ -166,16 +166,16 @@ ECLogicInput::ECLogicInput( ICNDocument *icnDocument, bool newItem, const char *
 {
 	m_name = i18n("Logic Input");
 	setSize( -8, -8, 16, 16 );
-	
+
 	b_state = false;
 	addButton( "button", QRect( -24, -8, 16, 16 ), "", true );
-	
+
 	createProperty( "useToggle", Variant::Type::Bool );
 	property("useToggle")->setCaption( i18n("Use Toggle") );
 	property("useToggle")->setValue(true);
 
 	init1PinRight();
-	
+
 	m_pOut = createLogicOut( m_pPNode[0], false );
 }
 
@@ -233,18 +233,18 @@ ECLogicOutput::ECLogicOutput( ICNDocument *icnDocument, bool newItem, const char
 {
 	m_name = i18n("Logic Output");
 	setSize( -8, -8, 16, 16 );
-	
+
 	init1PinLeft();
 	m_pIn = createLogicIn(m_pNNode[0]);
-	
+
 	m_pSimulator = Simulator::self();
-	
+
 	m_lastDrawState = 0.0;
 	m_lastSwitchTime = m_lastDrawTime = m_pSimulator->time();
 	m_highTime = 0;
 	m_bLastState = false;
 	m_bDynamicContent = true;
-	
+
 	m_pIn->setCallback( this, (CallbackPtr)(&ECLogicOutput::inStateChanged) );
 }
 
@@ -256,12 +256,12 @@ void ECLogicOutput::inStateChanged( bool newState )
 {
 	if ( m_bLastState == newState )
 		return;
-	
+
 	unsigned long long newTime = m_pSimulator->time();
 	unsigned long long dt = newTime - m_lastSwitchTime;
-	
+
 	m_lastSwitchTime = newTime;
-	
+
 	m_bLastState = newState;
 	if (!newState)
 	{
@@ -276,28 +276,27 @@ void ECLogicOutput::drawShape( QPainter &p )
 	unsigned long long newTime = m_pSimulator->time();
 	unsigned long long runTime = newTime - m_lastDrawTime;
 	m_lastDrawTime = newTime;
-	
+
 	if (m_bLastState)
 	{
 		// Logic in is currently high
 		m_highTime += newTime - m_lastSwitchTime;
 	}
-	
+
 	double state;
-	
+
 	if ( runTime == 0 )
 		state = m_lastDrawState;
-	
+
 	else
 		state = m_lastDrawState = double(m_highTime)/double(runTime);
-	
+
 	initPainter(p);
 	p.setBrush( QColor( 255, uint(255-state*(255-166)), uint((1-state)*255) ) );
 	p.drawEllipse( int(x()-8), int(y()-8), width(), height() );
 	deinitPainter(p);
-	
+
 	m_lastSwitchTime = newTime;
 	m_highTime = 0;
 }
 //END class ECLogicOutput
-

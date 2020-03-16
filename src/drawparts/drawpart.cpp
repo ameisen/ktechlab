@@ -17,16 +17,16 @@ DrawPart::DrawPart(ItemDocument *itemDocument, bool newItem, const char *id) :
 
 DrawPart::~DrawPart() {}
 
-Variant * DrawPart::createProperty(const QString &id, Variant::TypeValue type) {
+Variant * DrawPart::createProperty(const QString &id, Variant::Type type) {
 	const auto createStyleProperty = [this, id, type] (const std::initializer_list<QString> &styles) -> Variant & {
-		auto &v = Item::createPropertyRef( id, Variant::TypeValue::String);
+		auto &v = Item::createPropertyRef( id, Variant::Type::String);
 		v.setType(type);
 		v.setAllowed(QStringList{styles});
 		return v;
 	};
 
 	switch (type) {
-		case Variant::TypeValue::PenStyle: {
+		case Variant::Type::PenStyle: {
 			return &createStyleProperty({
 				DrawPart::penStyleToName(Qt::SolidLine),
 				DrawPart::penStyleToName(Qt::DashLine),
@@ -35,7 +35,7 @@ Variant * DrawPart::createProperty(const QString &id, Variant::TypeValue type) {
 				DrawPart::penStyleToName(Qt::DashDotDotLine)
 			});
 		}
-		case Variant::TypeValue::PenCapStyle: {
+		case Variant::Type::PenCapStyle: {
 			return &createStyleProperty({
 				DrawPart::penCapStyleToName(Qt::FlatCap),
 				DrawPart::penCapStyleToName(Qt::SquareCap),
@@ -87,10 +87,10 @@ ItemData DrawPart::itemData() const {
 	const auto end = m_variantData.end();
 	for (auto it = m_variantData.begin(); it != end; ++it) {
 		switch(it.value()->type()) {
-			case Variant::TypeValue::PenStyle:
+			case Variant::Type::PenStyle:
 				itemData.dataString[it.key()] = penStyleToID( nameToPenStyle( it.value()->value().toString() ) );
 				break;
-			case Variant::TypeValue::PenCapStyle:
+			case Variant::Type::PenCapStyle:
 				itemData.dataString[it.key()] = penCapStyleToID( nameToPenCapStyle( it.value()->value().toString() ) );
 				break;
 			default:
@@ -114,13 +114,13 @@ void DrawPart::restoreFromItemData(const ItemData &itemData) {
 			continue;
 
 		switch (vit.value()->type()) {
-			case Variant::TypeValue::PenStyle:
+			case Variant::Type::PenStyle:
 				setDataPenStyle(
 					key,
 					idToPenStyle(it.value())
 				);
 				break;
-			case Variant::TypeValue::PenCapStyle:
+			case Variant::Type::PenCapStyle:
 				setDataPenCapStyle(
 					key,
 					idToPenCapStyle(it.value())

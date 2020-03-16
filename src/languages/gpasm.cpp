@@ -161,22 +161,7 @@ ProcessOptions::Path Gpasm::outputPath( ProcessOptions::Path inputPath ) const
 		case ProcessOptions::Path::AssemblyRelocatable_Program:
 			return ProcessOptions::Path::Object_Program;
 
-		case ProcessOptions::Path::FlowCode_AssemblyAbsolute:
-		case ProcessOptions::Path::FlowCode_Microbe:
-		case ProcessOptions::Path::FlowCode_PIC:
-		case ProcessOptions::Path::FlowCode_Program:
-		case ProcessOptions::Path::Microbe_AssemblyAbsolute:
-		case ProcessOptions::Path::Microbe_PIC:
-		case ProcessOptions::Path::Microbe_Program:
-		case ProcessOptions::Path::Object_Disassembly:
-		case ProcessOptions::Path::Object_Library:
-		case ProcessOptions::Path::Object_PIC:
-		case ProcessOptions::Path::Object_Program:
-		case ProcessOptions::Path::PIC_AssemblyAbsolute:
-		case ProcessOptions::Path::Program_Disassembly:
-		case ProcessOptions::Path::Program_PIC:
-		case ProcessOptions::Path::Invalid:
-		case ProcessOptions::Path::None:
+		default:
 			return ProcessOptions::Path::Invalid;
 	}
 

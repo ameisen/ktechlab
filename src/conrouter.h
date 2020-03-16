@@ -19,7 +19,7 @@
 #include <qlist.h>
 
 class ICNDocument;
-class Cell;
+struct Cell;
 
 /**
 Abstraction for the routing of a connector.

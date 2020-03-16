@@ -1,15 +1,4 @@
-/***************************************************************************
- *   Copyright (C) 2003-2005 by David Saxton                               *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
-#ifndef NONLINEAR_H
-#define NONLINEAR_H
+#pragma once
 
 #include "element.h"
 
@@ -17,11 +6,11 @@
 @short Represents a non-linear circuit element (such as a diode)
 @author David Saxton
 */
-class NonLinear : public Element
-{
+class NonLinear : public Element {
+	using Super = Element;
 	public:
-		NonLinear();
-	
+		NonLinear() = default;
+
 		bool isNonLinear() const override { return true; }
 		/**
 		 * Newton-Raphson iteration: Update equation system.
@@ -46,11 +35,11 @@ class NonLinear : public Element
 		/**
 		 * Current and conductance for a diode junction.
 		 */
-		void diodeJunction( double v, double I_S, double N, double * I, double * g ) const;
+		void diodeJunction( double v, double I_S, double N, double &I, double &g ) const;
 		/**
 		 * Current and conductance for a MOS diode junction.
 		 */
-		void mosDiodeJunction( double V, double I_S, double N, double * I, double * g ) const;
+		void mosDiodeJunction( double V, double I_S, double N, double &I, double &g ) const;
 		/**
 		 * Limits the drain-source voltage to prevent divergence in the
 		 * nonlinear iterations.
@@ -64,5 +53,3 @@ class NonLinear : public Element
 
 		double diodeLimitedVoltage( double I_S, double N ) const;
 };
-
-#endif

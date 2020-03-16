@@ -6,7 +6,7 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  ***************************************************************************/
- 
+
 #include "ledbargraphdisplay.h"
 #include "colorcombo.h"
 #include "libraryitem.h"
@@ -21,12 +21,12 @@
 LEDPart::LEDPart( Component *pParent, const QString& strPNode, const QString& strNNode )
 {
 	m_pParent = pParent;
-	 
+
 	m_strPNode = strPNode;
 	m_strNNode = strNNode;
-	
+
 	m_pDiode = pParent->createDiode( pParent->ecNodeWithID( strPNode ), pParent->ecNodeWithID( strNNode ) );
-		
+
 	avg_brightness = 255;
 	lastUpdatePeriod = 1.;
 	last_brightness = 255;
@@ -54,7 +54,7 @@ void LEDPart::setColor( const QColor &color )
 
 void LEDPart::step()
 {
-	avg_brightness += LED::brightness( m_pDiode->current() ) * LINEAR_UPDATE_PERIOD;
+	avg_brightness += LED::getBrightness( m_pDiode->current() ) * LINEAR_UPDATE_PERIOD;
 	lastUpdatePeriod += LINEAR_UPDATE_PERIOD;
 }
 
@@ -68,14 +68,14 @@ void LEDPart::draw( QPainter &p, int x, int y, int w, int h )
 		_b = (uint)(avg_brightness/lastUpdatePeriod);
 		last_brightness = _b;
 	}
-	
+
 	avg_brightness = 0.;
 	lastUpdatePeriod = 0.;
-	
+
 	p.setBrush( QColor( uint(255-(255-_b)*(1-r)), uint(255-(255-_b)*(1-g)), uint(255-(255-_b)*(1-b)) ) );
 	p.drawRect( x, y, w, h );
 }
-		
+
 Item* LEDBarGraphDisplay::construct( ItemDocument *itemDocument, bool newItem, const char *id )
 {
 	return new LEDBarGraphDisplay( (ICNDocument*)itemDocument, newItem, id );
@@ -89,7 +89,7 @@ LibraryItem* LEDBarGraphDisplay::libraryItem()
 	i18n("Outputs"),
 	"bar_graph_display.png",
 	LibraryItem::lit_component,
-	LEDBarGraphDisplay::construct 
+	LEDBarGraphDisplay::construct
 						  );
 }
 
@@ -98,25 +98,25 @@ LEDBarGraphDisplay::LEDBarGraphDisplay( ICNDocument* icnDocument, bool newItem, 
 {
 	m_name = i18n("Bar Graph Display");
 	m_bDynamicContent = true;
-		
+
 	m_numRows = 0;
-		
+
 	for( unsigned i = 0; i < max_LED_rows; i++ )
 		m_LEDParts[i] = 0l;
-	
+
 	// Create a Row property.
 	createProperty( "rows", Variant::Type::Int );
 	property("rows")->setCaption( i18n("Rows") );
 	property("rows")->setMinValue(1);
 	property("rows")->setMaxValue( max_LED_rows );
 	property("rows")->setValue( 7 );
-	
+
 	createProperty( "color", Variant::Type::Color );
 	property("color")->setCaption( i18n("Color") );
 	property("color")->setColorScheme( ColorCombo::LED );
-	
+
 	DiodeSettings ds;
-	
+
 	createProperty( "I_S", Variant::Type::Double );
 	property("I_S")->setCaption("Saturation Current");
 	property("I_S")->setUnit("A");
@@ -124,14 +124,14 @@ LEDBarGraphDisplay::LEDBarGraphDisplay( ICNDocument* icnDocument, bool newItem, 
 	property("I_S")->setMaxValue(1e-0);
 	property("I_S")->setValue( ds.I_S );
 	property("I_S")->setAdvanced(true);
-	
+
 	createProperty( "N", Variant::Type::Double );
 	property("N")->setCaption( i18n("Emission Coefficient") );
 	property("N")->setMinValue(1e0);
 	property("N")->setMaxValue(1e1);
 	property("N")->setValue( ds.N );
 	property("N")->setAdvanced(true);
-	
+
 	createProperty( "V_B", Variant::Type::Double );
 	property("V_B")->setCaption( i18n("Breakdown Voltage") );
 	property("V_B")->setUnit("V");
@@ -153,9 +153,9 @@ void LEDBarGraphDisplay::dataChanged()
 	ds.I_S = dataDouble("I_S");
 	ds.V_B = dataDouble("V_B");
 	ds.N = dataDouble("N");
-	
+
 	initPins();
-		
+
 	// Update each diode in array with new diode setting as they are acting individually.
 	for( unsigned i = 0; i < m_numRows; i++ )
 	{
@@ -167,15 +167,15 @@ void LEDBarGraphDisplay::dataChanged()
 void LEDBarGraphDisplay::initPins()
 {
 	unsigned int numRows = dataInt( "rows" );
-	
+
 	if( numRows == m_numRows )
 		return;
-	
+
 	if( numRows > max_LED_rows )
 		numRows = max_LED_rows;
 	if( numRows < 1 )
 		numRows = 1;
-		
+
 	// Create a list of named pins.
 	// A default setup looks like:
 	//       -------
@@ -186,45 +186,45 @@ void LEDBarGraphDisplay::initPins()
 	// p_4--|5    10|--n_4
 	// p_5--|6     9|--n_5
 	// p_6--|7     8|--n_6
-	//		 -------	
+	//		 -------
 	//
 	// And this is the scheme used to create the nodes and diodes.
 	//
-	
+
 	// Create the positive & negative pin names in an anticlockwise fashion
 	// as shown in the pin schematic above.
 	QStringList pins;
 	for( unsigned i = 0; i < numRows; i++ )
 		pins += QString( "p_" + QString::number( i ) );
-	
+
 	for( int i = numRows - 1; i >= 0; i-- )
 		pins += QString( "n_" + QString::number( i ) );
-	
+
 	// Set the size of the component *BEFORE* initDIP() is called
 	// as initDIP() uses this data to initialise the pin positions.
 	setSize( -16, -( numRows + 1 ) * 8, 32, ( numRows + 1 ) * 16, true );
-	
+
 	// Create the nodes.
 	initDIP( pins );
-	
+
 	// Create or remove LED parts
 	if( numRows > m_numRows )
 	{
 		// Create the extra LED parts required.
-		for( unsigned i = m_numRows; i < numRows; i++ )			
-			m_LEDParts[i] = new LEDPart( (Component*)this, QString( "p_" + QString::number( i ) ), 
+		for( unsigned i = m_numRows; i < numRows; i++ )
+			m_LEDParts[i] = new LEDPart( (Component*)this, QString( "p_" + QString::number( i ) ),
 										  QString( "n_" + QString::number( i ) ) );
 	}
-	else 
+	else
 	{
 		// Remove excess LED parts.
 		for( unsigned i = numRows; i < m_numRows; i++ )
 		{
 			delete m_LEDParts[i];
-			m_LEDParts[i] = 0l;	
+			m_LEDParts[i] = 0l;
 		}
 	}
-		   
+
 	m_numRows = numRows;
 }
 
@@ -239,15 +239,14 @@ void LEDBarGraphDisplay::drawShape( QPainter &p )
 {
 	Component::drawShape(p);
 	initPainter(p);
-		
+
 	// Init _x and _y to top left hand corner of component.
 	int _x = (int)(x()+offsetX());
 	int _y = (int)(y()+offsetY());
 
 	// Draw LED elements, passing in a position for each.
 	for( unsigned i = 0; i < m_numRows; i++ )
-		m_LEDParts[i]->draw( p, _x + 4, _y + (i*16) + 10, 24, 12 ); 
+		m_LEDParts[i]->draw( p, _x + 4, _y + (i*16) + 10, 24, 12 );
 
-	deinitPainter(p);	
+	deinitPainter(p);
 }
-

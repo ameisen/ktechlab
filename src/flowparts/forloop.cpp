@@ -35,25 +35,25 @@ ForLoop::ForLoop( ICNDocument *icnDocument, bool newItem, const char *id )
 	: FlowContainer( icnDocument, newItem, id ? id : "forloop" )
 {
 	m_name = i18n("For Loop");
-	
+
 	createTopContainerNode();
 	createBotContainerNode();
-	
+
 	createProperty( "0-var", Variant::Type::Combo );
 	property("0-var")->setToolbarCaption("for");
 	property("0-var")->setEditorCaption( i18n("Variable") );
 	property("0-var")->setValue("x");
-	
+
 	createProperty( "1-initial", Variant::Type::Combo );
 	property("1-initial")->setToolbarCaption("=");
 	property("1-initial")->setEditorCaption( i18n("Initial Value") );
 	property("1-initial")->setValue("1");
-	
+
 	createProperty( "2-end", Variant::Type::Combo );
 	property("2-end")->setToolbarCaption( i18nc( "for x = 1 to", "to" ) );
 	property("2-end")->setEditorCaption( i18n("End Value") );
 	property("2-end")->setValue("10");
-	
+
 	createProperty( "3-step", Variant::Type::Combo );
 	property("3-step")->setToolbarCaption("step");
 	property("3-step")->setEditorCaption( i18n("Step") );
@@ -80,4 +80,3 @@ void ForLoop::generateMicrobe( FlowCode *code )
 	code->addCode("}");
 	code->addCodeBranch( outputPart("ext_out") );
 }
-

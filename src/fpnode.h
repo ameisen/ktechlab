@@ -155,9 +155,6 @@ protected:
 
 	FlowConnectorList m_inFlowConnList;
 	QPointer<FlowConnector> m_outputConnector;
-
-private:
-	bool m_isInput;
 };
 
 #endif

@@ -61,7 +61,7 @@ void MagnitudeComparator::dataChanged()
 }
 
 
-void MagnitudeComparator::inStateChanged()
+void MagnitudeComparator::inStateChanged([[maybe_unused]] bool isHigh)
 {
 	int i;
 

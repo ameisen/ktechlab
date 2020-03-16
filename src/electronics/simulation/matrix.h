@@ -11,7 +11,7 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#include <math/qmatrix.h>
+#include <math/quickmatrix.h>
 
 /**
 This class performs matrix storage, lu decomposition, forward and backward
@@ -48,7 +48,7 @@ public:
 	 * Returns true if the matrix is changed since last calling performLU()
 	 * - i.e. if we do need to call performLU again.
 	 */
-	inline bool isChanged() const { return max_k < m_mat->size_m(); }
+	inline bool isChanged() const { return max_k < (unsigned int)m_mat->numRows(); }
 	/**
 	 * Performs LU decomposition. Going along the rows,
 	 * the value of the decomposed LU matrix depends only on
@@ -76,10 +76,10 @@ public:
 		const unsigned int mapped_i = m_inMap[i];
 		if ( mapped_i<max_k ) max_k=mapped_i;
 		if ( j<max_k ) max_k=j;
-		
+
 		// I think I need the next line...
 		if ( max_k>0 ) max_k--;
-		
+
 		return (*m_mat)[mapped_i][j];
 	}
 
@@ -111,9 +111,9 @@ private:
 	 */
 	void swapRows( CUI a, CUI b );
 
-	unsigned int m_n; // number of cnodes. 
-	unsigned int max_k; // optimization variable, allows partial L_U re-do. 
-	
+	unsigned int m_n; // number of cnodes.
+	unsigned int max_k; // optimization variable, allows partial L_U re-do.
+
 	int *m_inMap; // Rowwise permutation mapping from external reference to internal storage
 
 	QuickMatrix *m_mat;
@@ -138,15 +138,15 @@ class Matrix22
 {
 public:
 	Matrix22();
-	
+
 	double &a11() { return m_a11; }
 	double &a12() { return m_a12; }
 	double &a21() { return m_a21; }
 	double &a22() { return m_a22; }
-	
+
 	double &b1() { return m_b1; }
 	double &b2() { return m_b2; }
-	
+
 	/**
 	 * Solve the matrix. Returns true if successful (i.e. non-singular), else
 	 * false. Get the solution with x1() and x2().
@@ -156,10 +156,10 @@ public:
 	 * Resets all entries to zero
 	 */
 	void reset();
-	
+
 	double x1() const { return m_x1; }
 	double x2() const { return m_x2; }
-	
+
 private:
 	double m_a11, m_a12, m_a21, m_a22;
 	double m_b1, m_b2;

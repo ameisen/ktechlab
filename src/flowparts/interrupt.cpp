@@ -35,7 +35,7 @@ Interrupt::Interrupt( ICNDocument *icnDocument, bool newItem, const char *id )
 	: FlowContainer( icnDocument, newItem, id ? id : "interrupt" )
 {
 	m_name = i18n("Interrupt");
-	
+
 	QStringList interruptTypes;
 	interruptTypes.append("changed");
 	interruptTypes.append("external");
@@ -63,5 +63,3 @@ void Interrupt::generateMicrobe( FlowCode *code )
 	code->addCodeBranch( outputPart("int_in") );
 	code->addCode("}");
 }
-
-

@@ -38,7 +38,7 @@ ECGround::ECGround( ICNDocument *icnDocument, bool newItem, const char *id )
 	m_name = i18n("Ground");
 	setSize( -8, -8, 16, 16 );
 	init1PinRight();
-	m_pPNode[0]->pin()->setGroundType( Pin::gt_always );
+	m_pPNode[0]->pin()->setGroundType( Pin::GroundType::Always );
 	setAngleDegrees(270);
 }
 
@@ -60,6 +60,3 @@ void ECGround::drawShape( QPainter &p )
 	p.drawLine( _x+5, _y+6, _x+5, _y+10 );
 	deinitPainter(p);
 }
-
-
-

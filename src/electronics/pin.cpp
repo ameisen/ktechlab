@@ -1,193 +1,168 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include "pin.h"
 
 #include <cassert>
-#include <qdebug.h>
 
-#include <qdebug.h>
+#include <QDebug>
 
 #include <algorithm>
 
-Pin::Pin( ECNode * parent )
+Pin::Pin(ECNode *parent) :
+	m_pECNode(parent)
 {
 	assert(parent);
-	m_pECNode = parent;
-	m_voltage = 0.;
-	m_current = 0.;
-	m_eqId = -2;
-	m_bCurrentIsKnown = false;
-	m_groundType = Pin::gt_never;
 }
 
-
-Pin::~Pin()
-{
+Pin::~Pin() {
 	for (auto &wire : m_inputWireList) {
-		if (wire.isNull()) continue;
-		delete (Wire *)wire;
+		if (!wire) continue;
+		delete wire.data();
 	}
 
 	for (auto &wire : m_outputWireList) {
-		if (wire.isNull()) continue;
-		delete (Wire *)wire;
+		if (!wire) continue;
+		delete wire.data();
 	}
 }
 
-
-QPtrList<Pin> Pin::localConnectedPins( ) const
-{
-// 	qDebug() << Q_FUNC_INFO << "Input wires: "<<m_inputWireList.size()<<"   Output wires: " << m_outputWireList.size() << "   Switch connected: " << m_switchConnectedPins.size() << endl;
-
+QPtrList<Pin> Pin::localConnectedPins() const {
 	QPtrList<Pin> pins;
+	pins.reserve(m_inputWireList.size() + m_outputWireList.size() + m_switchConnectedPins.size());
 
 	for (auto &wire : m_inputWireList) {
-		if (wire.isNull() || !(Wire *)wire) continue;
+		if (!wire) continue;
 		pins << wire->startPin();
 	}
 
 	for (auto &wire : m_outputWireList) {
-		if (wire.isNull() || !(Wire *)wire) continue;
+		if (!wire) continue;
 		pins << wire->endPin();
 	}
 
-	pins += m_switchConnectedPins;
+	for (auto &pin : m_switchConnectedPins) {
+		if (!pin) continue;
+		pins << pin;
+	}
 
 	return pins;
 }
 
+void Pin::setSwitchConnected(Pin *pin, bool isConnected) {
+	if (!pin) return;
 
-void Pin::setSwitchConnected( Pin * pin, bool isConnected )
-{
-	if (!pin)
-		return;
-
-	if (isConnected)
-	{
-		if ( !m_switchConnectedPins.contains(pin) )
-			m_switchConnectedPins.append(pin);
+	if (isConnected) {
+		m_switchConnectedPins.insert(pin);
 	}
-	else
-		m_switchConnectedPins.removeAll(pin);
+	else {
+		m_switchConnectedPins.remove(pin);
+	}
 }
 
 void Pin::setSwitchCurrentsUnknown() {
     if (!m_switchList.empty()) {
-        m_switchList.removeAt( 0l );
-    } else {
-        qDebug() << "Pin::setSwitchCurrentsUnknown - WARN - unexpected empty switch list";
+      m_switchList.removeFirst();
+    }
+		else {
+  		qDebug() << "Pin::setSwitchCurrentsUnknown - WARN - unexpected empty switch list";
     }
     m_unknownSwitchCurrents = m_switchList;
 }
 
-void Pin::addCircuitDependentPin( Pin * pin )
-{
-	if ( pin && !m_circuitDependentPins.contains(pin) )
+void Pin::addCircuitDependentPin(Pin *pin) {
+	if (pin && !m_circuitDependentPins.contains(pin)) {
 		m_circuitDependentPins.append(pin);
+	}
 }
 
-
-void Pin::addGroundDependentPin( Pin * pin )
-{
-	if ( pin && !m_groundDependentPins.contains(pin) )
+void Pin::addGroundDependentPin(Pin *pin) {
+	if (pin && !m_groundDependentPins.contains(pin)) {
 		m_groundDependentPins.append(pin);
+	}
 }
 
-
-void Pin::removeDependentPins()
-{
+void Pin::removeDependentPins() {
 	m_circuitDependentPins.clear();
 	m_groundDependentPins.clear();
 }
 
 
-void Pin::addElement( Element * e )
-{
-	if ( !e || m_elementList.contains(e) )
-		return;
-	m_elementList.append(e);
+void Pin::addElement(Element *e) {
+	if (e && !m_elementList.contains(e)) {
+		m_elementList.append(e);
+	}
 }
 
-
-void Pin::removeElement( Element * e )
-{
+void Pin::removeElement(Element *e) {
 	m_elementList.removeAll(e);
 }
 
-
-void Pin::addSwitch( Switch * sw )
-{
-	if ( !sw || m_switchList.contains( sw ) )
-		return;
-	m_switchList << sw;
+void Pin::addSwitch(Switch *sw) {
+	if (sw && !m_switchList.contains(sw)) {
+		m_switchList << sw;
+	}
 }
 
-
-void Pin::removeSwitch( Switch * sw )
-{
-	m_switchList.removeAll( sw );
+void Pin::removeSwitch(Switch *sw) {
+	m_switchList.removeAll(sw);
 }
 
-
-void Pin::addInputWire( Wire * wire )
-{
-	if ( wire && !m_inputWireList.contains(wire) )
+void Pin::addInputWire(Wire *wire) {
+	if (wire && !m_inputWireList.contains(wire)) {
 		m_inputWireList << wire;
+	}
 }
 
-
-void Pin::addOutputWire( Wire * wire )
-{
-	if ( wire && !m_outputWireList.contains(wire) )
+void Pin::addOutputWire(Wire *wire) {
+	if (wire && !m_outputWireList.contains(wire)) {
 		m_outputWireList << wire;
+	}
 }
 
+bool Pin::calculateCurrentFromWires() {
+	auto &inputs = m_inputWireList;
+	auto &outputs = m_outputWireList;
 
-bool Pin::calculateCurrentFromWires()
-{
-	m_inputWireList.removeAll(nullptr);
-	m_outputWireList.removeAll(nullptr);
-
-	const auto &inputs = m_inputWireList;
-	const auto &outputs = m_outputWireList;
+	inputs.removeAll(nullptr);
+	outputs.removeAll(nullptr);
 
 	m_current = 0.0;
+	m_bCurrentIsKnown = false;
 
 	// If a pin has no outputs, then it cannot have a circuituous connection and thus
 	// cannot pass current
 	if (outputs.isEmpty() || inputs.isEmpty()) {
-		m_bCurrentIsKnown = false;
 		return false;
 	}
 
 	double current = 0.0;
 
+	bool inputsFound = false;
 	for (auto &wire : inputs) {
 		if (Ptr::isNull(wire)) continue;
+		inputsFound = true;
 		if (!wire->currentIsKnown()) {
-			m_bCurrentIsKnown = false;
 			return false;
 		}
 
 		current -= wire->current();
 	}
 
+	if (!inputsFound) {
+		return false;
+	}
+
+	bool outputsFound = false;
 	for (auto &wire : outputs) {
 		if (Ptr::isNull(wire)) continue;
+		outputsFound = true;
 		if (!wire->currentIsKnown()) {
-			m_bCurrentIsKnown = false;
 			return false;
 		}
 
 		current += wire->current();
+	}
+
+	if (!outputsFound) {
+		return false;
 	}
 
 	m_current = current;

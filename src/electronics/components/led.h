@@ -1,15 +1,4 @@
-/***************************************************************************
- *   Copyright (C) 2003 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
-#ifndef LED_H
-#define LED_H
+#pragma once
 
 #include "component.h"
 #include "ecdiode.h"
@@ -18,32 +7,36 @@
 @short Simulates a LED
 @author David Saxton
 */
-class LED final : public ECDiode
-{
+class LED final : public ECDiode {
+	using Super = ECDiode;
+
+	static constexpr const current_t MinCurrent = 0.002;
+	static constexpr const current_t MaxCurrent = 0.018;
 public:
-	LED( ICNDocument *icnDocument, bool newItem, const char *id = 0L );
-	~LED() override;
+	static constexpr const cstring Category = "ec";
+	static constexpr const cstring ID = "led";
+	static constexpr const cstring Name = "LED";
 
-	static Item* construct( ItemDocument *itemDocument, bool newItem, const char *id );
+	LED(ICNDocument *icnDocument, bool newItem, const char *id = nullptr);
+	~LED() override = default;
+
+	static Item* construct(ItemDocument *itemDocument, bool newItem, const char *id);
 	static LibraryItem *libraryItem();
-
-	/**
-	 * Returns the brightness for the given current, from 255 (off) -> 0 (on)
-	 */
-	static uint brightness( double i );
 
 	void dataChanged() override;
 	void stepNonLogic() override;
 	bool doesStepNonLogic() const override { return true; }
 
+	static real getBrightnessReal(current_t current, current_t minCurrentV = MinCurrent, current_t maxCurrentV = MaxCurrent);
+	static int getBrightness(current_t current, current_t minCurrentV = MinCurrent, current_t maxCurrentV = MaxCurrent);
+
 private:
-	void drawShape( QPainter &p ) override;
+	void drawShape(QPainter &p) override;
 
-	double r, g, b;
+	Property &zeroColor;
+	Property &minCurrent;
+	Property &maxCurrent;
+	Point3<real> color = {0.0, 0.0, 0.0};
 
-	double avg_brightness;
-	uint last_brightness;
-	double lastUpdatePeriod;
+	real brightness = 0.0;
 };
-
-#endif

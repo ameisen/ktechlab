@@ -38,12 +38,12 @@ WritePort::WritePort( ICNDocument *icnDocument, bool newItem, const char *id )
 	initIOSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "0-var", Variant::Type::Combo );
 	property("0-var")->setToolbarCaption( i18n("Write") );
 	property("0-var")->setEditorCaption( i18n("Variable") );
 	property("0-var")->setValue("x");
-	
+
 	createProperty( "1-port", Variant::Type::Port );
 	property("1-port")->setToolbarCaption( i18nc( "write to port", "to" ) );
 	property("1-port")->setEditorCaption( i18n("Port") );
@@ -66,29 +66,29 @@ void WritePort::generateMicrobe( FlowCode *code )
 {
 	code->addCode( dataString("1-port")+" = "+dataString("0-var") );
 	code->addCodeBranch( outputPart("stdoutput") );
-	
+
 #if 0
 	QString var = dataString("var");
 	QString port = dataString("port");
-	
+
 	// WTF? I don't want to do this!
 // 	QString newCode = "bsf STATUS,5 ; Move to bank 1\n";
 	QString newCode;
-	
+
 	if ( FlowCode::isLiteral(var) ) newCode += "movlw " + var + " ; Move " + var + " to working register w\n";
 	else
 	{
 		code->addVariable(var);
 		newCode += "movf " + var + ",0 ; Move " + var + " to working register w\n";
 	}
-	
+
 	newCode += "movwf " + port + " ; Move register w to port\n";
-	
+
 	// Same for below as for above
 // 	newCode += "bcf STATUS,5 ; Come back to bank 0\n";
-	
+
 	newCode += gotoCode("stdoutput") + "\n";
-	
+
 	code->addCodeBlock( id(), newCode );
 #endif
 }

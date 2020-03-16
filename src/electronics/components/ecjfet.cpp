@@ -62,12 +62,12 @@ ECJFET::ECJFET( int JFET_type, ICNDocument * icnDocument, bool newItem, const ch
 		m_name = i18n("N-Channel JFET");
 	else
 		m_name = i18n("P-Channel JFET");
-	
+
 	setSize( -8, -8, 16, 16 );
 	m_pJFET = createJFET( createPin( 8, -16, 90, "D" ), createPin( -16, 0, 0, "G" ), createPin( 8, 16, 270, "S" ), JFET_type );
-	
+
 	JFETSettings s; // will be created with the default settings
-	
+
 	Variant * v = createProperty( "V_Th", Variant::Type::Double );
 	v->setCaption( i18n("Threshold voltage") );
 	v->setUnit("V");
@@ -75,7 +75,7 @@ ECJFET::ECJFET( int JFET_type, ICNDocument * icnDocument, bool newItem, const ch
 	v->setMaxValue(1e6);
 	v->setValue( s.V_Th );
 	v->setAdvanced( true );
-	
+
 	v = createProperty( "beta", Variant::Type::Double );
 	v->setCaption( i18n("Transcondutance") );
 	v->setUnit(QString("A/V") + QChar(0xb2));
@@ -83,7 +83,7 @@ ECJFET::ECJFET( int JFET_type, ICNDocument * icnDocument, bool newItem, const ch
 	v->setMaxValue(1e0);
 	v->setValue( s.beta );
 	v->setAdvanced( true );
-	
+
 	v = createProperty( "I_S", Variant::Type::Double );
 	v->setCaption( i18n("Saturation current") );
 	v->setUnit("A");
@@ -91,7 +91,7 @@ ECJFET::ECJFET( int JFET_type, ICNDocument * icnDocument, bool newItem, const ch
 	v->setMaxValue(1e0);
 	v->setValue( s.I_S );
 	v->setAdvanced( true );
-	
+
 	v = createProperty( "N", Variant::Type::Double );
 	v->setCaption( i18n("PN emission coefficient") );
 	v->setUnit("");
@@ -99,7 +99,7 @@ ECJFET::ECJFET( int JFET_type, ICNDocument * icnDocument, bool newItem, const ch
 	v->setMaxValue(10.0);
 	v->setValue( s.N );
 	v->setAdvanced( true );
-	
+
 	v = createProperty( "N_R", Variant::Type::Double );
 	v->setCaption( i18n("Isr emission coefficient") );
 	v->setUnit("");
@@ -122,7 +122,7 @@ void ECJFET::dataChanged()
 	s.I_S = dataDouble( "I_S" );
 	s.N = dataDouble( "N" );
 	s.N_R = dataDouble( "N_R" );
-	
+
 	m_pJFET->setJFETSettings( s );
 }
 
@@ -131,21 +131,21 @@ void ECJFET::drawShape( QPainter &p )
 {
 	const int _x = int(x());
 	const int _y = int(y());
-	
+
 	initPainter( p );
-	
+
 	// back lines
 	p.drawLine( _x-8, _y, _x+2, _y );
 	p.drawLine( _x+2, _y-8, _x+2, _y+8 );
-	
+
 	// top corner
 	p.drawLine( _x+2, _y-5, _x+8, _y-5 );
 	p.drawLine( _x+8, _y-5, _x+8, _y-8 );
-	
+
 	// bottom corner
 	p.drawLine( _x+2, _y+5, _x+8, _y+5 );
 	p.drawLine( _x+8, _y+5, _x+8, _y+8 );
-	
+
 	QPolygon pa(3);
 	if ( m_JFET_type == JFET::nJFET )
 	{
@@ -164,6 +164,6 @@ void ECJFET::drawShape( QPainter &p )
 	pa.translate( _x, _y );
 	p.setBrush( p.pen().color() );
 	p.drawPolygon( pa );
-	
+
 	deinitPainter( p );
 }

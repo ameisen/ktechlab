@@ -230,7 +230,7 @@ bool KtlQCanvasEllipse::collidesWith( const KtlQCanvasPolygonalItem* p, const Kt
     return collision_double_dispatch(p,r,e,this,0,this);
 }
 
-KtlQCanvasItemList KtlQCanvasItem::collisions(const bool exact) const
+QList<KtlQCanvasItem *> KtlQCanvasItem::collisions(const bool exact) const
 {
     return canvas()->collisions(chunks(),this,exact);
 }

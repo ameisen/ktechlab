@@ -37,17 +37,17 @@ Resistor::Resistor( ICNDocument *icnDocument, bool newItem, const char *id )
 {
 	m_name = i18n("Resistor");
 	setSize( -16, -8, 32, 16 );
-	
+
 	init1PinLeft();
 	init1PinRight();
 	m_resistance = createResistance( m_pPNode[0], m_pNNode[0], 1. );
-	
+
 	createProperty( "resistance", Variant::Type::Double );
 	property("resistance")->setCaption( i18n("Resistance") );
 	property("resistance")->setUnit( QChar(0x3a9) );
 	property("resistance")->setValue(1e4);
 	property("resistance")->setMinValue(1e-6);
-	
+
 	addDisplayText( "res", QRect( -16, -22, 32, 12 ), "", false );
 }
 
@@ -58,10 +58,10 @@ Resistor::~Resistor()
 void Resistor::dataChanged()
 {
 	double resistance = dataDouble("resistance");
-	
+
 	QString display = QString::number( resistance / getMultiplier(resistance), 'g', 3 ) + getNumberMag(resistance) + QChar(0x3a9);
 	setDisplayText( "res", display );
-	
+
 	m_resistance->setResistance(resistance);
 }
 
@@ -71,5 +71,3 @@ void Resistor::drawShape( QPainter &p )
 	p.drawRect( (int)x()-16, (int)y()-6, width(), 12 );
 	deinitPainter(p);
 }
-
-

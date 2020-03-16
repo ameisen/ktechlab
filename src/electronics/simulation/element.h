@@ -99,7 +99,7 @@ public:
 		Element_VoltageSignal,
 		Element_VoltageSource
 	};
-	
+
 	Element();
 	virtual ~Element();
 	/**
@@ -121,6 +121,16 @@ public:
 	 * all elements use this.
 	 */
 	void setCBranches( const int b0 = noBranch, const int b1 = noBranch, const int b2 = noBranch, const int b3 = noBranch );
+
+	void setCBranchesRange(const int count, const int base) {
+		setCBranches(
+			(count >= 1) ? base : noBranch,
+			(count >= 2) ? (base + 1) : noBranch,
+			(count >= 3) ? (base + 2) : noBranch,
+			(count >= 4) ? (base + 3) : noBranch
+		);
+	}
+
 	/**
 	 * Returns a pointer to the given CNode
 	 */
@@ -168,11 +178,11 @@ public:
 	 */
 	 void componentDeleted();
 	 void elementSetDeleted();
-	
+
 	double m_cnodeI[8]; ///< Current flowing into the cnodes from the element
 	double cbranchCurrent( const int branch );
 	double cnodeVoltage( const int node );
-	
+
 protected:
 	/**
 	 * Update the status, returning b_status
@@ -182,12 +192,12 @@ protected:
 	 * Resets all calculated currents in the nodes to 0
 	 */
 	void resetCurrents();
-	
+
 	inline double & A_g( uint i, uint j );
 	inline double & A_b( uint i, uint j );
 	inline double & A_c( uint i, uint j );
 	inline double & A_d( uint i, uint j );
-	
+
 	inline double & b_i( uint i );
 	inline double & b_v( uint i );
 
@@ -206,7 +216,7 @@ protected:
 	 */
 	int m_numCBranches;
 	CBranch *p_cbranch[MAX_CBRANCHES];
-	
+
 	/**
 	 * True when the element can do add_initial_dc(), i.e. when it has
 	 * pointers to the circuit, and at least one of its nodes is not ground.
@@ -222,24 +232,24 @@ private:
 double &Element::A_g( uint i, uint j )
 {
 	if(p_cnode[i]->isGround || p_cnode[j]->isGround) return m_temp;
-	return p_eSet->matrix()->g( p_cnode[i]->n(), p_cnode[j]->n() );
+	return p_eSet->matrix().g( p_cnode[i]->n(), p_cnode[j]->n() );
 }
 
 double &Element::A_b( uint i, uint j )
 {
 	if ( p_cnode[i]->isGround ) return m_temp;
-	return p_eSet->matrix()->b( p_cnode[i]->n(), p_cbranch[j]->n() );
+	return p_eSet->matrix().b( p_cnode[i]->n(), p_cbranch[j]->n() );
 }
 
 double &Element::A_c( uint i, uint j )
 {
 	if ( p_cnode[j]->isGround ) return m_temp;
-	return p_eSet->matrix()->c( p_cbranch[i]->n(), p_cnode[j]->n() );
+	return p_eSet->matrix().c( p_cbranch[i]->n(), p_cnode[j]->n() );
 }
 
 double &Element::A_d( uint i, uint j )
 {
-	return p_eSet->matrix()->d( p_cbranch[i]->n(), p_cbranch[j]->n() );
+	return p_eSet->matrix().d( p_cbranch[i]->n(), p_cbranch[j]->n() );
 }
 
 
@@ -247,13 +257,13 @@ double &Element::b_i( uint i )
 {
 	if ( p_cnode[i]->isGround )
 		return m_temp;
-	
-	return (*(p_eSet->b()))[ p_cnode[i]->n() ];
+
+	return p_eSet->b()[ p_cnode[i]->n() ];
 }
 
 double & Element::b_v( uint i )
 {
-	return (*(p_eSet->b()))[ p_eSet->cnodeCount() + p_cbranch[i]->n() ];
+	return p_eSet->b()[ p_eSet->cnodeCount() + p_cbranch[i]->n() ];
 }
 
 #endif

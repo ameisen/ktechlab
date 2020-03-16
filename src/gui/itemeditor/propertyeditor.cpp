@@ -308,7 +308,8 @@ PropertyEditor::PropertyEditor( QWidget * parent, const char * name )
 
 PropertyEditor::~PropertyEditor()
 {
-    // note: delete m_colPropertyDelegate and m_colValueDelegate
+		delete m_colPropertyDelegate;
+		delete m_colValueDelegate;
 }
 
 
@@ -395,7 +396,7 @@ void PropertyEditor::createEditor( const QModelIndex& index )
 	m_editItem = i;
 
 	PropertySubEditor *editor=0;
-	switch ( i->type() )
+	switch (Variant::Type(i->type()))
 	{
 		case Variant::Type::String:
 			editor = new PropertyEditorInput( viewport(), i->property() );

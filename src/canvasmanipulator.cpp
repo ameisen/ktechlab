@@ -519,6 +519,7 @@ QColor ConnectorDraw::validConnectionColor()
 	return QColor( 255, 166, 0 );
 }
 
+static constexpr inline double sq(double x) { return x * x; }
 
 QPoint ConnectorDraw::toValidPos( const QPoint & clickPos, Connector * clickedConnector ) const
 {
@@ -529,12 +530,19 @@ QPoint ConnectorDraw::toValidPos( const QPoint & clickPos, Connector * clickedCo
 
 	QList<QPoint>::const_iterator end = pointList.end();
 
-	double dl[] = { 0.5, 8.5, 11.5, 18.0, 23.0 }; // various distances rounded up of (0,0) cells, (0,1), etc
+	// various distances rounded up of (0,0) cells, (0,1), etc
+	constexpr const double dl[] = {
+		sq(0.5),
+		sq(8.5),
+		sq(11.5),
+		sq(18.0),
+		sq(23.0)
+	};
 	for ( unsigned i = 0; i < 5; ++i )
 	{
 		for ( QList<QPoint>::const_iterator it = pointList.begin(); it != end; ++it )
 		{
-			if ( qpoint_distance( *it, clickPos ) <= dl[i] )
+			if ( qpoint_distance_sq( *it, clickPos ) <= dl[i] )
 				return *it;
 		}
 	}
@@ -1425,7 +1433,7 @@ void SelectRectangle::setSize( int w, int h )
 }
 
 
-KtlQCanvasItemList SelectRectangle::collisions()
+QList<KtlQCanvasItem *> SelectRectangle::collisions()
 {
 	KtlQCanvas *canvas = m_topLine->canvas();
 

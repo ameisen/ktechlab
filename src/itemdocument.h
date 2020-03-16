@@ -97,6 +97,7 @@ class ItemDocument : public Document
 		 * Attempt to register the item, returning true iff successful
 		 */
 		virtual bool registerItem( KtlQCanvasItem *qcanvasItem );
+		bool registerItem( Item *item );
 		/**
 		 * Will attempt to create an item with the given id at position p. Some item
 		 * (such as PIC/START) have restrictions, and can only have one instance of
@@ -446,7 +447,7 @@ class Canvas : public KtlQCanvas
 		void drawBackground ( QPainter & painter, const QRect & clip ) override;
 		void drawForeground ( QPainter & painter, const QRect & clip ) override;
 
-		ItemDocument *p_itemDocument;
+		QPointer<ItemDocument> p_itemDocument;
 
 		QString m_message;
 		QTimer * m_pMessageTimeout;
@@ -474,7 +475,7 @@ class CanvasTip : public KtlQCanvasRectangle
 
 		QVector<double> m_v;
 		QVector<double> m_i;
-		ItemDocument *p_itemDocument;
+		QPointer<ItemDocument> p_itemDocument;
 		QString m_text;
 };
 

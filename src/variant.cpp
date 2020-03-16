@@ -1,133 +1,92 @@
-/***************************************************************************
- *   Copyright (C) 2003-2005 by David Saxton                               *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include <algorithm>
 #include <cmath>
 
 #include "colorcombo.h"
 #include "cnitem.h"
-#include <qdebug.h>
-#include <klocalizedstring.h>
+
+#include <QDebug>
+#include <KLocalizedString>
+
 using namespace std;
 
 // this value is taken from ColorCombo and should ideally be put somewhere...
 static constexpr const char DefaultColor[] = "#f62a2a";
 
-Variant::Variant(const QString &id, TypeValue type) :
-	QObject(),
+Variant::Variant(const QString &id, Type type) :
+	Super(),
 	m_id(id),
 	m_type(type),
 	m_colorScheme(ColorCombo::QtStandard)
 {
-	if (type == TypeValue::Color)
-	{
+	if (type == Type::Color) {
 		m_value = m_defaultValue = DefaultColor;
 	}
 }
 
-Variant::Variant(QString &&id, TypeValue type) :
-	QObject(),
-	m_id(id),
-	m_type(type),
-	m_colorScheme(ColorCombo::QtStandard)
-{
-	if (type == TypeValue::Color)
-	{
-		m_value = m_defaultValue = DefaultColor;
-	}
-}
+Variant::Variant(QString &&id, Type type) : Variant(id, type)
+{}
 
-Variant::~Variant()
-{
-}
-
-void Variant::appendAllowed(const QString &id, const QString &i18nName)
-{
+void Variant::appendAllowed(const QString &id, const QString &i18nName) {
 	m_allowed[id] = i18nName;
 }
 
-void Variant::appendAllowed(QString &&id, const QString &i18nName)
-{
+void Variant::appendAllowed(QString &&id, const QString &i18nName) {
 	m_allowed[id] = i18nName;
 }
 
-void Variant::appendAllowed(const QString &id, QString &&i18nName)
-{
+void Variant::appendAllowed(const QString &id, QString &&i18nName) {
 	m_allowed[id] = i18nName;
 }
 
-void Variant::appendAllowed(QString &&id, QString &&i18nName)
-{
+void Variant::appendAllowed(QString &&id, QString &&i18nName) {
 	m_allowed[id] = i18nName;
 }
 
-void Variant::setAllowed(const QStringList &allowed)
-{
+void Variant::setAllowed(const QStringList &allowed) {
 	m_allowed.clear();
 	for (auto &&value : allowed) {
 		m_allowed[value] = value;
 	}
-	/*
-	QStringList::const_iterator end = allowed.end();
-	for ( QStringList::const_iterator it = allowed.begin(); it != end; ++it )
-		m_allowed[ *it ] = *it;
-	*/
 }
 
-void Variant::appendAllowed(const QString &allowed)
-{
+void Variant::appendAllowed(const QString &allowed) {
 	m_allowed[allowed] = allowed;
 }
 
-void Variant::appendAllowed(QString &&allowed)
-{
+void Variant::appendAllowed(QString &&allowed) {
 	m_allowed[allowed] = allowed;
 }
 
-void Variant::setMinValue(double value)
-{
+void Variant::setMinValue(double value) {
 	m_minValue = value;
 
-	if (value != 0.0)
-	{
+	if (value != 0.0) {
 		m_minAbsValue = std::min(m_minAbsValue, std::abs(value));
 	}
 }
 
-void Variant::setMaxValue(double value)
-{
+void Variant::setMaxValue(double value) {
 	m_maxValue = value;
 
-	if (value != 0.0)
-	{
+	if (value != 0.0) {
 		m_minAbsValue = std::min(m_minAbsValue, std::abs(value));
 	}
 }
 
-QString Variant::displayString() const
-{
-	switch(type())
-	{
-		case TypeValue::Double:
-		{
+QString Variant::displayString() const {
+	switch(type()) {
+		case Type::Double: {
 			auto numValue = m_value.toDouble();
 			return QString::number(numValue / CNItem::getMultiplier(numValue)) + " " + CNItem::getNumberMag(numValue) + m_unit;
 		}
 
-		case TypeValue::Int:
+		case Type::Int:
 			return m_value.toString() + " " + m_unit;
 
-		case TypeValue::Bool:
+		case Type::Bool:
 			return i18n(m_value.toBool() ? "True" : "False");
 
-		case TypeValue::Select:
+		case Type::Select:
 			return m_allowed[m_value.toString()];
 
 		default:
@@ -136,57 +95,51 @@ QString Variant::displayString() const
 }
 
 template <typename T>
-void Variant::_setValue(T val)
-{
+void Variant::_setValue(T val) {
 	qDebug() << Q_FUNC_INFO << "val=" << val << " old=" << m_value;
-	if (type() == TypeValue::Select && !m_allowed.contains(val.toString()))
-	{
+	if (type() == Type::Select && !m_allowed.contains(val.toString())) {
 		// Our value is being set to an i18n name, not the actual string id.
 		// So change val to the id (if it exists)
 
 		auto i18nName = val.toString();
 
 		// Range-for on QMap gives you values, not key-value pairs. Frustrating.
-		QStringMap::iterator end = m_allowed.end();
-		for (QStringMap::iterator it = m_allowed.begin(); it != end; ++it)
-		{
-			if (it.value() == i18nName)
-			{
+		const auto end = m_allowed.end();
+		for (auto it = m_allowed.begin(); it != end; ++it) {
+			if (it.value() == i18nName) {
 				val = it.key();
 				break;
 			}
 		}
 	}
 
-	if (!m_bSetDefault)
-	{
+	if (!m_bSetDefault) {
 		m_defaultValue = val;
 		m_bSetDefault = true;
 	}
 
-	if (m_value == val)
+	if (m_value == val) {
 		return;
+	}
 
 	const QVariant old = std::move(m_value);
 	m_value = val;
-	emit( valueChanged(val, old) );
+	emit(valueChanged(val, old));
 
-	switch (type())
-	{
-		case TypeValue::String:
-		case TypeValue::FileName:
-		case TypeValue::PenCapStyle:
-		case TypeValue::PenStyle:
-		case TypeValue::Port:
-		case TypeValue::Pin:
-		case TypeValue::VarName:
-		case TypeValue::Combo:
-		case TypeValue::Select:
-		case TypeValue::SevenSegment:
-		case TypeValue::KeyPad:
-		case TypeValue::Multiline:
-		case TypeValue::RichText:
-		{
+	switch (type()) {
+		case Type::String:
+		case Type::FileName:
+		case Type::PenCapStyle:
+		case Type::PenStyle:
+		case Type::Port:
+		case Type::Pin:
+		case Type::VarName:
+		case Type::Combo:
+		case Type::Select:
+		case Type::SevenSegment:
+		case Type::KeyPad:
+		case Type::Multiline:
+		case Type::RichText: {
 			auto dispString = displayString();
 			qDebug() << Q_FUNC_INFO << "dispString=" << dispString << " value=" << m_value;
 			emit valueChanged(dispString);
@@ -194,66 +147,60 @@ void Variant::_setValue(T val)
 		}
 		break;
 
-		case TypeValue::Int:
+		case Type::Int:
 			emit valueChanged(value().toInt());
 			break;
 
-		case TypeValue::Double:
+		case Type::Double:
 			emit valueChanged(value().toDouble());
 			break;
 
-		case TypeValue::Color:
+		case Type::Color:
 			emit valueChanged(value().value<QColor>());
 			break;
 
-		case TypeValue::Bool:
+		case Type::Bool:
 			emit valueChanged(value().toBool());
 			break;
 
-		case TypeValue::Raw:
-		case TypeValue::None:
+		case Type::Raw:
+		case Type::None:
 			break;
 	}
 	qDebug() << Q_FUNC_INFO << "result m_value=" << m_value;
 }
 
-void Variant::setValue(const QVariant &val)
-{
+void Variant::setValue(const QVariant &val) {
 	_setValue(val);
 }
 
-void Variant::setValue(QVariant &&val)
-{
+void Variant::setValue(QVariant &&val) {
 	_setValue(val);
 }
 
-void Variant::setMinAbsValue(double val)
-{
+void Variant::setMinAbsValue(double val) {
 	m_minAbsValue = val;
 }
 
-
-bool Variant::changed() const
-{
+bool Variant::changed() const {
 	// Have to handle double slightly differently due inperfect storage of real numbers
-	if (type() == TypeValue::Double)
-	{
-		double cur = value().toDouble();
-		double def = defaultValue().toDouble();
+	if (type() == Type::Double) {
+		const double cur = value().toDouble();
+		const double def = defaultValue().toDouble();
 
-		double diff = std::abs(cur - def);
-		if (diff == 0) {
+		const double diff = std::abs(cur - def);
+		if (diff == 0.0) {
 			return false;
 		}
 
 		// denom cannot be zero
-		double denom = std::max(
+		const double denom = std::max(
 			std::abs(cur),
 			std::abs(def)
 		);
 
 		// not changed if within 1e-4% of each other's value
-		return ( (diff / denom) > 1e-6 );
+		return (diff / denom) > 1.0e-6;
 	}
 	return value() != defaultValue();
 }

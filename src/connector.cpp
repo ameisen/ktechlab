@@ -76,6 +76,11 @@ Connector::~Connector() {
 	for (int i = 0; i < m_wires.size(); i++)
 		delete m_wires[i];
 
+	for (auto &line: m_connectorLineVector) {
+		if (!line) continue;
+		delete line;
+	}
+
 //	m_wires.resize(0);
 }
 
@@ -250,10 +255,12 @@ void Connector::updateDrawList() {
 	}
 
 	//BEGIN build up ConnectorLine list
-	for (ConnectorLine* line: m_connectorLineList)
+	for (auto &line: m_connectorLineVector) {
+		if (!line) continue;
 		delete line;
+	}
 
-	m_connectorLineList.clear();
+	m_connectorLineVector.clear();
 
 	if (!drawLineList.isEmpty()) {
 		QPoint prev = drawLineList.first();
@@ -261,7 +268,7 @@ void Connector::updateDrawList() {
 
 		for (QPoint next: drawLineList) {
 			ConnectorLine *line = new ConnectorLine(this, pixelOffset);
-			m_connectorLineList.append(line);
+			m_connectorLineVector.append(line);
 
 			line->setPoints(prev.x(), prev.y(), next.x(), next.y());
 
@@ -491,7 +498,7 @@ void Connector::updateConnectorLines(bool forceRedraw) {
 
 	QPen pen(color, (numWires() > 1) ? 2 : 1);
 
-	for (KtlQCanvasPolygonalItem *item: m_connectorLineList) {
+	for (KtlQCanvasPolygonalItem *item: m_connectorLineVector) {
 		bool changed = (item->z() != z)
 			    || (item->pen() != pen)
 			    || (item->isVisible() != isVisible());
@@ -543,7 +550,7 @@ void Connector::incrementCurrentAnimation(double deltaTime) {
 
 
 //BEGIN class ConnectorLine
-ConnectorLine::ConnectorLine(Connector * connector, int pixelOffset)
+ConnectorLine::ConnectorLine(const QPointer<Connector> &connector, int pixelOffset)
 		: //QObject(connector),
             KtlQCanvasLine(connector->canvas()) {
     qDebug() << Q_FUNC_INFO << " this=" << this;
@@ -571,7 +578,7 @@ int boundify(int x, int bound1, int bound2) {
 
 
 void ConnectorLine::drawShape(QPainter & p) {
-	if (!m_bAnimateCurrent) {
+	if (!m_bAnimateCurrent || !m_pConnector) {
 		KtlQCanvasLine::drawShape(p);
 		return;
 	}

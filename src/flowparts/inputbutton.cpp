@@ -40,12 +40,12 @@ InputButton::InputButton( ICNDocument *icnDocument, bool newItem, const char *id
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "0-trigger", Variant::Type::Select );
 	property("0-trigger")->setCaption( i18n("Trigger") );
 	property("0-trigger")->setAllowed( (QStringList("rising") << "falling") );
 	property("0-trigger")->setValue("rising");
-	
+
 	createProperty( "1-pin", Variant::Type::Pin );
 	property("1-pin")->setCaption( i18n("Pin") );
 	property("1-pin")->setValue("RA0");
@@ -66,4 +66,3 @@ void InputButton::generateMicrobe( FlowCode *code )
 {
 	code->addCodeBranch( outputPart("stdoutput") );
 }
-

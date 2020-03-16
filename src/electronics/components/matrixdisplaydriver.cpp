@@ -312,11 +312,11 @@ MatrixDisplayDriver::MatrixDisplayDriver( ICNDocument *icnDocument, bool newItem
 	: Component( icnDocument, newItem, id ? id : "Matrix Display Driver" )
 {
 	m_name = i18n("Matrix Display Driver");
-	
+
 	m_prevCol = 0;
 	m_nextCol = 0;
 	m_scanCount = 2;
-	
+
 	createProperty( "diode-configuration", Variant::Type::Select );
 	property("diode-configuration")->setCaption( i18n("Configuration") );
 	QStringMap allowed;
@@ -325,16 +325,16 @@ MatrixDisplayDriver::MatrixDisplayDriver( ICNDocument *icnDocument, bool newItem
 	property("diode-configuration")->setAllowed( allowed );
 	property("diode-configuration")->setValue("Row Cathode");
 	property("diode-configuration")->setAdvanced(true);
-	
+
 	//QStringList pins = QStringList::split( ',', "D0,D1,D2,D3,D4,D5,D6,D7,,,,,,C4,C3,C2,C1,C0,,R0,R1,R2,R3,R4,R5,R6", true );
     QStringList pins = QString("D0,D1,D2,D3,D4,D5,D6,D7,,,,,,C4,C3,C2,C1,C0,,R0,R1,R2,R3,R4,R5,R6").split( ',', QString::KeepEmptyParts);
 	initDIPSymbol( pins, 64 );
 	initDIP(pins);
-	
+
 	m_pValueLogic.resize( 8 /*, 0l - 2018.06.02 - initialized below */ );
 	for ( unsigned i = 0; i < 8; ++i )
 		m_pValueLogic[i] = createLogicIn( ecNodeWithID("D"+QString::number(i)) );
-	
+
 	m_pRowLogic.resize( 7 /*, 0l - 2018.06.02 - initialized below */ );
 	for ( unsigned i = 0; i < 7; ++i )
 	{
@@ -342,7 +342,7 @@ MatrixDisplayDriver::MatrixDisplayDriver( ICNDocument *icnDocument, bool newItem
 		m_pRowLogic[i]->setOutputLowConductance( 1.0 );
 		m_pRowLogic[i]->setOutputHighVoltage(5.0);
 	}
-	
+
 	m_pColLogic.resize( 5 /*, 0l - 2018.06.02 - initialized below */ );
 	for ( unsigned i = 0; i < 5; ++i )
 	{
@@ -362,23 +362,22 @@ void MatrixDisplayDriver::stepNonLogic()
 	if ( ++m_scanCount < 5 )
 		return;
 	m_scanCount = 0;
-	
+
 	m_pColLogic[m_prevCol]->setHigh(false);
 	m_pColLogic[m_nextCol]->setHigh(true);
-	
+
 	unsigned value = 0;
 	for ( unsigned i = 0; i < 8; ++i )
 		value |= ( m_pValueLogic[i]->isHigh() ) ? (1 << i) : 0;
-	
+
 	for ( unsigned row = 0; row < 7; row++ )
 	{
 		m_pRowLogic[row]->setHigh( !displayBit( value, row, m_nextCol) );
 	}
-	
+
 	m_prevCol = m_nextCol;
-	
+
 	m_nextCol++;
 	if ( m_nextCol >= 5 )
 		m_nextCol = 0;
 }
-

@@ -1382,7 +1382,7 @@ void KTechlab::slotViewSplitLeftRight()
 	if (!view)
 		return;
 	ViewContainer *vc = view->viewContainer();
-	uint vaId = vc->createViewArea( view->viewAreaId(), ViewArea::Right, true );
+	uint vaId = vc->createViewArea( view->viewAreaId(), ViewArea::Position::Right, true );
 // 	view->document()->createView( vc, vaId );
 	(void)vaId;
 }
@@ -1392,7 +1392,7 @@ void KTechlab::slotViewSplitTopBottom()
 	if (!view)
 		return;
 	ViewContainer *vc = view->viewContainer();
-	uint vaId = vc->createViewArea( view->viewAreaId(), ViewArea::Bottom, true );
+	uint vaId = vc->createViewArea( view->viewAreaId(), ViewArea::Position::Bottom, true );
 // 	view->document()->createView( vc, vaId );
 	(void)vaId;
 }

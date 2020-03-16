@@ -1,41 +1,21 @@
-/***************************************************************************
- *   Copyright (C) 2003-2005 by David Saxton                               *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
-#ifndef CIRCUIT_H
-#define CIRCUIT_H
+#pragma once
 
 #include "pch.hpp"
 
-#include <qpointer.h>
-#include "qstringlist.h"
-#include "qlist.h"
+#include <QPointer>
+#include <QStringList>
+#include <QList>
 
 #include "elementset.h"
+#include "math/quickvector.h"
+
+#include <memory>
 
 class CircuitDocument;
 class Wire;
 class Pin;
 class Element;
 class LogicOut;
-
-class LogicCacheNode
-{
-public:
-	LogicCacheNode();
-	~LogicCacheNode();
-
-	LogicCacheNode * high;
-	LogicCacheNode * low;
-	QuickVector * data;
-};
-
 
 /**
 Usage of this class (usually invoked from CircuitDocument):
@@ -49,17 +29,26 @@ to this implementation, and the pure untainted ElementSet. Please keep it that w
 @short Simulates a collection of components
 @author David Saxton
 */
-class Circuit
-{
+class Circuit final {
+	struct LogicCacheNode final {
+		LogicCacheNode() = default;
+		~LogicCacheNode() = default;
+
+		QuickVector data = QuickVector{0};
+		std::unique_ptr<LogicCacheNode> high;
+		std::unique_ptr<LogicCacheNode> low;
+		bool hasData = false;
+	};
+
 public:
 	Circuit();
-	~Circuit();
+	~Circuit() = default;
 
-	void addPin( Pin *node );
-	void addElement( Element *element );
+	void addPin(Pin *node);
+	void addElement(Element *element);
 
-	bool contains( Pin *node );
-	bool containsNonLinear() const { return m_elementSet->containsNonLinear(); }
+	bool contains(Pin *pin);
+	bool containsNonLinear() const { return ElementSet_->containsNonLinear(); }
 
 	void init();
 	/**
@@ -78,7 +67,7 @@ public:
 	/**
 		* Solves for logic elements (i.e just does fbSub)
 		*/
-	void doLogic() { m_elementSet->doLinear(false); }
+	void doLogic() { ElementSet_->doLinear(false); }
 
 	void displayEquations();
 	void updateCurrents();
@@ -88,16 +77,20 @@ public:
 		* This will identify the ground node and non-ground nodes in the given set.
 		* Ground will be given the eqId -1, non-ground of 0.
 		* @param highest The highest ground type of the groundnodes found. If no
-		ground nodes were found, this will be (gt_never-1).
+		ground nodes were found, this will be (GroundType::Never-1).
 		* @returns the number of ground nodes. If all nodes are at or below the
-		* 			gt_never threshold, then this will be zero.
+		* 			GroundType::Never threshold, then this will be zero.
 		*/
-	static int identifyGround( QPtrList<Pin> nodeList, int *highest = 0l );
+	static int identifyGround(const QPtrList<Pin> &nodeList, int &highest);
+	static int identifyGround(const QPtrList<Pin> &nodeList) {
+		int highest = 0;
+		return identifyGround(nodeList, highest);
+	}
 
-	void setNextChanged( Circuit * circuit, unsigned char chain ) { m_pNextChanged[chain] = circuit; }
-	Circuit * nextChanged( unsigned char chain ) const { return m_pNextChanged[chain]; }
-	void setCanAddChanged( bool canAdd ) { m_bCanAddChanged = canAdd; }
-	bool canAddChanged() const { return m_bCanAddChanged; }
+	void setNextChanged(Circuit *circuit, int chain) { NextChanged_[chain] = circuit; }
+	Circuit * nextChanged(int chain) const { return NextChanged_[chain]; }
+
+	bool isCacheable() const { return bool(LogicCacheBase_); }
 
 protected:
 	void cacheAndUpdate();
@@ -112,24 +105,18 @@ protected:
 	/**
 		* Returns true if any of the nodes are ground
 		*/
-	static bool recursivePinAdd( Pin *node, QPtrList<Pin> *unassignedNodes, QPtrList<Pin> *associated, QPtrList<Pin> *nodes );
+	static bool recursivePinAdd(Pin *node, QPtrSet<Pin> &unassignedNodes, QPtrSet<Pin> &associated, QPtrVector<Pin> &nodes);
 
-	int m_cnodeCount;
-	int m_branchCount;
-	int m_prepNLCount; // Count until next m_elementSet->prepareNonLinear() is called
+	QPtrSet<Pin> PinSet_;
+	QList<Element *> ElementList_;
+	QList<LogicOut *> LogicOutList_;
+	Circuit * NextChanged_[2] = { nullptr, nullptr };
+	std::unique_ptr<ElementSet> ElementSet_;
+	std::unique_ptr<LogicCacheNode> LogicCacheBase_;
 
-	QPtrList<Pin> m_pinList;
-	QList<Element *> m_elementList;
-	ElementSet *m_elementSet;
+	int NonLogicCount_ = 0;
 
-	//Stuff for caching
-	bool m_bCanCache;
-	LogicCacheNode * m_pLogicCacheBase;
-	unsigned m_logicOutCount;
-	LogicOut ** m_pLogicOut;
-
-	bool m_bCanAddChanged;
-	Circuit * m_pNextChanged[2];
+public:
+	// Sometimes, things make more sense being public than requiring tons of setters/getters.
+	bool canAddChanged = true;
 };
-
-#endif

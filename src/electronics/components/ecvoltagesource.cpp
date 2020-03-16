@@ -18,8 +18,7 @@
 #include <klocalizedstring.h>
 #include <qpainter.h>
 
-Item* ECCell::construct( ItemDocument *itemDocument, bool newItem, const char *id )
-{
+Item* ECCell::construct( ItemDocument *itemDocument, bool newItem, const char *id ) {
 	return new ECCell( (ICNDocument*)itemDocument, newItem, id );
 }
 
@@ -45,17 +44,17 @@ ECCell::ECCell( ICNDocument *icnDocument, bool newItem, const char *id )
 
 	init1PinLeft();
 	init1PinRight();
-	
-	m_pNNode[0]->pin()->setGroundType( Pin::gt_medium );
+
+	m_pNNode[0]->pin()->setGroundType( Pin::GroundType::Medium );
 	m_voltageSource = createVoltageSource( m_pNNode[0], m_pPNode[0], voltage );
-	
+
 	createProperty( "voltage", Variant::Type::Double );
 	property("voltage")->setUnit("V");
 	property("voltage")->setCaption( i18n("Voltage") );
 	property("voltage")->setMinValue(-1e12);
 	property("voltage")->setMaxValue(1e12);
 	property("voltage")->setValue(5.0);
-	
+
 	addDisplayText( "voltage", QRect( -16, -24, 32, 16 ), "" );
 }
 
@@ -67,7 +66,7 @@ void ECCell::dataChanged()
 {
 	voltage = dataDouble("voltage");
 	m_voltageSource->setVoltage(voltage);
-	
+
 	QString display = QString::number( voltage / getMultiplier(voltage), 'g', 3 ) + getNumberMag(voltage) + "V";
 	setDisplayText( "voltage", display );
 }
@@ -75,16 +74,15 @@ void ECCell::dataChanged()
 void ECCell::drawShape( QPainter &p )
 {
 	initPainter(p);
-	
+
 	int _x = (int)x()-8;
 	int _y = (int)y()-24;
-	
+
 	p.drawLine( _x,		_y+20,	_x,	_y+28 );
 	p.drawLine( _x+5,	_y+16,	_x+5,	_y+32 );
 	p.drawLine( _x+10,	_y+20,	_x+10,	_y+28 );
 	p.drawLine( _x+15,	_y+16,	_x+15,	_y+32 );
-	
+
 	deinitPainter(p);
 // 	p.drawPolyline( areaPoints() );
 }
-

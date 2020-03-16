@@ -30,10 +30,10 @@ LibraryItem* DPText::libraryItem() {
 DPText::DPText( ItemDocument *itemDocument, bool newItem, const char *id ) :
 	DrawPart(itemDocument, newItem, id ? id : "canvas_text"),
 	m_rectangularOverlay(new RectangularOverlay(this)),
-	m_Text(createPropertyRef("text", Variant::TypeValue::RichText)),
-	m_Background(createPropertyRef("background", Variant::TypeValue::Bool)),
-	m_BackgroundColor(createPropertyRef("background-color", Variant::TypeValue::Color)),
-	m_FrameColor(createPropertyRef("frame-color", Variant::TypeValue::Color))
+	m_Text(createPropertyRef("text", Variant::Type::RichText)),
+	m_Background(createPropertyRef("background", Variant::Type::Bool)),
+	m_BackgroundColor(createPropertyRef("background-color", Variant::Type::Color)),
+	m_FrameColor(createPropertyRef("frame-color", Variant::Type::Color))
 {
 	m_name = i18n("Text");
 

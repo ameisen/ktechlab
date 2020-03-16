@@ -36,13 +36,13 @@ Meter::Meter( ICNDocument *icnDocument, bool newItem, const char *id )
 	setSize( -16, -16, 32, 32 );
 
 	p_displayText = addDisplayText( "meter", QRect( -16, 16, 32, 16 ), displayText() );
-	
+
 	createProperty( "0-minValue", Variant::Type::Double );
 	property("0-minValue")->setCaption( i18n("Minimum Value") );
 	property("0-minValue")->setMinValue(1e-12);
 	property("0-minValue")->setMaxValue(1e12);
 	property("0-minValue")->setValue(1e-3);
-	
+
 	createProperty( "1-maxValue", Variant::Type::Double );
 	property("1-maxValue")->setCaption( i18n("Maximum Value") );
 	property("1-maxValue")->setMinValue(1e-12);
@@ -74,12 +74,12 @@ void Meter::stepNonLogic()
 		property("1-maxValue")->setUnit(m_unit);
 		b_firstRun = false;
 	}
-		
+
 	const double v = meterValue();
 	if ( !b_timerStarted && std::abs(((v-m_old_value)/m_old_value)) > 1e-6 ) {
 		b_timerStarted = true;
 	}
-	
+
 	if (b_timerStarted) {
 		m_timeSinceUpdate += LINEAR_UPDATE_PERIOD;
 		m_avgValue += v * LINEAR_UPDATE_PERIOD;
@@ -105,22 +105,22 @@ void Meter::drawShape( QPainter &p )
 	p.drawEllipse( (int)x()-16, (int)y()-16, width(), width() );
 	p.setPen(QPen(Qt::black,2));
 	p.setBrush(Qt::black);
-	
+
 	// The proportion between 0.1mV and 10KV, on a logarithmic scale
 	m_prevProp = calcProp( m_old_value );
 	double sin_prop = 10*std::sin(m_prevProp*1.571); // 1.571 = pi/2
 	double cos_prop = 10*std::cos(m_prevProp*1.571); // 1.571 = pi/2
-	
+
 	int cx = int(x()-16+(width()/2));
 	int cy = int(y()-16+(height()/2));
 	p.drawLine( int(cx-sin_prop), int(cy-cos_prop), int(cx+sin_prop), int(cy+cos_prop) );
-	
+
 	QPolygon pa(3);
 	pa[0] = QPoint( int(cx-sin_prop), int(cy-cos_prop) ); // Arrow head
 	pa[1] = QPoint( int(cx-sin_prop + 8*std::sin(1.571*(-0.3+m_prevProp))), int(cy-cos_prop + 8*std::cos(1.571*(-0.3+m_prevProp))) );
 	pa[2] = QPoint( int(cx-sin_prop + 8*std::sin(1.571*(0.3+m_prevProp))), int(cy-cos_prop + 8*std::cos(1.571*(0.3+m_prevProp))) );
 	p.drawPolygon(pa);
-	
+
 	deinitPainter(p);
 }
 
@@ -128,7 +128,7 @@ void Meter::drawShape( QPainter &p )
 double Meter::calcProp( double v ) const
 {
 	double abs_value = std::abs( v );
-	
+
 	double prop;
 	if ( abs_value <= m_minValue )
 		prop = 0.0;
@@ -136,10 +136,10 @@ double Meter::calcProp( double v ) const
 		prop = 1.0;
 	else
 		prop = std::log10( abs_value/m_minValue ) / std::log10( m_maxValue/m_minValue );
-	
+
 	if ( m_old_value>0 )
 		prop *= -1;
-	
+
 	return prop;
 }
 
@@ -180,7 +180,7 @@ FrequencyMeter::FrequencyMeter( ICNDocument *icnDocument, bool newItem, const ch
 {
 	m_name = i18n("Frequency Meter");
 	m_unit = "Hz";
-	
+
 	m_probeNode = createPin( 0, -24, 90, "n1" );
 }
 
@@ -221,10 +221,10 @@ ECAmmeter::ECAmmeter( ICNDocument *icnDocument, bool newItem, const char *id )
 	m_name = i18n("Ammeter");
 	setSize( -16, -16, 32, 32 );
 	m_unit = "A";
-	
+
 	init1PinLeft(0);
 	init1PinRight(0);
-	
+
 	m_voltageSource = createVoltageSource( m_pNNode[0], m_pPNode[0], 0. );
 }
 
@@ -261,7 +261,7 @@ ECVoltMeter::ECVoltMeter( ICNDocument *icnDocument, bool newItem, const char *id
 {
 	m_name = i18n("Voltmeter");
 	m_unit = "V";
-	
+
 	init1PinLeft(0);
 	init1PinRight(0);
 }
@@ -275,4 +275,3 @@ double ECVoltMeter::meterValue()
 	return m_pNNode[0]->pin()->voltage() - m_pPNode[0]->pin()->voltage();
 }
 //END class ECVoltMeter
-

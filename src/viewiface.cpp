@@ -1,13 +1,3 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include "circuitview.h"
 #include "document.h"
 #include "flowcodeview.h"
@@ -15,128 +5,51 @@
 #include "textview.h"
 #include "viewiface.h"
 
-
 //BEGIN class ViewIface
-ViewIface::ViewIface( View * view )
-	: DCOPObject( /* "View" TODO */ )
-{
-	m_pView = view;
+DCOPRef ViewIface::document() const {
+	return DCOPRef();
 }
 
-ViewIface::~ ViewIface( )
-{
-}
-
-DCOPRef ViewIface::document( )
-{
-	return DCOPRef(); // TODO m_pView->document()->dcopObject() );
-}
-
-bool ViewIface::hasFocus( )
-{
+bool ViewIface::hasFocus() const {
 	return m_pView->hasFocus();
 }
 
-bool ViewIface::close( )
-{
+bool ViewIface::close() {
 	return m_pView->closeView();
 }
 
-void ViewIface::zoomIn( )
-{
+void ViewIface::zoomIn() {
 	m_pView->viewZoomIn();
 }
 
-void ViewIface::zoomOut( )
-{
+void ViewIface::zoomOut() {
 	m_pView->viewZoomOut();
 }
 
-bool ViewIface::canZoomIn( )
-{
+bool ViewIface::canZoomIn() const {
 	return m_pView->canZoomIn();
 }
 
-bool ViewIface::canZoomOut( )
-{
+bool ViewIface::canZoomOut() const {
 	return m_pView->canZoomOut();
 }
 
-void ViewIface::actualSize( )
-{
+void ViewIface::actualSize() {
 	m_pView->actualSize();
+}
+
+// hack
+double ViewIface::zoomLevelItemView() const {
+	return static_cast<ItemView *>(m_pView)->zoomLevel();
 }
 //END class ViewIface
 
-
-
 //BEGIN class TextViewIface
-TextViewIface::TextViewIface( TextView * view )
-	: ViewIface(view)
-{
-	m_pTextView = view;
+void TextViewIface::toggleBreakpoint() {
+	getView()->toggleBreakpoint();
 }
 
-void TextViewIface::toggleBreakpoint( )
-{
-	m_pTextView->toggleBreakpoint();
-}
-
-bool TextViewIface::gotoLine( const int line )
-{
-	return m_pTextView->gotoLine(line);
+bool TextViewIface::gotoLine(const int line) {
+	return getView()->gotoLine(line);
 }
 //END class TextViewIface
-
-
-
-//BEGIN class ItemViewIface
-ItemViewIface::ItemViewIface( ItemView * view )
-	: ViewIface(view)
-{
-	m_pItemView = view;
-}
-
-double ItemViewIface::zoomLevel( )
-{
-	return m_pItemView->zoomLevel();
-}
-//END class ItemViewIface
-
-
-
-//BEGIN class MechanicsViewIface
-MechanicsViewIface::MechanicsViewIface( MechanicsView * view )
-	: ItemViewIface(view)
-{
-	m_pMechanicsView = view;
-}
-//END class ICNViewIface
-
-
-
-//BEGIN class ICNViewIface
-ICNViewIface::ICNViewIface( ICNView * view )
-	: ItemViewIface(view)
-{
-	m_pICNView = view;
-}
-//END class ICNViewIface
-
-
-
-//BEGIN class CircuitViewIface
-CircuitViewIface::CircuitViewIface( CircuitView * view )
-	: ICNViewIface(view)
-{
-	m_pCircuitView = view;
-}
-//END class CircuitViewIface
-
-
-//BEGIN class FlowCodeViewIface
-FlowCodeViewIface::FlowCodeViewIface( FlowCodeView * view )
-	: ICNViewIface(view)
-{
-}
-//END class FlowCodeViewIface

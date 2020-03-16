@@ -37,18 +37,18 @@ While::While( ICNDocument *icnDocument, bool newItem, const char *id )
 	m_name = i18n("While");
 	createTopContainerNode();
 	createBotContainerNode();
-	
+
 	createProperty( "0var1", Variant::Type::Combo );
 	property("0var1")->setToolbarCaption( "while" );
 	property("0var1")->setEditorCaption( i18n("Variable") );
 	property("0var1")->setValue("x");
-	
+
 	createProperty( "1op", Variant::Type::Select );
 	property("1op")->setToolbarCaption(" ");
 	property("1op")->setEditorCaption( i18n("Operation") );
 	property("1op")->setAllowed( (QStringList("==") << "<" << ">" << "<=" << ">=" << "!=" ) );
 	property("1op")->setValue("==");
-	
+
 	createProperty( "2var2", Variant::Type::Combo );
 	property("2var2")->setToolbarCaption(" ");
 	property("2var2")->setEditorCaption( i18n("Value") );
@@ -71,8 +71,3 @@ void While::generateMicrobe( FlowCode *code )
 	code->addCode("}");
 	code->addCodeBranch( outputPart("ext_out") );
 }
-
-
-
-
-

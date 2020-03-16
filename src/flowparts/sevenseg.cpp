@@ -41,11 +41,11 @@ SevenSeg::SevenSeg( ICNDocument *icnDocument, bool newItem, const char *id )
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "expression", Variant::Type::Combo );
 	property("expression")->setValue("x");
 	property("expression")->setCaption( i18n("Variable") );
-	
+
 	createProperty( "sevenseg", Variant::Type::SevenSegment );
 	property("sevenseg")->setCaption( i18n("Pin map") );
 }
@@ -67,4 +67,3 @@ void SevenSeg::generateMicrobe( FlowCode *code )
 	code->addCode( QString("%1 = %2").arg( dataString("sevenseg") ).arg( dataString("expression") ) );
 	code->addCodeBranch( outputPart("stdoutput") );
 }
-

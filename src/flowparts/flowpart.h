@@ -110,7 +110,7 @@ public:
 	 * Draw the picture of the flowpart in the given orientation onto the pixmap
 	 */
 	void orientationPixmap( uint orientation, QPixmap & pm ) const;
-	Variant * createProperty( const QString & id, Variant::Type::Value type ) override;
+	Variant * createProperty( const QString & id, Variant::Type type ) override;
 
 public slots:
 	/**
@@ -183,7 +183,7 @@ protected:
 	FPNode *m_stdOutput;
 	FPNode *m_altOutput;
 	QPointer<FlowCodeDocument> m_pFlowCodeDocument;
-	
+
 	void postResize() override;
 	void updateNodePositions();
 
@@ -193,6 +193,3 @@ private:
 typedef QList<FlowPart*> FlowPartList;
 
 #endif
-
-
-

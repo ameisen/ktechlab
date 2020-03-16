@@ -38,7 +38,7 @@ Delay::Delay( ICNDocument *icnDocument, bool newItem, const char *id )
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "delay_length", Variant::Type::Double );
 	property("delay_length")->setCaption( i18n("Pause Length") );
 	property("delay_length")->setUnit("sec");
@@ -60,9 +60,9 @@ void Delay::generateMicrobe( FlowCode *code )
 	const double delayLength_ms = dataDouble("delay_length")*1e3;
 	code->addCode( "delay "+QString::number(delayLength_ms) );
 	code->addCodeBranch( outputPart("stdoutput") );
-	
+
 // 	code->addVariable("COUNT_REPEAT");
-	
+
 #if 0
 	// Code for pauses less than 769uS
 	if ( pauseLength < 769 )
@@ -71,7 +71,7 @@ void Delay::generateMicrobe( FlowCode *code )
 									"movwf COUNT_REPEAT\n"
 									"call count_3uS\n"
 									+ gotoCode("stdoutput") );
-									
+
 		code->addCodeBlock( "count_3uS",	"decfsz COUNT_REPEAT,1\n"
 											"goto count_3uS\n"
 											"return" );
@@ -79,12 +79,12 @@ void Delay::generateMicrobe( FlowCode *code )
 	else if ( pauseLength < 196609 )
 	{
 		code->addVariable("COUNT_LOOP_1");
-		
+
 		code->addCodeBlock( id(),	"movlw " + QString::number(pauseLength/(3*256)) + "\n"
 									"movwf COUNT_REPEAT\n"
 									"call count_768uS\n"
 									+ gotoCode("stdoutput") );
-									
+
 		code->addCodeBlock( "count_768uS",	"decfsz	COUNT_LOOP_1,1\n"
 											"goto count_768uS\n"
 											"decfsz COUNT_REPEAT,1\n"
@@ -95,12 +95,12 @@ void Delay::generateMicrobe( FlowCode *code )
 	{
 		code->addVariable("COUNT_LOOP_1");
 		code->addVariable("COUNT_LOOP_2");
-		
+
 		code->addCodeBlock( id(),	"movlw " + QString::number(pauseLength/(3*256*256)) + "\n"
 									"movwf COUNT_REPEAT\n"
 									"call count_200mS\n"
 									+ gotoCode("stdoutput") );
-									
+
 		code->addCodeBlock( "count_200mS",	"decfsz	COUNT_LOOP_1,1\n"
 											"goto count_200mS\n"
 											"decfsz COUNT_LOOP_2,1\n"
@@ -114,12 +114,12 @@ void Delay::generateMicrobe( FlowCode *code )
 		code->addVariable("COUNT_LOOP_1");
 		code->addVariable("COUNT_LOOP_2");
 		code->addVariable("COUNT_LOOP_3");
-		
+
 		code->addCodeBlock( id(),	"movlw " + QString::number(pauseLength/(3*256*256*256)) + "\n"
 									"movwf COUNT_REPEAT\n"
 									"call count_50S\n"
 									+ gotoCode("stdoutput") );
-									
+
 		code->addCodeBlock( "count_50S",	"decfsz	COUNT_LOOP_1,1\n"
 											"goto count_50S\n"
 											"decfsz COUNT_LOOP_2,1\n"
@@ -132,4 +132,3 @@ void Delay::generateMicrobe( FlowCode *code )
 	}
 #endif
 }
-

@@ -468,7 +468,7 @@ class SelectRectangle
 		~SelectRectangle();
 
 		void setSize( int w, int h );
-		KtlQCanvasItemList collisions();
+		QList<KtlQCanvasItem *> collisions();
 
 	protected:
 		KtlQCanvasLine *m_topLine;

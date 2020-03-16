@@ -7,6 +7,10 @@ cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(BUILD_EXAMPLES OFF)
+set(BUILD_DOCS OFF)
+set(BUILD_TESTS OFF)
+
 find_package(ECM 5.44.0 CONFIG REQUIRED)
 set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
 
@@ -51,29 +55,23 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions(-Wno-deprecated-declarations) # TODO too much spam for now
+add_definitions(-Wno-deprecated-declarations)
 add_definitions(-fPIC)
 
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+add_definitions( -Wall -Wextra )
 
 if (KTECHLAB_DEVELOPER_BUILD)
-# for debugging with GCC 5
-    add_definitions( -fno-omit-frame-pointer -Og )
-    set(SANITIZE_FLAGS " -fsanitize=address -fno-omit-frame-pointer -fPIC") # address
-    #set(SANITIZE_FLAGS " -fsanitize=undefined -fno-omit-frame-pointer ") # undefined
-    #set(SANITIZE_FLAGS "") # disabled
-
-    #add_definitions ( -DQT3_SUPPORT_WARNINGS )
-
+    add_definitions( -fno-omit-frame-pointer )
+    set( SANITIZE_FLAGS " -fsanitize=address -fno-omit-frame-pointer -fPIC" )
     add_definitions( ${SANITIZE_FLAGS} )
-    SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_FLAGS}" )
-
-    add_definitions( -Wall -Wextra )
-
-    #add_definitions( -Wold-style-cast ) # warn on old style casts. as these could introduce bugs
-
-    add_definitions( -fno-inline )  # do not inline any method calls; this is useful for crash debugging
+    set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_FLAGS}" )
 endif (KTECHLAB_DEVELOPER_BUILD)
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions( -Og )
+else()
+    add_definitions( -O3 )
+endif ()
 
 add_definitions(
     ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}
@@ -101,7 +99,6 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/src/core
     ${KDE4_INCLUDES}
-#    ${KDELibs4Support_INCLUDE_DIRS}
     ${TextEditor_INCLUDE_DIRS}  # TODO figure out this one
     ${Qt5Core_INCLUDE_DIRS}
     ${Qt5Widgets_INCLUDE_DIRS}
@@ -125,11 +122,16 @@ message(STATUS "include_dir end")
 
 add_subdirectory( microbe )
 add_subdirectory( src )
-add_subdirectory( examples )
+if (BUILD_EXAMPLES)
+    add_subdirectory( examples )
+endif ()
 add_subdirectory( icons )
 add_subdirectory( icons-kde3 )
-add_subdirectory( doc )
-
-add_subdirectory(tests)
+if (BUILD_DOCS)
+    add_subdirectory( doc )
+endif ()
+if (BUILD_TESTS)
+    add_subdirectory( tests )
+endif ()
 
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)

@@ -61,15 +61,18 @@ public:
 	 * Returns the matrix in use. This is created once on the creation of the ElementSet
 	 * class, and deleted in the destructor, so the pointer returned will never change.
 	 */
-	Matrix *matrix() const { return p_A; }
+	const Matrix &matrix() const { return *p_A; }
+	Matrix &matrix() { return *p_A; }
 	/**
 	 * Returns the vector for b (i.e. the independent currents & voltages)
 	 */
-	QuickVector *b() const { return p_b; }
+	const QuickVector &b() const { return *p_b; }
+	QuickVector &b() { return *p_b; }
 	/**
 	 * Returns the vector for x (i.e. the currents & voltages at the branches and nodes)
 	 */
-	QuickVector *x() const { return p_x; }
+	const QuickVector &x() const { return *p_x; }
+	QuickVector &x() { return *p_x; }
 	/**
 	 * @return if we have any nonlinear elements (e.g. diodes, tranaistors).
 	 */

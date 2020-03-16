@@ -117,8 +117,8 @@ void ECRotoSwitch::dataChanged()
 	m_curPosition = dataInt( "cur_position" );
 	setUpSwitches();
 
-	if(m_positions[m_curPosition].posSwitch->state() != Switch::Closed) {
-		m_positions[m_curPosition].posSwitch->setState(Switch::Closed);
+	if(m_positions[m_curPosition].posSwitch->getState() != Switch::State::Closed) {
+		m_positions[m_curPosition].posSwitch->setState(Switch::State::Closed);
 	}
 
 	for(int i = 0; i < m_numPositions; i++) {
@@ -212,7 +212,7 @@ void ECRotoSwitch::buttonStateChanged( const QString & id, bool state )
 		} else if(m_curPosition == m_numPositions - 1) {
 			nextPos = m_curPosition - 1;
 		}
-		
+
 	} else //press
 	{
 		if(id == "go_left" && m_curPosition > 0) {
@@ -225,10 +225,10 @@ void ECRotoSwitch::buttonStateChanged( const QString & id, bool state )
 
 	if(nextPos != m_curPosition) {
 		SwitchPosition& nextSP = m_positions[nextPos];
-	
-		curSP.posSwitch->setState(Switch::Open);
-		nextSP.posSwitch->setState(Switch::Closed);
-	
+
+		curSP.posSwitch->setState(Switch::State::Open);
+		nextSP.posSwitch->setState(Switch::State::Closed);
+
 		m_curPosition = nextPos;
 
 		property( "cur_position" )->setValue( m_curPosition );
@@ -307,8 +307,8 @@ void ECRotoSwitch::setActivePosition(int newPosition)
 	SwitchPosition& curSP = m_positions[m_curPosition];
 	SwitchPosition& nextSP = m_positions[newPosition];
 
-	curSP.posSwitch->setState(Switch::Open);
-	nextSP.posSwitch->setState(Switch::Closed);
+	curSP.posSwitch->setState(Switch::State::Open);
+	nextSP.posSwitch->setState(Switch::State::Closed);
 
 	m_curPosition = newPosition;
 
@@ -316,4 +316,3 @@ void ECRotoSwitch::setActivePosition(int newPosition)
 }
 
 //END class ECRotoSwitch
-

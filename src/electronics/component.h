@@ -20,6 +20,8 @@
 
 #include "switch.h"
 
+#include <utility>
+
 class ICNDocument;
 class CircuitDocument;
 class ECNode;
@@ -186,7 +188,25 @@ class Component : public CNItem
 		OpAmp *		createOpAmp( ECNode * nonInverting, ECNode * out, ECNode * inverting );
 
 		Resistance *	createResistance( Pin *n0, Pin *n1, double resistance );
+		Resistance *	createResistance( Pin &n0, Pin &n1, double resistance ) {
+			return createResistance(&n0, &n1, resistance);
+		}
+		Resistance *	createResistance( const std::pair<Pin *, Pin *> &pins, double resistance ) {
+			return createResistance(pins.first, pins.second, resistance);
+		}
+		Resistance *	createResistance( const std::pair<Pin &, Pin &> &pins, double resistance ) {
+			return createResistance(&pins.first, &pins.second, resistance);
+		}
 		Resistance *	createResistance( ECNode *n0, ECNode *n1, double resistance );
+		Resistance *	createResistance( ECNode &n0, ECNode &n1, double resistance ) {
+			return createResistance(&n0, &n1, resistance);
+		}
+		Resistance *	createResistance( const std::pair<ECNode *, ECNode *> &nodes, double resistance ) {
+			return createResistance(nodes.first, nodes.second, resistance);
+		}
+		Resistance *	createResistance( const std::pair<ECNode &, ECNode &> &nodes, double resistance ) {
+			return createResistance(&nodes.first, &nodes.second, resistance);
+		}
 
 		Switch *	createSwitch( Pin *n0, Pin *n1, bool open );
 		Switch *	createSwitch( ECNode *n0, ECNode *n1, bool open );

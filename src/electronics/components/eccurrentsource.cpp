@@ -42,17 +42,17 @@ ECCurrentSource::ECCurrentSource( ICNDocument *icnDocument, bool newItem, const 
 
 	init1PinLeft(8);
 	init1PinRight(8);
-	m_pNNode[0]->pin()->setGroundType( Pin::gt_low );
-	
+	m_pNNode[0]->pin()->setGroundType( Pin::GroundType::Low );
+
 	m_currentSource = createCurrentSource( m_pNNode[0], m_pPNode[0], 0. );
-	
+
 	createProperty( "current", Variant::Type::Double );
 	property("current")->setCaption( i18n("Current") );
 	property("current")->setUnit("A");
 	property("current")->setMinValue(-1e12);
 	property("current")->setMaxValue(1e12);
 	property("current")->setValue(0.02);
-	
+
 	addDisplayText("current", QRect( -16, -16, 24, 0 ), "" );
 }
 
@@ -65,7 +65,7 @@ void ECCurrentSource::dataChanged()
 {
 	double current = dataDouble("current");
 	m_currentSource->setCurrent(current);
-	
+
 	QString display = QString::number( current / getMultiplier(current), 'g', 3 ) + getNumberMag(current) + "A";
 	setDisplayText("current", display );
 }
@@ -73,21 +73,18 @@ void ECCurrentSource::dataChanged()
 void ECCurrentSource::drawShape( QPainter &p )
 {
 	initPainter(p);
-	
+
 	int _x = (int)x()-16;
 	int _y = (int)y()-24;
-	
+
 	// Top arrow indicating current direction
 	p.drawLine( _x+width(), _y+19, _x, _y+19 );
 	p.drawLine( _x+width(), _y+19, _x+width()-3, _y+16 );
 	p.drawLine( _x+width(), _y+19, _x+width()-3, _y+22 );
-	
+
 	// Double circules
 	p.drawEllipse( _x, _y+24, 16, 16 );
 	p.drawEllipse( _x+8, _y+24, 16, 16 );
-	
+
 	deinitPainter(p);
 }
-
-
-

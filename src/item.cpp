@@ -316,7 +316,7 @@ bool Item::mouseDoubleClickEvent( const EventInfo & eventInfo )
 	Q_UNUSED(eventInfo);
 
 	Property * property = 0l;
-	Variant::Type::Value type = Variant::Type::None;
+	Variant::Type type = Variant::Type::None;
 
 	const VariantDataMap::iterator variantDataEnd = m_variantData.end();
 	for ( VariantDataMap::iterator it = m_variantData.begin(); it != variantDataEnd; ++it )
@@ -611,7 +611,7 @@ QColor Item::dataColor( const QString & id ) const
 }
 
 
-Variant * Item::createProperty( const QString & id, Variant::Type::Value type )
+Variant * Item::createProperty( const QString & id, Variant::Type type )
 {
 	if ( !m_variantData.contains(id) )
 	{
@@ -622,7 +622,7 @@ Variant * Item::createProperty( const QString & id, Variant::Type::Value type )
 	return m_variantData[id];
 }
 
-Variant & Item::createPropertyRef(const QString &id, Variant::TypeValue type) {
+Variant & Item::createPropertyRef(const QString &id, Variant::Type type) {
 	return *createProperty(id, type);
 }
 

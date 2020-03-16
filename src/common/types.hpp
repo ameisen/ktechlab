@@ -84,9 +84,25 @@ namespace KTechLab::Types {
 	KTL_DEFINE_UNSIGNED_INT(128);
 #undef KTL_DEFINE_UNSIGNED_INT
 
+	using intsz = std::make_signed_t<decltype(sizeof(0))>;
+	using uintsz = std::make_unsigned_t<decltype(sizeof(0))>;
+
+	using intptr = std::intptr_t;
+	using uintptr = std::uintptr_t;
+
 	using real = double;
 
 	template <typename T>
 	using carray = T[];
 	using cstring = carray<char>;
+
+	// TODO : Move me to type traits or something
+	template <typename T>
+	static constexpr const T MaxValue = std::numeric_limits<T>::max();
+
+	template <typename T>
+	static constexpr const T MinValue = std::numeric_limits<T>::lowest();
+
+	template <typename T>
+	static constexpr const T SmallestValue = std::numeric_limits<T>::min();
 }

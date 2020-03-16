@@ -1,25 +1,15 @@
-//
-// C++ Interface: canvas_private
-//
-// Description:
-//
-//
-// Author: Alan Grimes <agrimes@speakeasy.net>, (C) 2008
-//
-// Copyright: See COPYING file that comes with this distribution
-//
-//
+#pragma once
 
-#ifndef CANVAS_PRIVATE_H
-#define CANVAS_PRIVATE_H
+#include "pch.hpp"
 
-#include "qbitmap.h"
-#include "qimage.h"
+#include <QBitmap>
+#include <QImage>
+
 #include "ktlq3polygonscanner.h"
+
 #include "canvasitems.h"
 
-class KtlQPolygonalProcessor
-{
+class KtlQPolygonalProcessor {
 	public:
 	KtlQPolygonalProcessor(KtlQCanvas *c, const QPolygon &pa) :
 		canvas(c)
@@ -37,8 +27,7 @@ class KtlQPolygonalProcessor
 		bitmap.fill(0);
 	}
 
-	inline void add(int x, int y)
-	{
+	inline void add(int x, int y) {
 		if (pnt >= result.size()) {
 			result.resize(pnt * 2 + 10);
 		}
@@ -50,13 +39,15 @@ class KtlQPolygonalProcessor
 	}
 
 	inline void addBits(int x1, int x2, uchar newbits, int xo, int yo) {
-		for (int i = x1; i <= x2; i++)
-			if (newbits & (1<<i))
+		for (int i = x1; i <= x2; ++i) {
+			if (newbits & (1u << i)) {
 				add(xo + i, yo);
+			}
+		}
 	}
 
 	void doSpans(int n, QPoint *pt, int *w)	{
-		for (int j = 0; j < n; j++) {
+		for (int j : Times{n}) {
 			int y =  canvas->toChunkScaling(pt[j].y()) - bounds.y();
 			uchar *l = bitmap.scanLine(y);
 			int x = pt[j].x();
@@ -100,89 +91,83 @@ class KtlQPolygonalProcessor
 private:
 	QImage bitmap;
 	QRect bounds;
-	KtlQCanvas *canvas;
+	KtlQCanvas *canvas = nullptr;
 	int pnt = 0;
 };
 
-
-class KtlQCanvasViewData
-{
+class KtlQCanvasViewData {
 public:
-	KtlQCanvasViewData() {}
+	KtlQCanvasViewData() = default;
 	QMatrix xform;
 	QMatrix ixform;
 	bool repaint_from_moving = false;
 };
 
-
-class KtlQCanvasClusterizer
-{
+class KtlQCanvasClusterizer {
 public:
-	KtlQCanvasClusterizer(int maxclusters);
-	~KtlQCanvasClusterizer();
+	KtlQCanvasClusterizer(int maxClusters);
 
 	void add(int x, int y); // 1x1 rectangle (point)
+	void add(const QPoint &point);
 	void add(int x, int y, int w, int h);
-	void add(const QRect& rect);
+	void add(const QRect &rect);
 
 	void clear();
-	int clusters() { return count; }
-	const QRect& operator[](int i);
+	int count() const { return count_; }
+	const QRect & operator [] (int i) const {
+		assert(i <= capacity);
+		return clusters.get()[i];
+	}
+	QRect & operator [] (int i) {
+		assert(i <= capacity);
+		return clusters.get()[i];
+	}
 
 private:
-	QRect *cluster;
-	int count;
-	const int maxcl;
+	const std::unique_ptr<QRect[]> clusters;
+	int count_ = 0;
+	const int capacity = 0;
 };
 
-
-class KtlQCanvasItemPtr
-{
+class KtlQCanvasItemPtr {
 public:
-	KtlQCanvasItemPtr() { }
-	KtlQCanvasItemPtr( KtlQCanvasItem *p ) : ptr(p) { }
+	KtlQCanvasItemPtr() = default;
+	KtlQCanvasItemPtr(KtlQCanvasItem *p) : ptr(p) { }
 
-	bool operator <= (const KtlQCanvasItemPtr &that) const
-	{
+	bool operator <= (const KtlQCanvasItemPtr &that) const {
 		// Order same-z objects by identity.
-		if (that.ptr->z()==ptr->z())
+		if (that.ptr->z() == ptr->z())
 			return that.ptr <= ptr;
 		return that.ptr->z() <= ptr->z();
 	}
 
-	bool operator < (const KtlQCanvasItemPtr &that) const
-	{
+	bool operator < (const KtlQCanvasItemPtr &that) const {
 		// Order same-z objects by identity.
-		if (that.ptr->z()==ptr->z())
+		if (that.ptr->z() == ptr->z())
 			return that.ptr < ptr;
 		return that.ptr->z() < ptr->z();
 	}
 
-	bool operator > (const KtlQCanvasItemPtr &that) const
-	{
+	bool operator > (const KtlQCanvasItemPtr &that) const {
 		// Order same-z objects by identity.
-		if (that.ptr->z()==ptr->z())
+		if (that.ptr->z() == ptr->z())
 			return that.ptr > ptr;
 		return that.ptr->z() > ptr->z();
 	}
 
-	bool operator == (const KtlQCanvasItemPtr &that) const
-	{
+	bool operator == (const KtlQCanvasItemPtr &that) const {
 		return that.ptr == ptr;
 	}
 
 	operator KtlQCanvasItem * () const { return ptr; }
 
 private:
-	KtlQCanvasItem *ptr = nullptr;
+	KtlQCanvasItem * const ptr = nullptr;
 };
 
-
-
-class KtlQCanvasChunk
-{
+class KtlQCanvasChunk {
 public:
-	KtlQCanvasChunk() { }
+	KtlQCanvasChunk() = default;
 	// Other code assumes lists are not deleted. Assignment is also
 	// done on ChunkRecs. So don't add that sort of thing here.
 
@@ -192,6 +177,10 @@ public:
 
 	const KtlQCanvasItemList * listPtr() const {
 		return &list;
+	}
+
+	const KtlQCanvasItemList & getList() const {
+		return list;
 	}
 
 	void add(KtlQCanvasItem *item) {
@@ -223,31 +212,19 @@ private:
 	bool changed = true;
 };
 
-
-
-class KtlQCanvasPolygonScanner : public KtlQ3PolygonScanner
-{
+class KtlQCanvasPolygonScanner : public KtlQ3PolygonScanner {
 	KtlQPolygonalProcessor &processor;
 
 public:
-	KtlQCanvasPolygonScanner(KtlQPolygonalProcessor &p) :	processor(p)
-	{
-	}
-	void processSpans( int n, QPoint *point, int *width ) override
-	{
+	KtlQCanvasPolygonScanner(KtlQPolygonalProcessor &p) :	processor(p) {}
+	void processSpans( int n, QPoint *point, int *width ) override {
 		processor.doSpans(n, point, width);
 	}
 };
 
-
 // lesser-used data in canvas item, plus room for extension.
 // Be careful adding to this - check all usages.
-class KtlQCanvasItemExtra
-{
-	KtlQCanvasItemExtra() { }
+class KtlQCanvasItemExtra {
+	KtlQCanvasItemExtra() = default;
 	friend class KtlQCanvasItem;
 };
-
-
-
-#endif

@@ -151,8 +151,8 @@ SET(ktechlab_SRCS
     ./flowparts/keypad.cpp
     ./flowparts/sevenseg.cpp
     ./flowparts/varcomparison.cpp
-    ./math/qvector.cpp
-    ./math/qmatrix.cpp
+    ./math/quickvector.cpp
+    ./math/quickmatrix.cpp
     ./picitem.cpp
 #     ./core/main.cpp
     ./core/diagnosticstyle.cpp
@@ -338,13 +338,6 @@ target_precompile_headers(ktechlab
 )
 
 target_link_libraries( ktechlab
-    #core
-#     gui
-    #micro
-    #flowparts
-    #ktlqt3support
-	#mechanics electronics elements components languages drawparts
-	#itemeditor math
 	KF5::TextEditor
 	KF5::KHtml
 	KF5::Parts
@@ -373,14 +366,6 @@ endif()
 
 install(TARGETS ktechlab ${INSTALL_TARGETS_DEFAULT_ARGS})
 
-
-# message(STATUS "include_dir begin")
-# get_property(dirs TARGET ktechlab PROPERTY INCLUDE_DIRECTORIES)
-# foreach(dir ${dirs})
-#   message(STATUS "ktechlab include_dir='${dir}'")
-# endforeach()
-# message(STATUS "include_dir end")
-
 message(STATUS "include_dir begin")
 get_property(dirs TARGET KF5::TextEditor PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
 foreach(dir ${dirs})
@@ -390,15 +375,17 @@ message(STATUS "include_dir end")
 
 # for helping testing
 
-add_library(test_ktechlab STATIC ${ktechlab_SRCS})
+if (BUILD_TESTS)
+    add_library(test_ktechlab STATIC ${ktechlab_SRCS})
 
-target_link_libraries(test_ktechlab
-    KF5::TextEditor
-	KF5::KHtml
-	KF5::Parts
-    KF5::KDELibs4Support
-    KF5::WidgetsAddons
-)
+    target_link_libraries(test_ktechlab
+        KF5::TextEditor
+        KF5::KHtml
+        KF5::Parts
+        KF5::KDELibs4Support
+        KF5::WidgetsAddons
+    )
+endif()
 
 ########### install files ###############
 

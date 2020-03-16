@@ -63,7 +63,7 @@ void LogicIn::check()
 {
 	if (!b_status)
 		return;
-	
+
 	bool newState;
 	if (m_bLastState)
 	{
@@ -75,7 +75,7 @@ void LogicIn::check()
 		// Was low, will still be low unless voltage is more than rising trigger
 		newState = p_cnode[0]->v > m_config.risingTrigger;
 	}
-	
+
 	if ( m_pCallbackFunction && (newState != m_bLastState) )
 	{
 		m_bLastState = newState;
@@ -98,7 +98,7 @@ void LogicIn::setElementSet( ElementSet *c )
 		m_pNextLogic = 0l;
 	else
 		m_cnodeI[0] = 0.;
-	
+
 	Element::setElementSet(c);
 }
 
@@ -144,7 +144,7 @@ LogicOut::LogicOut( LogicConfig config, bool _high )
 	m_old_g_out = m_g_out = 0.0;
 	m_old_v_out = m_v_out = 0.0;
 	setHigh(_high);
-	
+
 	// Although we already call this function in LogicIn's constructor, our
 	// virtual function will not have got called, so we have to call it again.
 	setLogic(getConfig());
@@ -157,12 +157,12 @@ LogicOut::~LogicOut()
     }
 	if (!m_pSimulator)
 		m_pSimulator = Simulator::self();
-	
+
 	// Note that although this function will get called in the destructor of
 	// LogicIn, we must call it here as well as it needs to be called before
 	// removeLogicOutReferences(this) is called.
 	m_pSimulator->removeLogicInReferences(this);
-	
+
 	m_pSimulator->removeLogicOutReferences(this);
 }
 
@@ -171,7 +171,7 @@ void LogicOut::setUseLogicChain( bool use )
 {
 	if (!m_pSimulator)
 		m_pSimulator = Simulator::self();
-	
+
 	m_bUseLogicChain = use;
 	if (use)
 		setElementSet(0l);
@@ -182,17 +182,17 @@ void LogicOut::setElementSet( ElementSet *c )
 {
 	if (!m_pSimulator)
 		m_pSimulator = Simulator::self();
-	
+
 	if (c)
 	{
 		m_bUseLogicChain = false;
 		m_pNextChanged[0] = m_pNextChanged[1] = 0l;
 	}
-	
+
 	// NOTE Make sure that the next two lines are the same as those in setHigh and setLogic
 	m_g_out = b_state ? m_gHigh : m_gLow;
 	m_v_out = b_state ? m_vHigh : 0.0;
-	
+
 	LogicIn::setElementSet(c);
 }
 
@@ -230,16 +230,16 @@ void LogicOut::setOutputHighVoltage( double v )
 void LogicOut::setLogic( LogicConfig config )
 {
 	m_config = config;
-	
+
 	if (!m_bOutputHighConductanceConst)
 		m_gHigh = 1.0/config.highImpedance;
-	
+
 	if (!m_bOutputLowConductanceConst)
 		m_gLow = (config.lowImpedance == 0.0) ? 0.0 : 1.0/config.lowImpedance;
-	
+
 	if (!m_bOutputHighVoltageConst)
 		m_vHigh = config.output;
-	
+
 	configChanged();
 }
 
@@ -248,24 +248,24 @@ void LogicOut::configChanged()
 {
 	if (m_bUseLogicChain)
 		return;
-	
+
 	if (p_eSet)
 		p_eSet->setCacheInvalidated();
-	
+
 	// Re-add the DC stuff using the new values
-	
+
 	m_old_g_out = m_g_out;
 	m_old_v_out = m_v_out;
-	
+
 	// NOTE Make sure that the next two lines are the same as those in setElementSet and setHigh
 	m_g_out = b_state ? m_gHigh : m_gLow;
 	m_v_out = b_state ? m_vHigh : 0.0;
-	
+
 	add_initial_dc();
-	
+
 	m_old_g_out = 0.;
 	m_old_v_out = 0.;
-	
+
 	check();
 }
 
@@ -273,7 +273,7 @@ void LogicOut::add_initial_dc()
 {
 	if (!b_status)
 		return;
-	
+
 	A_g( 0, 0 ) += m_g_out-m_old_g_out;
 	b_i( 0 ) += m_g_out*m_v_out-m_old_g_out*m_old_v_out;
 }
@@ -287,7 +287,7 @@ void LogicOut::updateCurrents()
 	}
 	if (!b_status)
 		return;
-	
+
 	m_cnodeI[0] = (m_v_out - p_cnode[0]->v) * m_g_out;
 }
 
@@ -295,42 +295,41 @@ void LogicOut::setHigh( bool high )
 {
 	if ( high == b_state )
 		return;
-	
+
 	if (m_bUseLogicChain)
 	{
 		b_state = high;
-		
+
 		for ( LogicIn * logic = this; logic; logic = logic->nextLogic() )
 			logic->setLastState(high);
-		
+
 		if (m_bCanAddChanged)
 		{
 			m_pSimulator->addChangedLogic(this);
 			m_bCanAddChanged = false;
 		}
-	
+
 		return;
 	}
-	
+
 	m_old_g_out = m_g_out;
 	m_old_v_out = m_v_out;
-	
+
 	// NOTE Make sure that the next two lines are the same as those in setElementSet and setLogic
 	m_g_out = high ? m_gHigh : m_gLow;
 	m_v_out = high ? m_vHigh : 0.0;
-	
+
 	add_initial_dc();
-	
+
 	m_old_g_out = 0.;
 	m_old_v_out = 0.;
-	
+
 	b_state = high;
-	
-	if ( p_eSet && p_eSet->circuit()->canAddChanged() )
+
+	if ( p_eSet && p_eSet->circuit()->canAddChanged )
 	{
 		m_pSimulator->addChangedCircuit( p_eSet->circuit() );
-		p_eSet->circuit()->setCanAddChanged(false);
+		p_eSet->circuit()->canAddChanged = false;
 	}
 }
 //END class LogicOut
-

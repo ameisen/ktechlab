@@ -1,12 +1,3 @@
-/***************************************************************************
- *   Copyright (C) 2005-2006 David Saxton <david@bluehaze.org>             *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include "docmanager.h"
 #include "document.h"
 #include "itemview.h"
@@ -14,134 +5,110 @@
 #include "view.h"
 #include "viewcontainer.h"
 
-#include <kconfig.h>
-#include <qdebug.h>
-#include <qboxlayout.h>
-#include <kglobalsettings.h>
-#include <klocalizedstring.h>
-#include <kpushbutton.h>
-#include <ktabwidget.h>
-#include <kconfiggroup.h>
-
-//#include <qobjectlist.h>
-
+#include <KConfig>
+#include <QDebug>
+#include <QBoxLayout>
+#include <KGlobalSettings>
+#include <KLocalizedString>
+#include <KPushButton>
+#include <KTabWidget>
+#include <KConfigGroup>
 
 //BEGIN class ViewContainer
-ViewContainer::ViewContainer( const QString & caption, QWidget * parent )
-	: QWidget( parent ? parent : KTechlab::self()->tabWidget() )
+ViewContainer::ViewContainer(const QString &caption, QWidget *parent) :
+	QWidget(parent ?: KTechlab::self()->tabWidget())
 {
-	b_deleted = false;
 	connect( KTechlab::self(), SIGNAL(needUpdateCaptions()), this, SLOT(updateCaption()) );
 
+	// I assume these must eventually be deleted?
 	QHBoxLayout *layout = new QHBoxLayout(this);
-	m_baseViewArea = new ViewArea( this, this, 0, false, "viewarea_0" );
-	connect( m_baseViewArea, SIGNAL(destroyed(QObject* )), this, SLOT(baseViewAreaDestroyed(QObject* )) );
+	m_baseViewArea = new ViewArea(this, this, 0, false, "viewarea_0");
+	connect(m_baseViewArea, SIGNAL(destroyed(QObject*)), this, SLOT(baseViewAreaDestroyed(QObject*)));
 
 	layout->addWidget(m_baseViewArea);
 
-	m_activeViewArea = 0;
-	setFocusProxy( m_baseViewArea );
+	setFocusProxy(m_baseViewArea);
 
-	if ( !parent )
-	{
-		KTechlab::self()->tabWidget()->addTab( this, caption );
-		KTabWidget * tabWidget = KTechlab::self()->tabWidget();
-		tabWidget->setCurrentIndex( tabWidget->indexOf(this) );
+	if (!parent) {
+		KTechlab::self()->tabWidget()->addTab(this, caption);
+		KTabWidget *tabWidget = KTechlab::self()->tabWidget();
+		tabWidget->setCurrentIndex(tabWidget->indexOf(this));
 	}
 
 	show();
 }
 
-
 ViewContainer::~ViewContainer()
 {
-	b_deleted = true;
 }
 
-
-void ViewContainer::setActiveViewArea( uint id )
-{
-	if ( m_activeViewArea == int(id) )
+void ViewContainer::setActiveViewArea(int id) {
+	if (m_activeViewArea == id)
 		return;
 
 	m_activeViewArea = id;
-	View * newView = view(id);
-	setFocusProxy( newView );
+	View *newView = view(id);
+	setFocusProxy(newView);
 
-	if ( newView )
-	{
-		setWindowTitle( newView->windowTitle() );
+	if (newView) {
+		setWindowTitle(newView->windowTitle());
 
-		if ( !DocManager::self()->getFocusedView() && newView->isVisible() )
+		if (!DocManager::self()->getFocusedView() && newView->isVisible()) {
 			newView->setFocus();
+		}
 	}
 }
 
-
-View *ViewContainer::view( uint id ) const
-{
+View *ViewContainer::view(int id) const {
 	ViewArea *va = viewArea(id);
 	if (!va)
-		return 0l;
+		return nullptr;
 
 	// We do not want a recursive search as ViewAreas also hold other ViewAreas
-	//QObjectList l = va->queryList( "View", 0, false, false ); // 2018.12.02
-    QList<View*> l = va->findChildren<View*>();
-	View *view = 0l;
-	if ( !l.isEmpty() )
+  auto l = va->findChildren<View*>();
+	View *view = nullptr;
+	if (!l.isEmpty()) {
 		view = dynamic_cast<View*>(l.first());
-	//delete l;
+	}
 
 	return view;
 }
 
-
-ViewArea *ViewContainer::viewArea( uint id ) const
-{
-	if ( !m_viewAreaMap.contains(id) )
-		return 0l;
-
-	return m_viewAreaMap[id];
+ViewArea *ViewContainer::viewArea(int id) const {
+	return m_viewAreaMap.value(id, nullptr);
 }
 
-
-bool ViewContainer::closeViewContainer()
-{
+bool ViewContainer::closeViewContainer() {
 	bool didClose = true;
-	while ( didClose && !m_viewAreaMap.isEmpty() )
-	{
-		didClose = closeViewArea( m_viewAreaMap.begin().key() );
+	while (didClose && !m_viewAreaMap.isEmpty()) {
+		didClose = closeViewArea(m_viewAreaMap.begin().key());
 	}
 
 	return m_viewAreaMap.isEmpty();
 }
 
-
-bool ViewContainer::closeViewArea( uint id )
-{
+bool ViewContainer::closeViewArea(int id) {
 	ViewArea *va = viewArea(id);
-	if ( !va )
+	if (!va)
 		return true;
 
-	bool doClose = false;
+	bool doClose = true;
 	View *v = view(id);
-	if ( v && v->document() )
-	{
+	if (v && v->document()) {
 		doClose = v->document()->numberOfViews() > 1;
-		if (!doClose)
+		if (!doClose) {
 			doClose = v->document()->fileClose();
+		}
 	}
-	else
-		doClose = true;
 
-	if (!doClose)
+	if (!doClose) {
 		return false;
+	}
 
 	m_viewAreaMap.remove(id);
 	va->deleteLater();
 
-	if ( m_activeViewArea == int(id) )
-	{
+	if (m_activeViewArea == id){
 		m_activeViewArea = -1;
 		findActiveViewArea();
 	}
@@ -149,454 +116,411 @@ bool ViewContainer::closeViewArea( uint id )
 	return true;
 }
 
-
-int ViewContainer::createViewArea( int relativeViewArea, ViewArea::Position position, bool showOpenButton )
-{
-	if ( relativeViewArea == -1 )
+int ViewContainer::createViewArea(int relativeViewArea, ViewArea::Position position, bool showOpenButton) {
+	if (relativeViewArea == -1)
 		relativeViewArea = activeViewArea();
 
 	ViewArea *relative = viewArea(relativeViewArea);
-	if (!relative)
-	{
+	if (!relative) {
 		qCritical() << Q_FUNC_INFO << "Could not find relative view area" << endl;
 		return -1;
 	}
 
-	uint id = uniqueNewId();
-// 	setActiveViewArea(id);
+	int id = uniqueNewId();
 
-	ViewArea *viewArea = relative->createViewArea( position, id, showOpenButton );
-// 	ViewArea *viewArea = new ViewArea( m_splitter, id, (const char*)("viewarea_"+QString::number(id)) );
+	ViewArea *viewArea = relative->createViewArea(position, id, showOpenButton);
 	viewArea->show(); // remove?
 
 	return id;
 }
 
-
-void ViewContainer::setViewAreaId( ViewArea *viewArea, uint id )
-{
+void ViewContainer::setViewAreaId(ViewArea *viewArea, int id) {
 	m_viewAreaMap[id] = viewArea;
 	m_usedIDs.append(id);
 }
 
-
-void ViewContainer::setViewAreaRemoved( uint id )
-{
+void ViewContainer::setViewAreaRemoved(int id) {
 	if (b_deleted)
 		return;
 
-	ViewAreaMap::iterator it = m_viewAreaMap.find(id);
-	if ( it == m_viewAreaMap.end() )
+	if (!m_viewAreaMap.remove(id)) {
 		return;
+	}
 
-	m_viewAreaMap.erase(it);
-
-	if ( m_activeViewArea == int(id) )
+	if (m_activeViewArea == id) {
 		findActiveViewArea();
+	}
 }
 
-
-void ViewContainer::findActiveViewArea()
-{
-	if ( m_viewAreaMap.isEmpty() )
+void ViewContainer::findActiveViewArea() {
+	if (m_viewAreaMap.isEmpty())
 		return;
 
-	setActiveViewArea( (--m_viewAreaMap.end()).key() );
+	setActiveViewArea(m_viewAreaMap.lastKey());
 }
 
-
-void ViewContainer::baseViewAreaDestroyed( QObject *obj )
-{
+void ViewContainer::baseViewAreaDestroyed(QObject *obj) {
 	if (!obj)
 		return;
 
-	if (!b_deleted)
-	{
+	if (!b_deleted) {
 		b_deleted = true;
 		close();
 		deleteLater();
 	}
 }
 
-
-bool ViewContainer::canSaveUsefulStateInfo() const
-{
+bool ViewContainer::canSaveUsefulStateInfo() const {
 	return m_baseViewArea && m_baseViewArea->canSaveUsefulStateInfo();
 }
 
-
-void ViewContainer::saveState( KConfigGroup *config )
-{
+void ViewContainer::saveState(KConfigGroup *config) {
 	if (!m_baseViewArea)
 		return;
 
-	config->writeEntry( "BaseViewArea", m_baseViewArea->id() );
+	config->writeEntry("BaseViewArea", m_baseViewArea->id());
 	m_baseViewArea->saveState(config);
 }
 
-
-void ViewContainer::restoreState( KConfigGroup* config, const QString& groupName )
-{
-	//config->setGroup(groupName);
+void ViewContainer::restoreState(KConfigGroup *config, const QString &groupName) {
 	int baseAreaId = config->readEntry("BaseViewArea", 0);
-	m_baseViewArea->restoreState(  config, baseAreaId, groupName );
+	m_baseViewArea->restoreState(config, baseAreaId, groupName);
 }
 
-
-int ViewContainer::uniqueParentId()
-{
+int ViewContainer::uniqueParentId() {
 	int lowest = -1;
-	const IntList::iterator end = m_usedIDs.end();
-	for ( IntList::iterator it = m_usedIDs.begin(); it != end; ++it )
-	{
-		if ( *it < lowest )
-			lowest = *it;
+	for (auto id : m_usedIDs) {
+		lowest = std::min(lowest, id);
 	}
-	int newId = lowest-1;
+	int newId = lowest - 1;
 	m_usedIDs.append(newId);
 	return newId;
 }
 
-
-int ViewContainer::uniqueNewId()
-{
+int ViewContainer::uniqueNewId() {
 	int highest = 0;
-	const IntList::iterator end = m_usedIDs.end();
-	for ( IntList::iterator it = m_usedIDs.begin(); it != end; ++it )
-	{
-		if ( *it > highest )
-			highest = *it;
+	for (auto id : m_usedIDs) {
+		highest = std::max(highest, id);
 	}
-	int newId = highest+1;
+	int newId = highest + 1;
 	m_usedIDs.append(newId);
 	return newId;
 }
 
-
-void ViewContainer::setIdUsed( int id )
-{
+void ViewContainer::setIdUsed(int id) {
 	m_usedIDs.append(id);
 }
 
 
-void ViewContainer::updateCaption()
-{
+void ViewContainer::updateCaption() {
 	QString caption;
 
-	if ( !activeView() || !activeView()->document() )
+	if (!activeView() || !activeView()->document()) {
 		caption = i18n("(empty)");
-
-	else
-	{
-		Document * doc = activeView()->document();
+	}
+	else {
+		Document *doc = activeView()->document();
 		caption = doc->url().isEmpty() ? doc->caption() : doc->url().fileName();
-		if ( viewCount() > 1 )
+		if (viewCount() > 1) {
 			caption += " ...";
+		}
 	}
 
 	setWindowTitle(caption);
-	//KTechlab::self()->tabWidget()->setTabLabel( this, caption ); // 2018.12.02
-    KTechlab::self()->tabWidget()->setTabText(
-                                                KTechlab::self()->tabWidget()->indexOf(this),
-                                                caption );
+
+  KTechlab::self()->tabWidget()->setTabText(
+  	KTechlab::self()->tabWidget()->indexOf(this),
+		caption
+	);
 }
 //END class ViewContainer
 
-
 //BEGIN class ViewArea
-ViewArea::ViewArea( QWidget *parent, ViewContainer *viewContainer, int id, bool showOpenButton, const char *name )
-	: QSplitter( parent /*, name */ )
+ViewArea::ViewArea(QWidget *parent, ViewContainer *viewContainer, int id, bool showOpenButton, const char *name) :
+	QSplitter(parent),
+	p_viewContainer(viewContainer),
+	m_id(id)
 {
-    setObjectName(name);
-	p_viewContainer = viewContainer;
-	m_id = id;
-	p_view = 0l;
-	p_viewArea1 = 0l;
-	p_viewArea2 = 0l;
+  setObjectName(name);
 
-	if (id >= 0)
-		p_viewContainer->setViewAreaId( this, uint(id) );
+	if (id >= 0) {
+		p_viewContainer->setViewAreaId(this, id);
+	}
 
 	p_viewContainer->setIdUsed(id);
-	setOpaqueResize( KGlobalSettings::opaqueResize() );
+	setOpaqueResize(KGlobalSettings::opaqueResize());
 
-	m_pEmptyViewArea = 0l;
-	if ( showOpenButton )
-		m_pEmptyViewArea = new EmptyViewArea( this );
+	if (showOpenButton) {
+		m_pEmptyViewArea = new EmptyViewArea(this);
+	}
 }
 
-
-ViewArea::~ViewArea()
-{
-	if ( m_id >= 0 )
-		p_viewContainer->setViewAreaRemoved( uint(m_id) );
+ViewArea::~ViewArea() {
+	if (m_id >= 0) {
+		p_viewContainer->setViewAreaRemoved(m_id);
+	}
 }
 
-
-ViewArea *ViewArea::createViewArea( Position position, uint id, bool showOpenButton )
-{
-	if (p_viewArea1 || p_viewArea2)
-	{
+ViewArea *ViewArea::createViewArea(Position position, int id, bool showOpenButton) {
+	if (p_viewArea[0] || p_viewArea[1]) {
 		qCritical() << Q_FUNC_INFO << "Attempting to create ViewArea when already containing ViewAreas!" << endl;
-		return 0l;
+		return nullptr;
 	}
-	if (!p_view)
-	{
+	if (!p_view) {
 		qCritical() << Q_FUNC_INFO << "We don't have a view yet, so creating a new ViewArea is redundant" << endl;
-		return 0l;
+		return nullptr;
 	}
 
-	setOrientation( ( position == Right ) ? Qt::Horizontal : Qt::Vertical );
+	setOrientation((position == Position::Right) ? Qt::Horizontal : Qt::Vertical);
 
-	p_viewArea1 = new ViewArea( this, p_viewContainer, m_id, false,
-                                ("viewarea_"+QString::number(m_id)).toLatin1().data() );
-	p_viewArea2 = new ViewArea( this, p_viewContainer, id, showOpenButton,
-                                ("viewarea_"+QString::number(id)).toLatin1().data() );
+	p_viewArea[0] = new ViewArea(
+		this,
+		p_viewContainer,
+		m_id,
+		false,
+    ("viewarea_" + QString::number(m_id)).toLatin1().data()
+	);
+	p_viewArea[1] = new ViewArea(
+		this,
+		p_viewContainer,
+		id,
+		showOpenButton,
+    ("viewarea_" + QString::number(id)).toLatin1().data()
+	);
 
-	connect( p_viewArea1, SIGNAL(destroyed(QObject* )), this, SLOT(viewAreaDestroyed(QObject* )) );
-	connect( p_viewArea2, SIGNAL(destroyed(QObject* )), this, SLOT(viewAreaDestroyed(QObject* )) );
+	for (auto *viewArea : p_viewArea) {
+		connect(viewArea, SIGNAL(destroyed(QObject*)), this, SLOT(viewAreaDestroyed(QObject*)));
+	}
 
 	p_view->clearFocus();
-	//p_view->reparent( p_viewArea1, QPoint(), true ); // 2018.12.02
-    p_view->setParent( p_viewArea1 );
-    p_view->move(QPoint());
-    p_view->show();
-	p_viewArea1->setView(p_view);
-	setView( 0l );
+	p_view->setParent(p_viewArea[0]);
+  p_view->move(QPoint());
+  p_view->show();
+	p_viewArea[0]->setView(p_view);
+	setView(nullptr);
 
 	m_id = p_viewContainer->uniqueParentId();
 
-	QList<int> splitPos;
-	int pos = ((orientation() == Qt::Horizontal) ? width()/2 : height()/2);
-	splitPos << pos << pos;
+	// TODO : switch to QVector
+	int pos = (orientation() == Qt::Horizontal) ? (width() / 2) : (height() / 2);
+	QList<int> splitPos = { pos, pos };
 	setSizes(splitPos);
 
-	p_viewArea1->show();
-	p_viewArea2->show();
-	return p_viewArea2;
+	for (auto *viewArea : p_viewArea) {
+		viewArea->show();
+	}
+
+	return p_viewArea[1];
 }
 
+void ViewArea::viewAreaDestroyed(QObject *obj) {
+	auto *viewArea = static_cast<ViewArea*>(obj);
 
-void ViewArea::viewAreaDestroyed( QObject *obj )
-{
-	ViewArea *viewArea = static_cast<ViewArea*>(obj);
+	for (auto *&pViewArea : p_viewArea) {
+		if (pViewArea == viewArea) {
+			pViewArea = nullptr;
+		}
+	}
 
-	if ( viewArea == p_viewArea1 )
-		p_viewArea1 = 0l;
-
-	if ( viewArea == p_viewArea2 )
-		p_viewArea2 = 0l;
-
-	if ( !p_viewArea1 && !p_viewArea2 )
+	if (!p_viewArea[0] && !p_viewArea[1]) {
 		deleteLater();
+	}
 }
 
-
-void ViewArea::setView( View *view )
-{
-	if ( !view )
-	{
-		p_view = 0l;
-		setFocusProxy( 0l );
+void ViewArea::setView(View *view) {
+	if (!view) {
+		p_view = nullptr;
+		setFocusProxy(nullptr);
 		return;
 	}
 
 	delete m_pEmptyViewArea;
+	m_pEmptyViewArea = nullptr;
 
-	if ( p_view )
-	{
+	if (p_view) {
 		qCritical() << Q_FUNC_INFO << "Attempting to set already contained view!" << endl;
 		return;
 	}
 
 	p_view = view;
 
-// 	qDebug() << Q_FUNC_INFO << "p_view->isFocusEnabled()="<<p_view->isFocusEnabled()<<" p_view->isHidden()="<<p_view->isHidden()<<endl;
-
-	connect( view, SIGNAL(destroyed()), this, SLOT(viewDestroyed()) );
+	connect(view, SIGNAL(destroyed()), this, SLOT(viewDestroyed()));
 	bool hadFocus = hasFocus();
-	setFocusProxy( p_view );
-	if ( hadFocus && !p_view->isHidden() )
+	setFocusProxy(p_view);
+	if (hadFocus && !p_view->isHidden()) {
 		p_view->setFocus();
+	}
 
 	// The ViewContainer by default has a view area as its focus proxy.
 	// This is because there is no view when it is constructed. So give
 	// it our view as the focus proxy if it doesn't have one.
-	if ( !dynamic_cast<View*>(p_viewContainer->focusProxy()) )
-		p_viewContainer->setFocusProxy( p_view );
+	if (!dynamic_cast<View*>(p_viewContainer->focusProxy())) {
+		p_viewContainer->setFocusProxy(p_view);
+	}
 }
 
-
-void ViewArea::viewDestroyed()
-{
-	if ( !p_view && !p_viewArea1 && !p_viewArea2 )
+void ViewArea::viewDestroyed() {
+	if (!p_view && !p_viewArea[0] && !p_viewArea[1]) {
 		deleteLater();
+	}
 }
 
+bool ViewArea::canSaveUsefulStateInfo() const {
+	for (auto *viewArea : p_viewArea) {
+		if (viewArea && viewArea->canSaveUsefulStateInfo()) {
+			return true;
+		}
+	}
 
-bool ViewArea::canSaveUsefulStateInfo() const
-{
-	if ( p_viewArea1 && p_viewArea1->canSaveUsefulStateInfo() )
+	if (p_view && p_view->document() && !p_view->document()->url().isEmpty()) {
 		return true;
-
-	if ( p_viewArea2 && p_viewArea2->canSaveUsefulStateInfo() )
-		return true;
-
-	if ( p_view && p_view->document() && !p_view->document()->url().isEmpty() )
-		return true;
+	}
 
 	return false;
 }
 
+void ViewArea::saveState(KConfigGroup *config) {
+	bool va1Ok = p_viewArea[0] && p_viewArea[0]->canSaveUsefulStateInfo();
+	bool va2Ok = p_viewArea[1] && p_viewArea[1]->canSaveUsefulStateInfo();
 
-void ViewArea::saveState( KConfigGroup* config )
-{
-	bool va1Ok = p_viewArea1 && p_viewArea1->canSaveUsefulStateInfo();
-	bool va2Ok = p_viewArea2 && p_viewArea2->canSaveUsefulStateInfo();
-
-	if ( va1Ok || va2Ok )
-	{
-		config->writeEntry( orientationKey(m_id), (orientation() == Qt::Horizontal) ? "LeftRight" : "TopBottom" );
+	if (va1Ok || va2Ok) {
+		config->writeEntry(orientationKey(m_id), (orientation() == Qt::Horizontal) ? "LeftRight" : "TopBottom");
 
 		QList<int> contains;
-		if (va1Ok)
-			contains << p_viewArea1->id();
-		if (va2Ok)
-			contains << p_viewArea2->id();
+		contains.reserve(2);
+		if (va1Ok) {
+			contains << p_viewArea[0]->id();
+		}
+		if (va2Ok) {
+			contains << p_viewArea[1]->id();
+		}
 
-		config->writeEntry( containsKey(m_id), contains );
-		if (va1Ok)
-			p_viewArea1->saveState(config);
-		if (va2Ok)
-			p_viewArea2->saveState(config);
+		config->writeEntry(containsKey(m_id), contains);
+		if (va1Ok) {
+			p_viewArea[0]->saveState(config);
+		}
+		if (va2Ok) {
+			p_viewArea[1]->saveState(config);
+		}
 	}
-	else if ( p_view && !p_view->document()->url().isEmpty() )
-	{
-		config->writePathEntry( fileKey(m_id), p_view->document()->url().prettyUrl() );
+	else if (p_view && !p_view->document()->url().isEmpty()) {
+		config->writePathEntry(fileKey(m_id), p_view->document()->url().prettyUrl());
 	}
 }
 
-
-void ViewArea::restoreState( KConfigGroup* config, int id, const QString& groupName )
-{
+void ViewArea::restoreState(KConfigGroup *config, int id, const QString &groupName) {
 	if (!config)
 		return;
 
-	if ( id != m_id )
-	{
-		if ( m_id >= 0 )
-			p_viewContainer->setViewAreaRemoved( uint(m_id) );
+	if (id != m_id) {
+		if (m_id >= 0) {
+			p_viewContainer->setViewAreaRemoved(m_id);
+		}
 
 		m_id = id;
 
-		if ( m_id >= 0 )
-			p_viewContainer->setViewAreaId( this, uint(m_id) );
+		if (m_id >= 0) {
+			p_viewContainer->setViewAreaId(this, m_id);
+		}
 
 		p_viewContainer->setIdUsed(id);
 	}
-
-	//config->setGroup(groupName);
-	if ( config->hasKey( orientationKey(id) ) )
-	{
-		QString orientation = config->readEntry( orientationKey(m_id) );
-		setOrientation( (orientation == "LeftRight") ? Qt::Horizontal : Qt::Vertical );
+;
+	if (config->hasKey(orientationKey(id))) {
+		QString orientation = config->readEntry(orientationKey(m_id));
+		setOrientation((orientation == "LeftRight") ? Qt::Horizontal : Qt::Vertical);
 	}
 
-	//config->setGroup(groupName);
-	if ( config->hasKey( containsKey(m_id) ) )
-	{
-		typedef QList<int> IntList;
-		IntList contains = config->readEntry( containsKey(m_id), IntList());
+	if (config->hasKey(containsKey(m_id))) {
+		IntList contains = config->readEntry(containsKey(m_id), IntList());
 
-		if ( contains.isEmpty() || contains.size() > 2 )
+		if (contains.isEmpty() || contains.size() > 2) {
 			qCritical() << Q_FUNC_INFO << "Contained list has wrong size of " << contains.size() << endl;
-
-		else
-		{
-			if ( contains.size() >= 1 )
-			{
+		}
+		else {
+			if (contains.size() >= 1) {
 				int viewArea1Id = contains[0];
-				p_viewArea1 = new ViewArea( this, p_viewContainer, viewArea1Id, false,
-                                            ("viewarea_"+QString::number(viewArea1Id)).toLatin1().data() );
-				connect( p_viewArea1, SIGNAL(destroyed(QObject* )), this, SLOT(viewAreaDestroyed(QObject* )) );
-				p_viewArea1->restoreState( config, viewArea1Id, groupName );
-				p_viewArea1->show();
+				p_viewArea[0] = new ViewArea(
+					this,
+					p_viewContainer,
+					viewArea1Id,
+					false,
+          ("viewarea_" + QString::number(viewArea1Id)).toLatin1().data()
+				);
+				connect(p_viewArea[0], SIGNAL(destroyed(QObject *)), this, SLOT(viewAreaDestroyed(QObject *)));
+				p_viewArea[0]->restoreState(config, viewArea1Id, groupName);
+				p_viewArea[0]->show();
 			}
-
-			if ( contains.size() >= 2 )
-			{
+			if (contains.size() >= 2) {
 				int viewArea2Id = contains[1];
-				p_viewArea2 = new ViewArea( this, p_viewContainer, viewArea2Id, false,
-                                            ("viewarea_"+QString::number(viewArea2Id)).toLatin1().data() );
-				connect( p_viewArea2, SIGNAL(destroyed(QObject* )), this, SLOT(viewAreaDestroyed(QObject* )) );
-				p_viewArea2->restoreState( config, viewArea2Id, groupName );
-				p_viewArea2->show();
+				p_viewArea[1] = new ViewArea(
+					this,
+					p_viewContainer,
+					viewArea2Id,
+					false,
+          ("viewarea_" + QString::number(viewArea2Id)).toLatin1().data()
+				);
+				connect(p_viewArea[1], SIGNAL(destroyed(QObject *)), this, SLOT(viewAreaDestroyed(QObject *)));
+				p_viewArea[1]->restoreState(config, viewArea2Id, groupName);
+				p_viewArea[1]->show();
 			}
 		}
 	}
 
-	//config->setGroup(groupName);
-	if ( config->hasKey( fileKey(m_id) ) )
-	{
-		bool openedOk = DocManager::self()->openURL( config->readPathEntry( fileKey(m_id), "" ), this );
-		if (!openedOk)
+	if (config->hasKey(fileKey(m_id))) {
+		bool openedOk = DocManager::self()->openURL(config->readPathEntry(fileKey(m_id), ""), this);
+		if (!openedOk) {
 			deleteLater();
+		}
 	}
 }
 
-QString ViewArea::fileKey( int id )
-{
+QString ViewArea::fileKey(int id) {
 	return QString("ViewArea ") + QString::number(id) + QString(" file");
 }
-QString ViewArea::containsKey( int id )
-{
+
+QString ViewArea::containsKey(int id) {
 	return QString("ViewArea ") + QString::number(id) + QString(" contains");
 }
-QString ViewArea::orientationKey( int id )
-{
+
+QString ViewArea::orientationKey(int id) {
 	return QString("ViewArea ") + QString::number(id) + QString(" orientation");
 }
 //END class ViewArea
 
-
-
 //BEGIN class EmptyViewArea
-EmptyViewArea::EmptyViewArea( ViewArea * parent )
-	: QWidget( parent )
+EmptyViewArea::EmptyViewArea(ViewArea *parent) :
+	QWidget(parent),
+	m_pViewArea(parent)
 {
-	m_pViewArea = parent;
+	QGridLayout *layout = new QGridLayout(this);
+  layout->setMargin(0);
+  layout->setSpacing(6);
 
-	QGridLayout * layout = new QGridLayout( this /*, 5, 3, 0, 6 */ );
-    layout->setMargin(0);
-    layout->setSpacing(6);
+	layout->setRowStretch(0, 20);
+	layout->setRowStretch(2, 1);
+	layout->setRowStretch(4, 20);
 
-	layout->setRowStretch( 0, 20 );
-	layout->setRowStretch( 2, 1 );
-	layout->setRowStretch( 4, 20 );
+	layout->setColumnStretch(0, 1);
+	layout->setColumnStretch(2, 1);
 
-	layout->setColumnStretch( 0, 1 );
-	layout->setColumnStretch( 2, 1 );
+	KGuiItem openItem(i18n("Open Document"), "document-open");
+	KPushButton *newDocButton = new KPushButton(openItem, this);
+	layout->addWidget(newDocButton, 1, 1);
+	connect(newDocButton, SIGNAL(clicked()), this, SLOT(openDocument()));
 
-	KGuiItem openItem( i18n("Open Document"), "document-open" );
-	KPushButton * newDocButton = new KPushButton( openItem, this );
-	layout->addWidget( newDocButton, 1, 1 );
-	connect( newDocButton, SIGNAL(clicked()), this, SLOT(openDocument()) );
-
-	KGuiItem cancelItem( i18n("Cancel"), "dialog-cancel" );
-	KPushButton * cancelButton = new KPushButton( cancelItem, this );
-	layout->addWidget( cancelButton, 3, 1 );
-	connect( cancelButton, SIGNAL(clicked()), m_pViewArea, SLOT(deleteLater()) );
+	KGuiItem cancelItem(i18n("Cancel"), "dialog-cancel");
+	KPushButton *cancelButton = new KPushButton(cancelItem, this);
+	layout->addWidget(cancelButton, 3, 1);
+	connect(cancelButton, SIGNAL(clicked()), m_pViewArea, SLOT(deleteLater()));
 }
-
 
 EmptyViewArea::~EmptyViewArea()
 {
 }
 
-
-void EmptyViewArea::openDocument()
-{
-	KTechlab::self()->openFile( m_pViewArea );
+void EmptyViewArea::openDocument() {
+	KTechlab::self()->openFile(m_pViewArea);
 }
 //END class EmptyViewArea
 

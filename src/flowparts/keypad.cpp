@@ -39,11 +39,11 @@ Keypad::Keypad( ICNDocument *icnDocument, bool newItem, const char *id )
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "variable", Variant::Type::VarName );
 	property("variable")->setValue("x");
 	property("variable")->setCaption( i18n("Variable") );
-	
+
 	Variant * v = createProperty( "keypad", Variant::Type::KeyPad );
 	v->setCaption( i18n("Pin map") );
 }
@@ -62,5 +62,3 @@ void Keypad::generateMicrobe( FlowCode *code )
 	code->addCode( QString("%1 = %2").arg( dataString("variable") ).arg( dataString("keypad") ) );
 	code->addCodeBranch( outputPart("stdoutput") );
 }
-
-

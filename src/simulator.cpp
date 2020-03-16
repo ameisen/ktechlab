@@ -161,7 +161,7 @@ void Simulator::step() {
 				for (   Circuit *circuit = changed;
                         circuit && (!canAddChangedSet.contains(circuit));
                         circuit = circuit->nextChanged(prevChain)) {
-					circuit->setCanAddChanged(true);
+					circuit->canAddChanged = true;
                     canAddChangedSet.insert(circuit);
                 }
 
@@ -302,9 +302,9 @@ void Simulator::attachCircuit(Circuit *circuit) {
 
 	m_ordinaryCircuits->push_back(circuit);
 
-//	if ( circuit->canAddChanged() ) {
+//	if ( circuit->canAddChanged ) {
 	addChangedCircuit(circuit);
-	circuit->setCanAddChanged(false);
+	circuit->canAddChanged = false;
 //	}
 }
 

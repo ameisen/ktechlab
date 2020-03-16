@@ -39,24 +39,24 @@ VarComparison::VarComparison( ICNDocument *icnDocument, bool newItem, const char
 	createStdInput();
 	createStdOutput();
 	createAltOutput();
-	
+
 	createProperty( "0var1", Variant::Type::Combo );
 	property("0var1")->setCaption( i18n("Variable") );
 	property("0var1")->setValue("x");
-	
+
 	createProperty( "1op", Variant::Type::Select );
 	property("1op")->setAllowed( (QStringList("==") << "<" << ">" << "<=" << ">=" << "!=" ) );
 	property("1op")->setValue("==");
 	property("1op")->setToolbarCaption(" ");
 	property("1op")->setEditorCaption( i18n("Operation") );
-	
+
 	createProperty( "2var2", Variant::Type::Combo );
 	property("2var2")->setToolbarCaption(" ");
 	property("2var2")->setEditorCaption( i18n("Value") );
 	property("2var2")->setValue("0");
-	
+
 	addDisplayText( "output_false", QRect( offsetX()+width(), 2, 40, 20 ), "No" );
-	addDisplayText( "output_true", QRect( 0, offsetY()+height(), 50, 20 ), "Yes" ); 
+	addDisplayText( "output_true", QRect( 0, offsetY()+height(), 50, 20 ), "Yes" );
 }
 
 VarComparison::~VarComparison()
@@ -84,9 +84,9 @@ void VarComparison::generateMicrobe( FlowCode *code )
 	QString var1 = dataString("0var1");
 	QString var2 = dataString("2var2");
 	QString test = dataString("1op");
-	
+
 	handleIfElse( code, var1+" "+test+" "+var2, var1+" "+oppOp(test)+" "+var2, "stdoutput", "altoutput" );
-	
+
 #if 0
 	code->addCode( "if "+var1+" "+test+" "+var2+"\n{\n" );
 	code->addCodeBranch( outputPart("stdoutput") );
@@ -98,25 +98,25 @@ void VarComparison::generateMicrobe( FlowCode *code )
 		code->addCode("}");
 	}
 #endif
-	
+
 #if 0
 	QString newCode;
-	
+
 	if ( FlowCode::isLiteral(var2) ) newCode += "movlw " + var2 + " ; Move literal to register w\n";
 	else
 	{
 		code->addVariable(var2);
 		newCode += "movf " + var2 + ",0 ; Move " + var2 + " to register w\n";
 	}
-	
+
 	if ( FlowCode::isLiteral(var1) ) newCode += "sublw " + var1 + " ; Subtract register w from " + var1 + ", placing result in w\n";
 	else
 	{
 		code->addVariable(var1);
 		newCode += "subwf " + var1 + ",0 ; Subtract register w from " + var1 + ", placing result in w\n";
 	}
-	
-	
+
+
 	if		( test == "==" )
 	{
 		// check: works
@@ -163,7 +163,7 @@ void VarComparison::generateMicrobe( FlowCode *code )
 		newCode += gotoCode("altoutput") + " ; Result is positive (not zero, has already tested for this); hence comparison is false\n";
 		newCode += gotoCode("stdoutput") + " ; Result is negative, hence comparison is true\n";
 	}
-	
+
 	code->addCodeBlock( id(), newCode );
 #endif
 }

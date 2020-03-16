@@ -6,8 +6,10 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
+#include <cassert>
 #include <cmath>
 #include <functional>
+#include <array>
 
 #include <KLocalizedString>
 #include <KDialog>
@@ -21,6 +23,7 @@
 #include <QVector2D>
 #include <QVector3D>
 #include <QList>
+#include <QSet>
 #include <QObject>
 #include <QDebug>
 #include <QColor>
@@ -43,6 +46,8 @@ namespace Type {
 }
 
 template <typename T> using QPtrList = QList<QPointer<T>>;
+template <typename T> using QPtrSet = QSet<QPointer<T>>;
+template <typename T> using QPtrVector = QVector<QPointer<T>>;
 
 template <typename T, typename U> using enable_if_ref = typename std::enable_if<
 	std::is_same<
@@ -146,14 +151,17 @@ class Point3 : _Point<T> {
 	public:
 	union {
 		T x = {};
+		T r;
 		T width;
 	};
 	union {
 		T y = {};
+		T g;
 		T height;
 	};
 	union {
 		T z = {};
+		T b;
 		T depth;
 	};
 
@@ -220,8 +228,56 @@ class Point3 : _Point<T> {
 template <typename T> using Size2 = Point2<T>;
 template <typename T> using Size3 = Point3<T>;
 
-static inline int round_int(float x) { return int(x + ((x >= 0) ? 0.5f : -0.5f)); }
-static inline int round_int(double x) { return int(x + ((x >= 0) ? 0.5 : -0.5)); }
+template <typename T>
+static inline T iround(float x) {
+	return T(std::clamp(
+		T((x >= 0.0f) ? (x + 0.5f) : (x - 0.5f)),
+		std::numeric_limits<T>::lowest(),
+		std::numeric_limits<T>::max()
+	));
+}
+
+template <typename T>
+static inline T iround(double x) {
+	return T(std::clamp(
+		T((x >= 0.0) ? (x + 0.5) : (x - 0.5)),
+		std::numeric_limits<T>::lowest(),
+		std::numeric_limits<T>::max()
+	));
+}
+
+template <typename T>
+static inline T iround(long double x) {
+	return T(std::clamp(
+		T((x >= 0.0L) ? (x + 0.5L) : (x - 0.5L)),
+		std::numeric_limits<T>::lowest(),
+		std::numeric_limits<T>::max()
+	));
+}
+
+static inline int round_int(float x) { return iround<int>(x); }
+static inline int round_int(double x) { return iround<int>(x); }
+static inline int round_int(long double x) { return iround<int>(x); }
+
+static inline float saturate(float x) { return std::clamp(x, 0.0f, 1.0f); }
+static inline double saturate(double x) { return std::clamp(x, 0.0, 1.0); }
+static inline long double saturate(long double x) { return std::clamp(x, 0.0L, 1.0L); }
+
+static inline float lerp(float s, float x, float y) { return x * (1.0f - s) + y * s; }
+static inline double lerp(double s, double x, double y) { return x * (1.0 - s) + y * s; }
+static inline long double lerp(long double s, long double x, long double y) { return x * (1.0L - s) + y * s; }
+
+static inline float clamped_lerp(float s, float x, float y) { return std::clamp(lerp(s, x, y), std::min(x, y), std::max(x, y)); }
+static inline double clamped_lerp(double s, double x, double y) { return std::clamp(lerp(s, x, y), std::min(x, y), std::max(x, y)); }
+static inline long double clamped_lerp(long double s, long double x, long double y) { return std::clamp(lerp(s, x, y), std::min(x, y), std::max(x, y)); }
+
+static inline float rlerp(float v, float x, float y) { return (v - x) / (y - x); }
+static inline double rlerp(double v, double x, double y) { return (v - x) / (y - x); }
+static inline long double rlerp(long double v, long double x, long double y) { return (v - x) / (y - x); }
+
+static inline float clamped_rlerp(float s, float x, float y) { return std::clamp(rlerp(s, x, y), 0.0f, 1.0f); }
+static inline double clamped_rlerp(double s, double x, double y) { return std::clamp(rlerp(s, x, y), 0.0, 1.0); }
+static inline long double clamped_rlerp(long double s, long double x, long double y) { return std::clamp(rlerp(s, x, y), 0.0L, 1.0L); }
 
 __attribute__((always_inline))
 static inline QString i18n (const QString &str) {
@@ -356,4 +412,151 @@ namespace Container {
 	static inline void removeNull(QList<T> &list) {
 		removeIf(list, [](const T &value){ return Ptr::isNull(value); });
 	}
+}
+
+template <uintsz N1, uintsz N2>
+static inline constexpr std::array<char, N1 + N2> GetCategoryID(const char (&category)[N1], const char (&id)[N2]) {
+	std::array<char, N1 + N2> result = {};
+
+	for (uintsz i = 0; i < (N1 - 1); ++i) {
+		result[i] = category[i];
+	}
+
+	result[N1 - 1] = '/';
+
+	for (uintsz i = 0; i < N2; ++i) {
+		result[N1 + i] = id[i];
+	}
+
+	return result;
+}
+
+using voltage_t = real;
+using current_t = real;
+using resistance_t = real;
+using conductance_t = real;
+using capacitance_t = real;
+using power_t = real;
+
+template <typename T>
+struct Range {
+	const T start_;
+	const T end_;
+
+	constexpr Range (T start, T end) :
+		start_(start), end_(end) {}
+
+	struct iterator final {
+		T value_;
+		const T endValue_;
+
+		T getNext () const {
+			assert(value_ != endValue_);
+
+			if (endValue_ >= value_) {
+				return value_ + 1;
+			}
+			return value_ - 1;
+		}
+
+		T getPrevious () const {
+			// TODO : Assert when returning to start value
+
+			if (endValue_ >= value_) {
+				return value_ - 1;
+			}
+			return value_ + 1;
+		}
+
+		constexpr iterator (T value, T endValue) : value_(value), endValue_(endValue) {}
+
+		iterator & operator ++ () {
+			value_ = getNext();
+			return *this;
+		}
+
+		constexpr iterator operator ++ (int) const {
+			return iterator{getNext(), endValue_};
+		}
+
+		iterator & operator -- () {
+			value_ = getPrevious();
+			return *this;
+		}
+
+		constexpr iterator operator -- (int) const {
+			return iterator{getPrevious(), endValue_};
+		}
+
+		constexpr bool operator == (const iterator &other) const {
+			return value_ == other.value_;
+		}
+
+		constexpr bool operator != (const iterator &other) const {
+			return value_ != other.value_;
+		}
+
+		constexpr T & operator * () {
+			return value_;
+		}
+
+		constexpr T operator * () const {
+			return value_;
+		}
+	};
+
+	constexpr iterator begin () const {
+		return iterator{start_, end_};
+	}
+
+	constexpr iterator end () const {
+		return iterator{end_, end_};
+	}
+
+	constexpr iterator rbegin () const {
+		// TODO : fix for unsigned
+		return iterator{end_ - 1, start_ - 1};
+	}
+
+	constexpr iterator rend () const {
+		// TODO : fix for unsigned
+		return iterator{start_ - 1, start_ - 1};
+	}
+};
+
+template <typename T> using From = Range<T>;
+template <typename T> using Until = Range<T>;
+
+template <typename T>
+struct Times : public Range<T> {
+	constexpr Times(T times) : Range<T>(0, times) {}
+};
+
+// TODO : should be long maybe, since int * int max size > int
+static inline int GetArea(const QRect &rect) {
+	return rect.width() * rect.height();
+}
+
+static inline int GetArea(const QSize &size) {
+	return size.width() * size.height();
+}
+
+class QPointRect final : public QRect {
+public:
+	QPointRect() : QRect(0, 0, 1, 1) {}
+	QPointRect(const QPointRect &rect) = default;
+	QPointRect(QPointRect &&rect) = default;
+	QPointRect(int x, int y) : QRect(x, y, 1, 1) {}
+	QPointRect(int edge) : QPointRect(edge, edge) {}
+	QPointRect(const QPoint &point) : QPointRect(point.x(), point.y()) {}
+};
+
+template <typename T>
+static inline uint qHash(const QPointer<T> &ptr, uint seed) {
+	return qHash(ptr ? ptr.data() : nullptr, seed);
+}
+
+template <typename T>
+static inline uint qHash(const QPointer<T> &ptr) {
+	return qHash(ptr ? ptr.data() : nullptr);
 }

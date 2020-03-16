@@ -105,11 +105,11 @@ Connector *ICNDocument::connectorWithID( const QString &id )
 
 FlowContainer *ICNDocument::flowContainer( const QPoint &pos )
 {
-	KtlQCanvasItemList collisions = m_canvas->collisions(pos);
+	auto collisions = m_canvas->collisions(pos);
 	FlowContainer *flowContainer = 0l;
 	int currentLevel = -1;
-	const KtlQCanvasItemList::iterator end = collisions.end();
-	for ( KtlQCanvasItemList::iterator it = collisions.begin(); it != end; ++it )
+	const auto end = collisions.end();
+	for ( auto it = collisions.begin(); it != end; ++it )
 	{
 		if ( FlowContainer *container = dynamic_cast<FlowContainer*>(*it) )
 		{
@@ -621,7 +621,7 @@ Item* ICNDocument::addItem( const QString &id, const QPoint &p, bool newItem )
 			flowContainer->setFullBounds(true);
 	}
 
-	KtlQCanvasItemList preCollisions = canvas()->collisions(p);
+	auto preCollisions = canvas()->collisions(p);
 	for ( ItemMap::iterator it = m_itemList.begin(); it != end; ++it )
 	{
 		if ( FlowContainer *flowContainer = dynamic_cast<FlowContainer*>(*it) )
@@ -634,8 +634,8 @@ Item* ICNDocument::addItem( const QString &id, const QPoint &p, bool newItem )
 	// Look through the CNItems at the given point (sorted by z-coordinate) for
 	// a container item.
 	FlowContainer *container = 0l;
-	const KtlQCanvasItemList::iterator pcEnd = preCollisions.end();
-	for ( KtlQCanvasItemList::iterator it = preCollisions.begin(); it != pcEnd && !container; ++it )
+	const auto pcEnd = preCollisions.end();
+	for ( auto it = preCollisions.begin(); it != pcEnd && !container; ++it )
 	{
 		if ( FlowContainer *flowContainer = dynamic_cast<FlowContainer*>(*it) )
 			container = flowContainer;
@@ -645,6 +645,7 @@ Item* ICNDocument::addItem( const QString &id, const QPoint &p, bool newItem )
 	// isValidItem may prompt the user about his bad choice
 	if ( !isValidItem(item) ) {
 		item->removeItem();
+		delete item;
 		flushDeleteList();
 		return 0L;
 	}
@@ -663,6 +664,8 @@ Item* ICNDocument::addItem( const QString &id, const QPoint &p, bool newItem )
 		if (container) container->addChild(cnItem);
 
 	} else item->move( x, y );
+
+	registerItem(item);
 
 	item->show();
 	requestStateSave();
@@ -732,9 +735,9 @@ void ICNDocument::rerouteInvalidatedConnectors()
 			// Test to see if the route intersects any Items (we ignore if it is a manual route)
 			if ( !needsRerouting && !connector->usesManualPoints() ) {
 
-				const KtlQCanvasItemList collisions = connector->collisions(true);
-				const KtlQCanvasItemList::const_iterator collisionsEnd = collisions.end();
-				for ( KtlQCanvasItemList::const_iterator collisionsIt = collisions.begin(); (collisionsIt != collisionsEnd) && !needsRerouting; ++collisionsIt )
+				const auto collisions = connector->collisions(true);
+				const auto collisionsEnd = collisions.end();
+				for ( auto collisionsIt = collisions.begin(); (collisionsIt != collisionsEnd) && !needsRerouting; ++collisionsIt )
 				{
 					if ( dynamic_cast<Item*>(*collisionsIt) )
 						needsRerouting = true;

@@ -42,10 +42,10 @@ BusSplitter::BusSplitter( ICNDocument *icnDocument, bool newItem, const char *id
 {
 	m_name = i18n("Bus Splitter");
 
-	m_busSize = 0;	
+	m_busSize = 0;
 	init1PinLeft();
 	m_pInNode = m_pNNode[0];
-	
+
 	createProperty( "size", Variant::Type::Int );
 	property("size")->setCaption( i18n("Size") );
 	property("size")->setMinValue(1);
@@ -62,18 +62,18 @@ BusSplitter::~BusSplitter()
 void BusSplitter::dataChanged()
 {
 	unsigned busSize = dataInt("size");
-	
+
 	if ( busSize < 1 )
 		busSize = 1;
-	
+
 	else if ( busSize > MAX_BUS_SIZE )
 		busSize = MAX_BUS_SIZE;
-	
+
 	if ( busSize == m_busSize )
 		return;
-	
+
 	m_pInNode->setNumPins(busSize);
-	
+
 	if ( busSize > m_busSize )
 	{
 		m_pWires.resize(busSize);
@@ -93,13 +93,13 @@ void BusSplitter::dataChanged()
 		m_pWires.resize(busSize);
 	}
 	m_busSize = busSize;
-	
+
 	// Position pins
 	setSize( 0, -int(m_busSize+1)*8, 8, int(m_busSize+1)*16, true );
 	for ( int i = 0; i < int(m_busSize); i++ )
 		m_nodeMap[ outNodeID(i) ].y = 16*i - int(m_busSize+1)*8 + 24;
 	m_nodeMap["n1"].y = -int(m_busSize+1)*8 + 8;
-	
+
 	updateAttachedPositioning();
 }
 
@@ -113,20 +113,17 @@ QString BusSplitter::outNodeID( unsigned node ) const
 void BusSplitter::drawShape( QPainter &p )
 {
 	initPainter(p);
-	
+
 // 	QPen pen(p.pen());
 // 	pen.setWidth();
 // 	p.setPen(pen);
-	
+
 	int _x = int(x());
 	int _y = int(y());
-	
+
 	QRect r = m_sizeRect;
 	r.translate( _x, _y );
 	p.drawRect(r);
-	
+
 	deinitPainter(p);
 }
-
-
-

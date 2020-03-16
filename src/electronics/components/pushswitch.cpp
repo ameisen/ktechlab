@@ -41,26 +41,26 @@ ECPTBSwitch::ECPTBSwitch( ICNDocument *icnDocument, bool newItem, const char *id
 {
 	m_name = i18n("Push to Break");
 	setSize( -16, -16, 32, 24 );
-	
+
 	addButton( "button", QRect( -16, 8, 32, 20 ), "" );
-	
+
 	createProperty( "button_text", Variant::Type::String );
 	property("button_text")->setCaption( i18n("Button Text") );
-	
+
 	Variant * v = createProperty( "bounce", Variant::Type::Bool );
 	v->setCaption( i18n("Bounce") );
 	v->setAdvanced(true);
 	v->setValue(false);
-	
+
 	v = createProperty( "bounce_period", Variant::Type::Double );
 	v->setCaption( i18n("Bounce Period") );
 	v->setAdvanced(true);
 	v->setUnit("s");
 	v->setValue(5e-3);
-	
+
 	init1PinLeft(0);
 	init1PinRight(0);
-	
+
 	m_switch = createSwitch( m_pPNode[0], m_pNNode[0], false );
 	pressed = false;
 }
@@ -73,7 +73,7 @@ ECPTBSwitch::~ECPTBSwitch()
 void ECPTBSwitch::dataChanged()
 {
 	button("button")->setText( dataString("button_text") );
-	
+
 	bool bounce = dataBool("bounce");
 	int bouncePeriod_ms = int(dataDouble("bounce_period")*1e3);
 	m_switch->setBounce( bounce, bouncePeriod_ms );
@@ -83,18 +83,18 @@ void ECPTBSwitch::dataChanged()
 void ECPTBSwitch::drawShape( QPainter &p )
 {
 	initPainter(p);
-	
+
 	int _x = (int)x()-16;
 	int _y = (int)y()-8;
 	const int radius = 2;
 	const int _height = height()-8;
-	
+
 	int dy = pressed ? 6 : 4;
-	
+
 	p.drawLine( _x+width()/4,	_y+dy,						_x+(3*width())/4,	_y+dy ); // Top horizontal line
 	p.drawLine( _x,				_y+(_height/2)-radius+dy,	_x+width(),			_y+(_height/2)-radius+dy ); // Bottom horizontal line
 	p.drawLine( _x+width()/2,	_y+dy,						_x+width()/2,		_y+(_height/2)-radius+dy ); // Vertical line
-	
+
 	p.drawEllipse( _x,						_y+(_height/2)-radius, 2*radius, 2*radius ); // Left circle
 	p.drawEllipse( _x+width()-2*radius+1,	_y+(_height/2)-radius, 2*radius, 2*radius ); // Right circle
 
@@ -105,7 +105,7 @@ void ECPTBSwitch::buttonStateChanged( const QString &id, bool state )
 {
 	if ( id != "button" )
 		return;
-	m_switch->setState( state ? Switch::Open : Switch::Closed );
+	m_switch->setState( state ? Switch::State::Open : Switch::State::Closed );
 	pressed = state;
 }
 //END class ECPTBSwitch
@@ -133,26 +133,26 @@ ECPTMSwitch::ECPTMSwitch( ICNDocument *icnDocument, bool newItem, const char *id
 {
 	m_name = i18n("Push to Make");
 	setSize( -16, -16, 32, 24 );
-	
+
 	addButton( "button", QRect( -16, 8, 32, 20 ), "" );
-	
+
 	createProperty( "button_text", Variant::Type::String );
 	property("button_text")->setCaption( i18n("Button Text") );
-	
+
 	Variant * v = createProperty( "bounce", Variant::Type::Bool );
 	v->setCaption("Bounce");
 	v->setAdvanced(true);
 	v->setValue(false);
-	
+
 	v = createProperty( "bounce_period", Variant::Type::Double );
 	v->setCaption("Bounce Period");
 	v->setAdvanced(true);
 	v->setUnit("s");
 	v->setValue(5e-3);
-	
+
 	init1PinLeft(0);
 	init1PinRight(0);
-	
+
 	m_switch = createSwitch( m_pPNode[0], m_pNNode[0], true );
 	pressed = false;
 }
@@ -166,7 +166,7 @@ ECPTMSwitch::~ECPTMSwitch()
 void ECPTMSwitch::dataChanged()
 {
 	button("button")->setText( dataString("button_text") );
-	
+
 	bool bounce = dataBool("bounce");
 	int bouncePeriod_ms = int(dataDouble("bounce_period")*1e3);
 	m_switch->setBounce( bounce, bouncePeriod_ms );
@@ -176,18 +176,18 @@ void ECPTMSwitch::dataChanged()
 void ECPTMSwitch::drawShape( QPainter &p )
 {
 	initPainter(p);
-	
+
 	int _x = (int)x()-16;
 	int _y = (int)y()-8;
 	const int radius = 2;
 	const int _height = height()-8;
-	
+
 	int dy = pressed ? 1 : 3;
-	
+
 	p.drawLine( _x+width()/4,	_y-dy,						_x+(3*width())/4,	_y-dy ); // Top horizontal line
 	p.drawLine( _x,				_y+(_height/2)-radius-dy,	_x+width(),			_y+(_height/2)-radius-dy ); // Bottom horizontal line
 	p.drawLine( _x+width()/2,	_y-dy,						_x+width()/2,		_y+(_height/2)-radius-dy ); // Vertical line
-	
+
 	p.drawEllipse( _x,						_y+(_height/2)-radius, 2*radius, 2*radius ); // Left circle
 	p.drawEllipse( _x+width()-2*radius+1,	_y+(_height/2)-radius, 2*radius, 2*radius ); // Right circle
 
@@ -197,8 +197,7 @@ void ECPTMSwitch::drawShape( QPainter &p )
 void ECPTMSwitch::buttonStateChanged( const QString &id, bool state )
 {
 	if ( id != "button" ) return;
-	m_switch->setState( state ? Switch::Closed : Switch::Open );
+	m_switch->setState( state ? Switch::State::Closed : Switch::State::Open );
 	pressed = state;
 }
 //END class ECPTMSwitch
-

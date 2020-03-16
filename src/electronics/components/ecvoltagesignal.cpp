@@ -43,24 +43,24 @@ ECVoltageSignal::ECVoltageSignal( ICNDocument *icnDocument, bool newItem, const 
 {
 	m_name = i18n("Voltage Signal");
 	setSize( -8, -8, 16, 16 );
-	
+
 	init1PinLeft();
 	init1PinRight();
-	
-	m_pNNode[0]->pin()->setGroundType( Pin::gt_medium );
+
+	m_pNNode[0]->pin()->setGroundType( Pin::GroundType::Medium );
 	m_voltageSignal = createVoltageSignal( m_pNNode[0], m_pPNode[0], 0. );
 	m_voltageSignal->setStep(ElementSignal::st_sinusoidal, 50. );
-	
+
 	createProperty( "frequency", Variant::Type::Double );
 	property("frequency")->setCaption( i18n("Frequency") );
 	property("frequency")->setUnit("Hz");
 	property("frequency")->setMinValue(1e-9);
 	property("frequency")->setMaxValue(1e3);
 	property("frequency")->setValue(50.0);
-	
+
 	createProperty( "voltage", Variant::Type::Double );
 	property("voltage")->setCaption( i18n("Voltage Range") );
-	property("voltage")->setUnit("V");	
+	property("voltage")->setUnit("V");
 	property("voltage")->setMinValue(-1e12);
 	property("voltage")->setMaxValue(1e12);
 	property("voltage")->setValue(5.0);
@@ -105,4 +105,3 @@ void ECVoltageSignal::drawShape( QPainter &p )
 	p.drawEllipse( (int)x()-8, (int)y()-8, width(), height() );
 	deinitPainter(p);
 }
-

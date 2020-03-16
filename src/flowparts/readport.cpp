@@ -38,12 +38,12 @@ ReadPort::ReadPort( ICNDocument *icnDocument, bool newItem, const char *id )
 	initIOSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "0-port", Variant::Type::Port );
 	property("0-port")->setToolbarCaption( i18n("Read") );
 	property("0-port")->setEditorCaption( i18n("Port") );
 	property("0-port")->setValue("PORTA");
-	
+
 	createProperty( "1-var", Variant::Type::VarName );
 	property("1-var")->setToolbarCaption( i18nc( "read from port to x", "to" ) );
 	property("1-var")->setEditorCaption( i18n("Variable") );
@@ -65,4 +65,3 @@ void ReadPort::generateMicrobe( FlowCode *code )
 	code->addCode( dataString("1-var")+" = "+dataString("0-port") );
 	code->addCodeBranch( outputPart("stdoutput") );
 }
-

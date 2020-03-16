@@ -416,7 +416,7 @@ void CircuitDocument::calculateConnectorCurrents()
 				pin->setCurrentKnown( true );
 				// (and it has a current of 0 amps)
 			}
-			else if ( pin->groundType() == Pin::gt_always ) {
+			else if ( pin->getGroundType() == Pin::GroundType::Always ) {
 				groundPins << pin;
 				pin->setCurrentKnown( false );
 			} else {
@@ -640,7 +640,7 @@ void CircuitDocument::splitIntoCircuits( QPtrList<Pin> *pinList )
 			it != end &&
 			!(*it).isNull() &&
 			!!(*it) &&
-			(*it)->eqId() == -1
+			(*it)->eqId() == Pin::EquationID::Ground
 		) {
 			++it;
 		}
@@ -683,14 +683,14 @@ void CircuitDocument::recursivePinAdd( Pin *pin, Circuitoid *circuitoid, QPtrLis
 {
 	if (!pin || !circuitoid || !unassignedPins) return;
 
-	if (pin->eqId() != -1 )
+	if (pin->eqId() != Pin::EquationID::Ground )
 		unassignedPins->removeAll(pin);
 
 	if (circuitoid->contains(pin)) return;
 
 	circuitoid->addPin(pin);
 
-	if (pin->eqId() == -1) return;
+	if (pin->eqId() == Pin::EquationID::Ground) return;
 
 	for (auto &pin : pin->localConnectedPins()) {
 		if (pin.isNull() || !pin) continue;

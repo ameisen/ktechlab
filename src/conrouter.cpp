@@ -51,6 +51,7 @@ QList<QPoint> ConRouter::pointList( bool reverse ) const
 	return pointList;
 }
 
+static constexpr inline double sq(double x) { return x * x; }
 
 QList<QList<QPoint>> ConRouter::splitPoints( const QPoint &pos ) const
 {
@@ -64,13 +65,18 @@ QList<QList<QPoint>> ConRouter::splitPoints( const QPoint &pos ) const
 	bool found = false;
 	QList<QPoint>::const_iterator end = m_cellPointList.end();
 
-	double dl[] = { 0.0, 1.1, 1.5 }; // sqrt(2) < 1.5 < sqrt(5)
+	// sqrt(2) < 1.5 < sqrt(5)
+	constexpr const double dl[] = {
+		sq(0.0),
+		sq(1.1),
+		sq(1.5)
+	};
 	for ( unsigned i = 0; (i < 3) && !found; ++i )
 	{
 		for ( QList<QPoint>::const_iterator it = m_cellPointList.begin(); it != end && !found; ++it )
 		{
             QList<QPoint>::const_iterator fromLast = --m_cellPointList.constEnd();
-			if ( qpoint_distance( *it, split ) <= dl[i] && it != m_cellPointList.begin() && it != fromLast) // m_cellPointList.fromLast() )
+			if ( qpoint_distance_sq( *it, split ) <= dl[i] && it != m_cellPointList.begin() && it != fromLast) // m_cellPointList.fromLast() )
 				found = true;
 		}
 	}

@@ -1,19 +1,7 @@
-/***************************************************************************
- *   Copyright (C) 2005 by David Saxton                                    *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
-
 #include <cmath>
-#include <stdlib.h> // for rand
-#include <time.h>
 
-#include <qdebug.h>
-#include <qtimer.h>
+#include <QDebug>
+#include <QTimer>
 
 #include "circuitdocument.h"
 #include "component.h"
@@ -23,169 +11,182 @@
 #include "simulator.h"
 #include "switch.h"
 
-Switch::Switch(Component *parent, Pin *p1, Pin *p2, State state) {
-	m_bouncePeriod_ms = 5;
-	m_bBounce = false;
-	m_bounceStart = 0;
-	m_pBounceResistance = 0;
-	m_pP1 = p1;
-	m_pP2 = p2;
-	m_pComponent = parent;
-	m_pStopBouncingTimer = new QTimer(this);
-	connect(m_pStopBouncingTimer, SIGNAL(timeout()), this, SLOT(stopBouncing()));
+Switch::Switch(Component *parent, Pin *p1, Pin *p2, State state) :
+	Component_(parent),
+	StopBouncingTimer_(new QTimer(this)),
+	Pins_({p1, p2}),
+	State_(State(!bool(state)))
+{
+	connect(StopBouncingTimer_, SIGNAL(timeout()), this, SLOT(stopBouncing()));
 
 	// Force update
-	m_state = (state == Open) ? Closed : Open;
 	setState(state);
 }
 
-Switch::~ Switch() {
-	if (m_pP1) m_pP1->setSwitchConnected(m_pP2, false);
-	if (m_pP2) m_pP2->setSwitchConnected(m_pP1, false);
+Switch::~Switch() {
+	if (Pins_[0]) {
+		Pins_[0]->setSwitchConnected(Pins_[1], false);
+	}
+	if (Pins_[1]) {
+		Pins_[1]->setSwitchConnected(Pins_[0], false);
+	}
 }
 
 void Switch::setState(State state) {
-	if (m_state == state) return;
+	if (State_ == state) return;
 
-	m_state = state;
+	State_ = state;
 
-	if (m_bBounce) startBouncing();
+	if (Bounce_) {
+		startBouncing();
+	}
 	else {
-		// I'm being lazy...calling stopBouncing will connect the stuff
-		stopBouncing();
+		reconnectAll();
 	}
 }
 
 void Switch::setBounce(bool bounce, int msec) {
-	m_bBounce = bounce;
-	m_bouncePeriod_ms = msec;
+	Bounce_ = bounce;
+	BouncePeriod_ = msec;
 }
 
 void Switch::startBouncing() {
-	if (m_pBounceResistance) {
+	if (BouncingResistance_) {
 		// Already active?
 		return;
 	}
 
-	if (!m_pComponent->circuitDocument()) return;
+	if (!Component_->circuitDocument()) {
+		return;
+	}
 
-// 	qDebug() << Q_FUNC_INFO << endl;
+	BouncingResistance_ = Component_->createResistance(Pins_[0], Pins_[1], BounceResistance);
+	BounceStart_ = Simulator::self()->time();
 
-	m_pBounceResistance = m_pComponent->createResistance(m_pP1, m_pP2, 10000);
-	m_bounceStart = Simulator::self()->time();
+	//FIXME: I broke the bounce feature when I cleaned this out of the simulator,
+	// should probably be put into circuit document or some other solution which doesn't
+	// contaminate that many other classes.
 
-//FIXME: I broke the bounce feature when I cleaned this out of the simulator,
-// should probably be put into circuit document or some other solution which doesn't
-// contaminate that many other classes.
-
-//	Simulator::self()->attachSwitch( this );
-// 	qDebug() << "m_bounceStart="<<m_bounceStart<<" m_bouncePeriod_ms="<<m_bouncePeriod_ms<<endl;
+	//	Simulator::self()->attachSwitch( this );
+	// 	qDebug() << "BounceStart_="<<BounceStart_<<" BouncePeriod_="<<BouncePeriod_<<endl;
 
 	// initialize random generator
-	srand(time(NULL));
+	RandomEngine_ = std::make_unique<RandomEngine>(std::random_device{}());
 
 	// Give our bounce resistor an initial value
 	bounce();
 }
 
 void Switch::bounce() {
-	int bounced_ms = ((Simulator::self()->time() - m_bounceStart) * 1000) / LOGIC_UPDATE_RATE;
+	const auto bouncedTimeMS = ((Simulator::self()->time() - BounceStart_) * 1000ll) / LOGIC_UPDATE_RATE;
 
-	if (bounced_ms >= m_bouncePeriod_ms) {
-		if (!m_pStopBouncingTimer->isActive()) {
-            m_pStopBouncingTimer->setSingleShot( true );
-			m_pStopBouncingTimer->start(0 /*, true */ );
-        }
+	if (bouncedTimeMS >= BouncePeriod_) {
+		if (!StopBouncingTimer_->isActive()) {
+    	StopBouncingTimer_->setSingleShot(true);
+			StopBouncingTimer_->start(0);
+    }
 
 		return;
 	}
 
-	double g = double(rand()) / double(RAND_MAX);
-
+	std::uniform_real_distribution<conductance_t> distribution(0.0, 1.0);
 	// 4th power of the conductance seems to give a nice distribution
-	g = pow(g, 4);
-	m_pBounceResistance->setConductance(g);
+	const auto randomConductance = std::pow(distribution(*RandomEngine_.get()), 4.0);
+
+	BouncingResistance_->setConductance(randomConductance);
 }
 
 void Switch::stopBouncing() {
-//	Simulator::self()->detachSwitch( this );
-	m_pComponent->removeElement(m_pBounceResistance, true);
-	m_pBounceResistance = 0;
+	Component_->removeElement(BouncingResistance_, true);
+	BouncingResistance_ = nullptr;
+	RandomEngine_ = nullptr;
 
-	bool connected = (m_state == Closed);
-
-	if (m_pP1 && m_pP2) {
-		m_pP1->setSwitchConnected(m_pP2, connected);
-		m_pP2->setSwitchConnected(m_pP1, connected);
-	}
-
-	if (CircuitDocument *cd = m_pComponent->circuitDocument())
-		cd->requestAssignCircuits();
+	reconnectAll();
 }
 
+void Switch::reconnectAll() {
+	const bool connected = isClosed();
+
+	if (Pins_[0]) {
+		Pins_[0]->setSwitchConnected(Pins_[1], connected);
+	}
+	if (Pins_[1]) {
+		Pins_[1]->setSwitchConnected(Pins_[0], connected);
+	}
+
+	if (const auto &circuitDocument = Component_->circuitDocument()) {
+		circuitDocument->requestAssignCircuits();
+	}
+}
 
 bool Switch::calculateCurrent() {
-	if (m_pP1.isNull() || m_pP2.isNull()) return false;
+	if (!Pins_[0] || !Pins_[1]) {
+		return false;
+	}
 
-	if (state() == Open) {
-		m_pP1->setSwitchCurrentKnown(this);
-		m_pP2->setSwitchCurrentKnown(this);
+	if (isOpen()) {
+		Pins_[0]->setSwitchCurrentKnown(this);
+		Pins_[1]->setSwitchCurrentKnown(this);
 		return true;
 	}
 
-	Pin *pins[2] = { m_pP1, m_pP2 };
-
-	double current = 0.0;
+	current_t current = 0.0;
 	bool currentKnown = false;
-	int pol;
 
-	for (unsigned i = 0; i < 2; ++i) {
-		pol = (i == 0) ? 1 : -1;
+	bool reversePolarity = true;
 
-		const QPtrList<Wire> inputs = pins[i]->inputWireList();
-		const QPtrList<Wire> outputs = pins[i]->outputWireList();
+	for (auto &pin : Pins_) {
+		reversePolarity = !reversePolarity;
+
+		if (!pin) continue;
+
+		const auto &inputs = pin->inputWireList();
+		const auto &outputs = pin->outputWireList();
 
 		currentKnown = true;
 		current = 0.0;
 
-		QPtrList<Wire>::const_iterator end = inputs.end();
+		for (auto &wire : inputs) {
+			if (!wire) continue;
 
-		for (QPtrList<Wire>::const_iterator it = inputs.begin(); it != end; ++it) {
-			if (!(*it))
-				continue;
-
-			if (!(*it)->currentIsKnown()) {
+			if (!wire->currentIsKnown()) {
 				currentKnown = false;
 				break;
 			}
 
-			current += (*it)->current();
+			current += wire->current();
 		}
 
 		if (!currentKnown) continue;
 
-		end = outputs.end();
+		for (auto &wire : outputs) {
+			if (!wire) continue;
 
-		for (QPtrList<Wire>::const_iterator it = outputs.begin(); it != end; ++it) {
-			if (!(*it)) continue;
-
-			if (!(*it)->currentIsKnown()) {
+			if (!wire->currentIsKnown()) {
 				currentKnown = false;
 				break;
 			}
 
-			current -= (*it)->current();
+			current -= wire->current();
 		}
 
-		if (currentKnown) break;
+		if (!currentKnown) continue;
+
+		if (reversePolarity) {
+			current = -current;
+		}
 	}
 
 	if (!currentKnown) return false;
 
-	m_pP1->setSwitchCurrentKnown(this);
-	m_pP2->setSwitchCurrentKnown(this);
-	m_pP1->mergeCurrent(-current * pol);
-	m_pP2->mergeCurrent(current * pol);
+	// TODO : I don't believe that this is correct, because either pin can be in/out.
+	for (auto &pin : Pins_) {
+		current = -current;
+		if (!pin) continue;
+
+		pin->setSwitchCurrentKnown(this);
+		pin->mergeCurrent(current);
+	}
 
 	return true;
 }

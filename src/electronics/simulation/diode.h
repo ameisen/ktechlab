@@ -1,30 +1,19 @@
-/***************************************************************************
- *   Copyright (C) 2003-2004 by David Saxton                               *
- *   david@bluehaze.org                                                    *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- ***************************************************************************/
+#pragma once
 
-#ifndef DIODE_H
-#define DIODE_H
+#include "pch.hpp"
 
 #include "nonlinear.h"
 
-class DiodeSettings
-{
-	public:
-		DiodeSettings();
-		void reset();
+struct DiodeSettings {
+	void reset() {
+		*this = DiodeSettings{};
+	}
 
-		double I_S;	///< Diode saturation current
-		double N;	///< Emission coefficient
-		double V_B;	///< Reverse breakdown
-// 		double R;	///< Series resistance
+	current_t I_S = 1e-15;	///< Diode saturation current
+	real N = 1.0;	///< Emission coefficient
+	voltage_t V_B = 4.7;	///< Reverse breakdown
+// 	double R = 0.001;	///< Series resistance
 };
-
 
 /**
 This simulates a diode. The simulated diode characteristics are:
@@ -39,35 +28,38 @@ This simulates a diode. The simulated diode characteristics are:
 @short Simulates the electrical property of diode-ness
 @author David Saxton
 */
-class Diode : public NonLinear
-{
+class Diode : public NonLinear {
+	using Super = NonLinear;
 	public:
 		Diode();
-		~Diode() override;
-	
+		~Diode() override = default;
+
 		void update_dc() override;
 		void add_initial_dc() override;
 		Element::Type type() const override { return Element_Diode; }
 		DiodeSettings settings() const { return m_diodeSettings; }
-		void setDiodeSettings( const DiodeSettings & settings );
+		void setDiodeSettings(const DiodeSettings &settings);
 		/**
 		 * Returns the current flowing through the diode
 		 */
-		double current() const;
+		current_t current() const;
 
 	protected:
 		void updateCurrents() override;
 		void calc_eq();
-		void calcIg( double V, double * I, double * g ) const;
+
+		struct IG final {
+			current_t current = 0.0;
+			conductance_t conductance = 0.0;
+		};
+
+		IG calcIG(voltage_t V, bool conductance = false) const;
 		void updateLim();
 
-		double g_new, g_old;
-		double I_new, I_old;
-		double V_prev;
-		double V_lim;
-
 		DiodeSettings m_diodeSettings;
+
+		conductance_t g_new = 0.0, g_old = 0.0;
+		current_t I_new = 0.0, I_old = 0.0;
+		voltage_t V_prev = 0.0;
+		voltage_t V_lim = 0.0;
 };
-
-#endif
-

@@ -39,12 +39,12 @@ Embed::Embed( ICNDocument *icnDocument, bool newItem, const char *id )
 	initProcessSymbol();
 	createStdInput();
 	createStdOutput();
-	
+
 	createProperty( "type", Variant::Type::Select );
 	property("type")->setAllowed( (QStringList("Microbe") << "Assembly" ) );
 	property("type")->setValue("Microbe");
 	property("type")->setCaption( i18n("Type") ); // TODO: replace this with i18n( "the type", "Type" );
-	
+
 	createProperty( "code", Variant::Type::Multiline );
 	property("code")->setCaption( i18n("Code") );
 	property("code")->setValue( i18n("// Embedded code:") );
@@ -72,7 +72,7 @@ void Embed::generateMicrobe( FlowCode *code )
 {
 	if ( typeIsMicrobe() )
 		code->addCode( dataString("code") );
-	
+
 	else
 	{
 		// Is assembly code, we need to microbe as such
@@ -80,7 +80,6 @@ void Embed::generateMicrobe( FlowCode *code )
 		code->addCode( dataString("code") );
 		code->addCode("}");
 	}
-	
+
 	code->addCodeBranch( outputPart("stdoutput") );
 }
-
