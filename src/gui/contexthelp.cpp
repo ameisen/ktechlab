@@ -99,8 +99,10 @@ ContextHelp::ContextHelp( KateMDI::ToolView * parent )
 	m_pBrowserView = m_pBrowser->view();
 	m_pBrowserView->setFocusPolicy( Qt::NoFocus );
 	m_pBrowserLayout->addWidget( m_pBrowserView );
-	connect( m_pBrowser->browserExtension(), SIGNAL(openUrlRequest( const KUrl &, const KParts::OpenUrlArguments & ) ),
-			 this, SLOT( openURL(const KUrl & /*, const KParts::OpenUrlArguments & */ ) ) );
+	connect(
+		m_pBrowser->browserExtension(), SIGNAL(openUrlRequest(const QUrl &, const KParts::OpenUrlArguments &, const KParts::BrowserArguments &)),
+		this, SLOT(openURL(const QUrl &))
+	);
 
 	// Adjust appearance of browser
 	m_pBrowserView->setMarginWidth( 4 );

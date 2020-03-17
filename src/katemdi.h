@@ -26,11 +26,12 @@
 #include <kmultitabbar.h>
 #include <ktoggleaction.h>
 
-#include <KDELibs4Support/kshortcut.h>
-
 // #include <q3dict.h>
 // #include <q3intdict.h>
 // #include <q3vbox.h>
+
+#include <QKeySequence>
+
 #include <qsplitter.h>
 
 namespace KateMDI {
@@ -62,7 +63,7 @@ class ToggleToolViewAction : public KToggleAction
   Q_OBJECT
 
   public:
-    ToggleToolViewAction ( const QString& text, const KShortcut& cut,
+    ToggleToolViewAction ( const QString& text, const QKeySequence& cut,
                            class ToolView *tv, QObject* parent = 0, const char* name = 0 );
 
     ~ToggleToolViewAction() override;

@@ -65,6 +65,7 @@
 #include <ktabwidget.h>
 #include <kxmlguifactory.h>
 #include <kstandardaction.h>
+#include <KStandardShortcut>
 #include <ktoolbarpopupaction.h>
 
 #include <kwindowsystem.h>
@@ -415,7 +416,8 @@ void KTechlab::setupActions() {
 		ac
 	);
   p->setObjectName("file_new");
-  p->setShortcuts( KStandardShortcut::shortcut(KStandardShortcut::New) );
+
+	ac->setDefaultShortcuts(p, KStandardShortcut::openNew());
   connect(p, SIGNAL(triggered(bool)), this, SLOT(slotFileNew()));
   ac->addAction(p->objectName(), p);
 	p->menu()->setTitle( i18n("New File") );

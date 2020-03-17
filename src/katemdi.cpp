@@ -94,13 +94,13 @@ int Splitter::idAfter ( QWidget * w ) const
 
 //BEGIN TOGGLETOOLVIEWACTION
 
-ToggleToolViewAction::ToggleToolViewAction ( const QString& text, const KShortcut& cut, ToolView *tv,
+ToggleToolViewAction::ToggleToolViewAction ( const QString& text, const QKeySequence& cut, ToolView *tv,
                                              QObject* parent, const char* name )
  : KToggleAction(text /* ,cut */, parent /*,name*/)
  , m_tv(tv)
 {
     setObjectName(name);
-    KToggleAction::setShortcut(cut.primary());
+    KToggleAction::setShortcut(cut);
 
   connect(this,SIGNAL(toggled(bool)),this,SLOT(slotToggled(bool)));
   connect(m_tv,SIGNAL(visibleChanged(bool)),this,SLOT(visibleChanged(bool)));
@@ -167,7 +167,7 @@ void GUIClient::registerToolView (ToolView *tv)
   QString aname = QString("kate_mdi_toolview_") + tv->id;
 
   // try to read the action shortcut
-  KShortcut sc;
+  QKeySequence sc;
 
 //   KConfig *cfg = kapp->config();
 //   QString _grp = cfg->group();
@@ -176,7 +176,7 @@ void GUIClient::registerToolView (ToolView *tv)
 //   cfg->setGroup( _grp );
 
   KConfigGroup grSh = KGlobal::config()->group("Shortcuts");
-  sc = KShortcut( grSh.readEntry(aname, "") );
+  sc = QKeySequence( grSh.readEntry(aname, "") );
 }
 
 void GUIClient::clientAdded( KXMLGUIClient *client )
