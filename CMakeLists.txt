@@ -1,10 +1,11 @@
-set(KTECHLAB_DEVELOPER_BUILD "true")
+set(KTECHLAB_DEVELOPER_BUILD ON)
 
 project(ktechlab)
 set(VERSION 0.60.0)
 
 cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(BUILD_EXAMPLES OFF)
@@ -12,7 +13,7 @@ set(BUILD_DOCS OFF)
 set(BUILD_TESTS OFF)
 
 find_package(ECM 5.44.0 CONFIG REQUIRED)
-set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
+list(APPEND CMAKE_MODULE_PATH ${ECM_MODULE_PATH} ${ECM_KDE_MODULE_DIR})
 
 list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
@@ -55,26 +56,41 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_definitions(-Wno-deprecated-declarations)
-add_definitions(-fPIC)
+add_compile_options(
+    -Wno-deprecated-declarations
+    -Wall
+    -Wextra
+)
 
-add_definitions( -Wall -Wextra )
+list(APPEND build_flags
+    -fPIC
+)
 
 if (KTECHLAB_DEVELOPER_BUILD)
-    add_definitions( -fno-omit-frame-pointer )
-    set( SANITIZE_FLAGS " -fsanitize=address -fno-omit-frame-pointer -fPIC" )
-    add_definitions( ${SANITIZE_FLAGS} )
-    set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZE_FLAGS}" )
+    list(APPEND build_flags
+        -march=native
+        -fsanitize=address
+        -fno-omit-frame-pointer
+    )
 endif (KTECHLAB_DEVELOPER_BUILD)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions( -Og )
+    list(APPEND build_flags -Og)
 else()
-    add_definitions( -O3 )
+    list(APPEND build_flags -O3)
 endif ()
 
+list(APPEND build_flags ${Qt5Core_EXECUTABLE_COMPILE_FLAGS})
+
+add_compile_options(
+    ${build_flags}
+)
+
+add_link_options(
+    ${build_flags}
+)
+
 add_definitions(
-    ${Qt5Core_EXECUTABLE_COMPILE_FLAGS}
     ${GLIB2_DEFINITIONS}
     ${KDE4_DEFINITIONS}
 )
@@ -105,8 +121,8 @@ include_directories(
     ${Qt5Test_INCLUDE_DIRS}
 )
 
-set( SRC_EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples/ )
-set( SRC_TESTS_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/ )
+set(SRC_EXAMPLES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/examples/)
+set(SRC_TESTS_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/data/)
 
 CONFIGURE_FILE(
     ${CMAKE_SOURCE_DIR}/config.h.cmake

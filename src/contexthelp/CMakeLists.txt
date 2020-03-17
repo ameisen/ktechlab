@@ -1,14 +1,8 @@
+file(GLOB contexthelp_SRCS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    "help-*"
+    "*.png"
+)
+
 install(FILES
-	help-en_US
-	help-es
-	help-fr
-	help-it
-	help-de
-	help-uk
-	ohm.png
-	ohm_unit.png
-	opamp.png
-	siemens.png
-	siemens_unit.png
-	tf_op.png
+	${contexthelp_SRCS}
 	DESTINATION ${DATA_INSTALL_DIR}/ktechlab/contexthelp)

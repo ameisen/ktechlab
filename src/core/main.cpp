@@ -13,6 +13,10 @@
 #include <QApplication>
 #include <QCommandLineParser>
 
+#if defined(__SANITIZE_ADDRESS__)
+#	include <sanitizer/lsan_interface.h>
+#endif
+
 namespace Application {
 	static constexpr const cstring Name = "ktechlab";
 	static constexpr const cstring Version = VERSION;
@@ -174,5 +178,14 @@ int main(int argc, char **argv) {
 	}
 
 	ktechlab->show();
-	return app.exec();
+
+	const int resultCode = app.exec();
+
+	// https://stackoverflow.com/a/51553776
+#if defined(__SANITIZE_ADDRESS__)
+	__lsan_do_leak_check();
+	__lsan_disable();
+#endif
+
+	return resultCode;
 }

@@ -1,10 +1,8 @@
 SET(core_STAT_SRCS
-#    logtofilemsghandler.cpp
-#    diagnosticstyle.cpp
-#    main.cpp
+
 )
 
-set(core_KCFG_SRCS
+list(APPEND core_KCFG_SRCS
     ktlconfig.kcfgc
 )
 
